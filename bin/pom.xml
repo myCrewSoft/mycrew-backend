@@ -123,12 +123,6 @@
 			<artifactId>p6spy-spring-boot-starter</artifactId>
 			<version>1.10.0</version>
 		</dependency>
-		<!-- 환경 변수 -->
-		<dependency>
-		    <groupId>me.paulschwarz</groupId>
-		    <artifactId>spring-dotenv</artifactId>
-		    <version>4.0.0</version>
-		</dependency>
 		<!-- 테스트 -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
