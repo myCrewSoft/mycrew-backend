@@ -46,9 +46,7 @@ logging:
     org.springframework.security: DEBUG
 
 server:
-  error:
-    include-message: always
-    include-stacktrace: always
+  port: 80
 
 cors:
   allowed-origins: http://localhost:5173

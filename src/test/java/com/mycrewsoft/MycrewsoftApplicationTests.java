@@ -1,4 +1,4 @@
-package com.mycrewsoft.app;
+package com.mycrewsoft;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
