@@ -9,17 +9,17 @@ import lombok.Setter;
 @Setter
 public class IntgSchdVO {
 
-	private Long SchdId;		// 일정 ID
+	private Long schdId;		// 일정 ID
 	
-	private String SchdClsfCd;	// 일정 구분 코드
+	private String schdClsfCd;	// 일정 구분 코드
 	
-	private String DeptCd;		// 부서 코드
-	private String ProjId;		// 프로젝트 코드
+	private String deptCd;		// 부서 코드
+	private String projId;		// 프로젝트 코드
 	
-	private String SchdNm;		// 일정명
-	private String SchdDetailCn;	// 일정 상세 내용
-	private LocalDateTime BeginDt;		// 시작 일시
-	private LocalDateTime EndDt;			// 종료 일시
+	private String schdNm;		// 일정명
+	private String schdDetailCn;	// 일정 상세 내용
+	private LocalDateTime beginDt;		// 시작 일시
+	private LocalDateTime endDt;			// 종료 일시
 	
 	private Long SchdWrtrId;	// 일정 작성자 ID
 	private LocalDateTime SchdRegstDt;	// 일정 등록 일시
