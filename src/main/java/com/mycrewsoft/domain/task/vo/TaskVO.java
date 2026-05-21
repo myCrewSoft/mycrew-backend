@@ -14,11 +14,11 @@ import java.util.List;
 @Setter
 public class TaskVO {
 
-	private Long taskId;             // 업무ID
+	private Long taskId;             // 업무ID - PK
 	
-    private Long projId;             // 프로젝트ID
-    private Long chtrmId;            // 채팅방ID
-    private String taskTypeCd;       // 업무유형코드
+    private Long projId;             // 프로젝트ID - PK, FK
+    private Long chtrmId;            // 채팅방ID - FK
+    private String taskTypeCd;       // 업무유형코드 - FK
     private Long taskMngrId;         // 업무담당자ID
     private String taskStatCd;       // 업무상태
     private String taskPriorityCd;   // 업무우선순위

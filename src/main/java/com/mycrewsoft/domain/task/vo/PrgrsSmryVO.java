@@ -9,8 +9,8 @@ import lombok.Setter;
 @Setter
 public class PrgrsSmryVO {
 	
-    private Long taskId;		// 업무 ID		
-    private Long projId;		// 프로젝트 ID
+    private Long taskId;		// 업무 ID - PK, FK
+    private Long projId;		// 프로젝트 ID - PK, FK
 
     private Integer totTaskCnt;		// 전체 업무 수
     private Integer cmplTaskCnt;	// 완료된 업무 수
