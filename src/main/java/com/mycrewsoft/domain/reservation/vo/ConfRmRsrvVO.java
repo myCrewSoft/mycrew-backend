@@ -9,14 +9,14 @@ import lombok.Setter;
 @Setter
 public class ConfRmRsrvVO {
 
-	private Long RsrvId;			// 회의실 예약 번호 ID - PK
+	private Long rsrvId;			// 회의실 예약 번호 ID - PK
 	
-	private Long ConfRmId;			// 회의실 ID - FK
+	private Long confRmId;			// 회의실 ID - FK
 	
-	private Long RsrvMberId;		// 예약자 ID(TB_MEMBER)
-	private String RsrvPurps;		// 예약 목적
-	private LocalDateTime BeginDt;	// 시작 일시
-	private LocalDateTime EenDt;	// 종료 일시
-	private String RsrvSttusCd;		// 회의실 상태(01: 대기 / 02: 사용 중)
-	private String IntgRsrvYn;		// 종일 예약 여부
+	private Long rsrvMberId;		// 예약자 ID(TB_MEMBER)
+	private String rsrvPurps;		// 예약 목적
+	private LocalDateTime beginDt;	// 시작 일시
+	private LocalDateTime endDt;	// 종료 일시
+	private String rsrvSttusCd;		// 회의실 상태(01: 대기 / 02: 사용 중)
+	private String intgRsrvYn;		// 종일 예약 여부
 }

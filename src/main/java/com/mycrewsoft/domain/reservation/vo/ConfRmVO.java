@@ -7,12 +7,12 @@ import lombok.Setter;
 @Setter
 public class ConfRmVO {
 
-	private Long ConfRmId;			// 회의실 ID - PK
+	private Long confRmId;			// 회의실 ID - PK
 	
-	private String ConfRmNm;		// 회의실명
-	private String ConfRmHo;		// 회의실 호수
-	private Integer ConfRmFlr;		// 회의실 층수
-	private Long ConfRmMngrId;		// 회의실 관리자 ID(TB_MEMBER)
-	private String UseYn;			// 사용 여부
-	private String ConfRmColor;		// 회의실 색상
+	private String confRmNm;		// 회의실명
+	private String confRmHo;		// 회의실 호수
+	private Integer confRmFlr;		// 회의실 층수
+	private Long confRmMngrId;		// 회의실 관리자 ID(TB_MEMBER)
+	private String useYn;			// 사용 여부
+	private String confRmColor;		// 회의실 색상
 }
