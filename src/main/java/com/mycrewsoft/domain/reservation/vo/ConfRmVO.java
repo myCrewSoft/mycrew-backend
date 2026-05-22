@@ -1,5 +1,7 @@
 package com.mycrewsoft.domain.reservation.vo;
 
+import java.util.List;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,4 +17,6 @@ public class ConfRmVO {
 	private Long confRmMngrId;		// 회의실 관리자 ID(TB_MEMBER)
 	private String useYn;			// 사용 여부
 	private String confRmColor;		// 회의실 색상
+	
+	private List<ConfRmRsrvVO> confRmRsrvList;	// 회의실 예약 목록
 }

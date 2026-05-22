@@ -17,6 +17,6 @@ public class ConfRmRsrvVO {
 	private String rsrvPurps;		// 예약 목적
 	private LocalDateTime beginDt;	// 시작 일시
 	private LocalDateTime endDt;	// 종료 일시
-	private String rsrvSttusCd;		// 회의실 상태(01: 대기 / 02: 사용 중)
+	private String rsrvSttusCd;		// 회의실 예약 상태(01: 대기 / 02: 사용 중)
 	private String intgRsrvYn;		// 종일 예약 여부
 }
