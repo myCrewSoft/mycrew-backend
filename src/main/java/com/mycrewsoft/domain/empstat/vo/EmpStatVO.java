@@ -1,4 +1,4 @@
-package com.mycrewsoft.domain.empStat.vo;
+package com.mycrewsoft.domain.empstat.vo;
 
 /**
  * 사원상태코드 정보를 담는 VO 클래스

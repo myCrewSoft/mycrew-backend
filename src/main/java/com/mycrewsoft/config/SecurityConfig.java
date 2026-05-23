@@ -12,11 +12,14 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mycrewsoft.common.constant.Constants;
 import com.mycrewsoft.security.handler.CustomAccessDeniedHandler;
 import com.mycrewsoft.security.handler.CustomAuthenticationEntryPoint;
 import com.mycrewsoft.security.jwt.JwtAuthenticationFilter;
 import com.mycrewsoft.security.jwt.JwtTokenProvider;
+import com.mycrewsoft.security.service.AuthorizationUserDetailsService;
+import com.mycrewsoft.security.service.RefreshTokenService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -36,7 +39,9 @@ public class SecurityConfig {
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
     private final CorsConfigurationSource corsConfigurationSource;
-
+    private final RefreshTokenService refreshTokenService;
+    private final ObjectMapper objectMapper;
+    
     /**
      * Security 필터 체인을 구성한다.
      * CSRF 비활성화, 세션 미사용, URL 권한 설정, JWT 필터 등록을 처리한다.
@@ -46,7 +51,8 @@ public class SecurityConfig {
      */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
+        
+		http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource)) // cors 적용
                 .csrf(csrf -> csrf.disable()) // csrf 미사용
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 서버 세션 미사용
@@ -55,13 +61,14 @@ public class SecurityConfig {
                         .requestMatchers(Constants.PUBLIC_URLS).permitAll()
                         // 역할별 URL 제한은 팀과 역할 이름 확정 후 여기에 추가
                         // 예) .requestMatchers("/api/v1/admin/**").hasRole("GOD")
+                        .anyRequest().hasRole(Constants.PRIMARY_ADMIN) // 최고 관리자는 모든 기능 접근 가능
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(authenticationEntryPoint) // 401
                         .accessDeniedHandler(accessDeniedHandler) // 403
                 )
                 // JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 등록
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, refreshTokenService, objectMapper),
                         UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
@@ -76,4 +83,13 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
+    
+    /**
+     * 사용자 인증 정보(권한버전, 권한, 세션ID)를 추가하여 로드하는 UserDetailsService 빈.
+     * @return
+     */
+    @Bean
+	public AuthorizationUserDetailsService  userDetailsService() {
+		return new AuthorizationUserDetailsService();
+	}
 }

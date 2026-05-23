@@ -6,13 +6,13 @@ import java.util.List;
 
 import org.springframework.format.annotation.DateTimeFormat;
 
+import com.mycrewsoft.domain.authversion.vo.AuthVersionVO;
 import com.mycrewsoft.domain.department.vo.DepartmentVO;
-import com.mycrewsoft.domain.empStat.vo.EmpStatVO;
-import com.mycrewsoft.domain.jobGrade.vo.JobGradeVO;
-import com.mycrewsoft.domain.jobPosition.vo.JobPositionVO;
+import com.mycrewsoft.domain.empstat.vo.EmpStatVO;
+import com.mycrewsoft.domain.jobgrade.vo.JobGradeVO;
+import com.mycrewsoft.domain.jobposition.vo.JobPositionVO;
 import com.mycrewsoft.domain.messenger.vo.MsngrChtrmPtcptVO;
-import com.mycrewsoft.security.vo.AuthVersionVO;
-import com.mycrewsoft.security.vo.RoleMemberMappingVO;
+import com.mycrewsoft.domain.rolemembermapping.vo.RoleMemberMappingVO;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
