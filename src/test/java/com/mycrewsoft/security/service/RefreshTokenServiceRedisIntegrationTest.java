@@ -1,8 +1,10 @@
 package com.mycrewsoft.security.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -29,6 +31,8 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mycrewsoft.config.RedisConfig;
+import com.mycrewsoft.security.authz.ScopeType;
+import com.mycrewsoft.security.authz.ScopedPermission;
 import com.mycrewsoft.security.jwt.JwtAuthenticationFilter;
 import com.mycrewsoft.security.jwt.JwtTokenProvider;
 import com.mycrewsoft.security.users.AuthSession;
@@ -138,6 +142,8 @@ class RefreshTokenServiceRedisIntegrationTest {
                 11,
                 new LinkedHashSet<>(Set.of("ROLE_USER", "ROLE_MANAGER")),
                 null);
+        session.setScopedPermissions(List.of(
+                ScopedPermission.of("BOARD:DELETE", 10L, "board manager", ScopeType.DEPT, "10")));
         String refreshToken = "test-refresh-token-" + UUID.randomUUID();
         refreshTokenService.saveSession(session, refreshToken);
 
@@ -165,6 +171,9 @@ class RefreshTokenServiceRedisIntegrationTest {
         assertThat(principal.getMbrId()).isEqualTo(2001L);
         assertThat(principal.getUsername()).isEqualTo("authentication-test-user");
         assertThat(principal.getAuthVersion()).isEqualTo(11);
+        assertThat(principal.getScopedPermissions())
+                .extracting("permCd", "scopeType", "scopeId")
+                .containsExactly(tuple("BOARD:DELETE", ScopeType.DEPT, "10"));
 
         log.info("Authentication Principal: userId={}, username={}, authVersion={}",
                 principal.getMbrId(),

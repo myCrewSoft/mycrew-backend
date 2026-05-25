@@ -32,6 +32,7 @@ public enum ErrorCode {
     LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "AUTH_005", "아이디 또는 비밀번호가 올바르지 않습니다."),
     REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "AUTH_006", "Refresh Token 이 존재하지 않습니다."),
     AUTH_VERSION_MISMATCH(HttpStatus.UNAUTHORIZED, "AUTH_007", "Token authorization version이 일치하지 않습니다."),
+    INVALID_SCOPE(HttpStatus.BAD_REQUEST, "AUTH_008", "유효하지 않은 권한 범위입니다."),
 
     // USER
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "존재하지 않는 사용자입니다."),

@@ -1,0 +1,414 @@
+Scoped RBAC Conversation Summary
+Date: 2026-05-25
+Project: mycrew-backend
+
+1. Initial Context
+
+The current authentication/authorization system uses:
+- JWT Access Token
+- JWT Refresh Token
+- sessionId inside both tokens
+- Redis AuthSession keyed by sessionId
+- authVersion to detect stale authorization state
+
+The current system can handle simple role-based authorization, but cannot express dynamic scoped permissions such as:
+- User A can manage board posts for department 10.
+- User A cannot manage board posts for department 11.
+
+2. Current Auth System Review
+
+Important files reviewed:
+- src/main/java/com/mycrewsoft/config/SecurityConfig.java
+- src/main/java/com/mycrewsoft/security/jwt/JwtAuthenticationFilter.java
+- src/main/java/com/mycrewsoft/security/jwt/JwtTokenProvider.java
+- src/main/java/com/mycrewsoft/security/service/RefreshTokenService.java
+- src/main/java/com/mycrewsoft/security/users/AuthSession.java
+- src/main/java/com/mycrewsoft/security/users/AuthorizationUserDetails.java
+- src/main/java/com/mycrewsoft/common/constant/Constants.java
+
+Current request flow:
+1. JwtAuthenticationFilter reads the Bearer access token.
+2. JwtTokenProvider validates signature, expiration, and token type.
+3. userId, sessionId, and authVersion are extracted from the token.
+4. RefreshTokenService loads AuthSession from Redis.
+5. userId and authVersion are compared against the Redis session.
+6. enabled is checked.
+7. AuthSession.authorities are converted to Spring Security GrantedAuthority.
+8. AuthorizationUserDetails is placed into SecurityContext.
+
+Important observation:
+- JWT stores identity and session information.
+- Redis stores the actual session state.
+- Existing authorities are simple strings such as ROLE_USER or ROLE_ADMIN.
+- This cannot represent resource-scoped authorization.
+
+3. ERD Snapshot Review
+
+The ERD snapshot file was:
+C:\Users\dnjsg\Downloads\선생님의 꿀같은 조언-snapshot.json
+
+The JSON could not be parsed as strict JSON because some Korean strings were corrupted, but physical table and column names were readable.
+
+Relevant RBAC tables found:
+- TB_EMPLOYEE
+- TB_DEPARTMENT
+- TB_ROLE
+- TB_PERMISSION
+- TB_PERMISSION_ROLE_MAPPING
+- TB_ROLE_MEMBER_MAPPING
+- TB_AUTH_VERSION
+
+Relevant resource scope columns found:
+- TB_BOARD.DEPT_CD
+- TB_BOARD.PROJ_ID
+- TB_INTG_SCHD.DEPT_CD
+- TB_INTG_SCHD.PROJ_ID
+- TB_PROJECT.PROJ_ID
+- TB_PROJECT.PROJ_MGR_MBR_ID
+- TB_PROJECT.PROJ_LDR_MBR_ID
+- TB_PROJ_MEMBER.EMP_ID
+- TB_PROJ_MEMBER.PROJ_ID
+- TB_TASK.PROJ_ID
+- TB_TASK.TASK_MNGR_ID
+- TB_TASK_MEMBER.MBR_ID
+- TB_TASK_MEMBER.TASK_ID
+- TB_TASK_MEMBER.PROJ_ID
+- TB_APRVL_DOC.DRFTR_MBR_ID
+- TB_APRVL_LINE.APRVR_MBR_ID
+- TB_DRIVE.EMP_ID
+- TB_PROJ_DRIVE.PROJ_ID
+- TB_PROJ_DRIVE.TASK_ID
+
+4. Chosen Design Direction
+
+The chosen model is Scoped RBAC.
+
+Key principle:
+- Roles and permissions remain reusable definitions.
+- Scope is applied when a role is assigned to a user.
+
+Example:
+- Employee 100
+- Role: board manager
+- Scope type: DEPT
+- Scope id: 10
+
+Meaning:
+- Employee 100 can use board manager permissions only for department 10 resources.
+
+The user selected the general scope model:
+- GLOBAL
+- DEPT
+- PROJECT
+- SELF
+
+5. Database Design Decision
+
+The initial idea was to add a new TB_ROLE_ASSIGNMENT table.
+
+The user correctly asked whether TB_ROLE_MEMBER_MAPPING would then lose its reason to exist.
+
+Final decision:
+- Rename TB_ROLE_MEMBER_MAPPING to TB_ROLE_ASSIGNMENT.
+- Expand it into the single source of truth for user role grants.
+
+Proposed structure:
+
+TB_ROLE_ASSIGNMENT
+  ROLE_ASSIGN_ID   NUMBER(22) PK
+  EMP_ID           NUMBER(10) NOT NULL
+  ROLE_ID          NUMBER(22) NOT NULL
+  SCOPE_TYPE_CD    VARCHAR2(20) NOT NULL
+  SCOPE_ID         VARCHAR2(50) NOT NULL
+  ENABLED          CHAR(1) DEFAULT 'Y'
+  FRST_REG_DT      DATE
+  FRST_RGTR_ID     NUMBER(10)
+  LAST_MDFCN_DT    DATE
+  LAST_MDFR_ID     NUMBER(10)
+
+Constraints:
+- PK: ROLE_ASSIGN_ID
+- FK: EMP_ID -> TB_EMPLOYEE.EMP_ID
+- FK: ROLE_ID -> TB_ROLE.ROLE_ID
+- UK: EMP_ID, ROLE_ID, SCOPE_TYPE_CD, SCOPE_ID
+- CHECK: SCOPE_TYPE_CD IN ('GLOBAL', 'DEPT', 'PROJECT', 'SELF')
+- CHECK: ENABLED IN ('Y', 'N')
+
+Scope id convention:
+- GLOBAL -> SCOPE_ID='*'
+- SELF -> SCOPE_ID='*'
+- DEPT -> SCOPE_ID='<DEPT_CD>'
+- PROJECT -> SCOPE_ID='<PROJ_ID>'
+
+Existing TB_ROLE_MEMBER_MAPPING rows should migrate as:
+- SCOPE_TYPE_CD='GLOBAL'
+- SCOPE_ID='*'
+- ENABLED='Y'
+
+6. Permission Code Design
+
+Permission codes use the format:
+DOMAIN:ACTION
+
+Examples:
+- BOARD:READ
+- BOARD:CREATE
+- BOARD:UPDATE
+- BOARD:DELETE
+- BOARD:MANAGE
+- PROJECT:READ
+- PROJECT:UPDATE
+- PROJECT:MANAGE
+- TASK:READ
+- TASK:UPDATE
+- TASK:MANAGE
+- SCHEDULE:READ
+- SCHEDULE:CREATE
+- SCHEDULE:UPDATE
+- SCHEDULE:DELETE
+- DRIVE:READ
+- DRIVE:UPLOAD
+- DRIVE:DELETE
+- APPROVAL:READ
+- APPROVAL:APPROVE
+- EMPLOYEE:READ
+- EMPLOYEE:UPDATE
+- ROLE:ASSIGN
+
+Roles are bundles of permissions.
+Scope is not part of the role.
+Scope is part of the role assignment.
+
+7. Runtime Authorization Design
+
+SecurityConfig should only decide public vs authenticated routes.
+
+Recommended request authorization:
+- PUBLIC_URLS -> permitAll
+- all other routes -> authenticated
+
+Dynamic authorization happens in the service layer because the service can load the target resource and build ResourceContext.
+
+Core API:
+
+AuthorizationService
+  boolean hasPermission(Long empId, Collection<ScopedPermission> permissions, String permCd, ResourceContext resource)
+  void assertPermission(Long empId, Collection<ScopedPermission> permissions, String permCd, ResourceContext resource)
+  boolean hasCurrentUserPermission(String permCd, ResourceContext resource)
+  void assertCurrentUserPermission(String permCd, ResourceContext resource)
+
+ResourceContext:
+  resourceType
+  resourceId
+  deptCd
+  projId
+  ownerEmpId
+  managerEmpId
+  memberEmpIds
+
+Scope matching:
+- GLOBAL: permission match is enough.
+- DEPT: assignment.scopeId == resource.deptCd.
+- PROJECT: assignment.scopeId == resource.projId.
+- SELF: current emp id == resource.ownerEmpId.
+
+8. Redis Session Design
+
+Existing AuthSession should be expanded.
+
+AuthSession:
+  sessionId
+  userId
+  username
+  enabled
+  authVersion
+  authorities
+  scopedPermissions
+  refreshTokenHash
+
+authorities remain for Spring Security compatibility.
+scopedPermissions drive dynamic authorization.
+
+ScopedPermission:
+  permCd
+  roleId
+  roleName
+  scopeType
+  scopeId
+
+Example session permissions:
+- BOARD:READ, DEPT, 10
+- BOARD:DELETE, DEPT, 10
+- PROJECT:READ, PROJECT, 300
+- TASK:UPDATE, PROJECT, 300
+- EMPLOYEE:UPDATE, SELF, *
+
+9. Permission Change Invalidation
+
+When an admin changes a user's permissions:
+1. Update TB_ROLE_ASSIGNMENT or role-permission mappings.
+2. Increment TB_AUTH_VERSION.AUTH_VER for affected employees.
+3. Delete affected Redis sessions.
+4. Existing access/refresh tokens fail because the session id no longer resolves.
+5. User signs in again or goes through reauthentication.
+
+This prevents old tokens from continuing to use stale permissions.
+
+10. Design Document Created
+
+The design document was created at:
+docs/superpowers/specs/2026-05-25-scoped-rbac-design.md
+
+It contains:
+- DB design
+- scope rules
+- Redis session structure
+- permission code model
+- runtime authorization flow
+- testing strategy
+- migration notes
+
+11. First Code Slice Implemented
+
+The first implementation slice added the scoped authorization core.
+
+Files created:
+- src/main/java/com/mycrewsoft/security/authz/ScopeType.java
+- src/main/java/com/mycrewsoft/security/authz/ResourceType.java
+- src/main/java/com/mycrewsoft/security/authz/ScopedPermission.java
+- src/main/java/com/mycrewsoft/security/authz/ResourceContext.java
+- src/main/java/com/mycrewsoft/security/authz/AuthorizationService.java
+- src/test/java/com/mycrewsoft/security/authz/AuthorizationServiceTest.java
+
+Files modified:
+- src/main/java/com/mycrewsoft/security/users/AuthSession.java
+- src/main/java/com/mycrewsoft/security/users/AuthorizationUserDetails.java
+- src/main/java/com/mycrewsoft/security/jwt/JwtAuthenticationFilter.java
+- src/main/java/com/mycrewsoft/config/SecurityConfig.java
+- src/main/java/com/mycrewsoft/common/exception/ErrorCode.java
+- src/test/java/com/mycrewsoft/security/service/RefreshTokenServiceRedisIntegrationTest.java
+
+Important behavior added:
+- AuthorizationService can check GLOBAL, DEPT, PROJECT, and SELF scoped permissions.
+- AuthSession now has scopedPermissions.
+- AuthorizationUserDetails now has scopedPermissions.
+- JwtAuthenticationFilter copies scopedPermissions from Redis session into the authenticated principal.
+- SecurityConfig no longer globally requires PRIMARY_ADMIN for every non-public request.
+- INVALID_SCOPE error code was added.
+
+12. SecurityUtil Added
+
+The user asked whether SecurityUtil.getCurrentEmpId() and getCurrentScopedPermissions() would make service code simpler.
+
+Answer:
+- Yes.
+- It removes repeated SecurityContext boilerplate from feature services.
+
+Files created:
+- src/main/java/com/mycrewsoft/security/util/SecurityUtil.java
+- src/test/java/com/mycrewsoft/security/util/SecurityUtilTest.java
+
+SecurityUtil methods:
+- getCurrentUser()
+- getCurrentEmpId()
+- getCurrentScopedPermissions()
+
+AuthorizationService was extended with:
+- hasCurrentUserPermission(String permCd, ResourceContext resource)
+- assertCurrentUserPermission(String permCd, ResourceContext resource)
+
+13. Feature Developer Usage Pattern
+
+Controller should stay thin.
+
+Example:
+
+@DeleteMapping("/{boardId}")
+public ApiResponse<Void> deleteBoard(@PathVariable Long boardId) {
+    boardService.deleteBoard(boardId);
+    return ApiResponse.success(null);
+}
+
+Service should:
+1. Load the target resource from DB.
+2. Build ResourceContext.
+3. Call authorizationService.assertCurrentUserPermission(...).
+4. Execute business logic only after authorization succeeds.
+
+Example board delete service:
+
+public void deleteBoard(Long boardId) {
+    BoardVO board = boardMapper.selectBoardById(boardId);
+    if (board == null) {
+        throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+    }
+
+    ResourceContext resource = ResourceContext.builder()
+            .resourceType(ResourceType.BOARD)
+            .resourceId(String.valueOf(board.getBoardId()))
+            .deptCd(board.getDeptCd())
+            .projId(board.getProjId() == null ? null : String.valueOf(board.getProjId()))
+            .ownerEmpId(board.getFrstRgtrId())
+            .build();
+
+    authorizationService.assertCurrentUserPermission("BOARD:DELETE", resource);
+
+    boardMapper.deleteBoard(boardId);
+}
+
+Important rule:
+- For update/delete, never trust deptCd or projId from the request DTO.
+- Always load the existing resource from DB first.
+- Build ResourceContext from the DB record.
+- Then authorize.
+
+14. Example Authorization Flow
+
+User A has:
+- BOARD:DELETE with DEPT 10
+- TASK:UPDATE with PROJECT 300
+- EMPLOYEE:UPDATE with SELF *
+
+Case 1:
+- Request: delete board 55.
+- DB says board 55 has DEPT_CD=10.
+- Required permission: BOARD:DELETE.
+- User has BOARD:DELETE for DEPT 10.
+- Result: allowed.
+
+Case 2:
+- Request: delete board 56.
+- DB says board 56 has DEPT_CD=11.
+- Required permission: BOARD:DELETE.
+- User only has BOARD:DELETE for DEPT 10.
+- Result: denied.
+
+Case 3:
+- Request: update task 800.
+- DB says task 800 has PROJ_ID=300.
+- Required permission: TASK:UPDATE.
+- User has TASK:UPDATE for PROJECT 300.
+- Result: allowed.
+
+Case 4:
+- Request: update own employee profile.
+- Resource ownerEmpId is the current user's emp id.
+- Required permission: EMPLOYEE:UPDATE.
+- User has EMPLOYEE:UPDATE with SELF *.
+- Result: allowed.
+
+15. Test Verification Status
+
+Test commands were attempted, but Maven wrapper failed before test execution.
+
+Observed error:
+- Cannot index into a null array.
+- Cannot start maven from wrapper.
+
+Commands attempted included:
+- cmd /c mvnw.cmd -q "-Dtest=AuthorizationServiceTest,JwtTokenProviderTest" test
+- cmd /c mvnw.cmd -q "-Dtest=AuthorizationServiceTest,SecurityUtilTest" test
+
+The issue appears to be in the Maven wrapper script on this Windows PowerShell environment, before Maven actually starts.
+
+No git operations were performed because the user explicitly said they would handle git themselves.

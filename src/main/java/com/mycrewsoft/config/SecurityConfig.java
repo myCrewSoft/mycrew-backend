@@ -59,9 +59,6 @@ public class SecurityConfig {
                                                                                                   // (Stateless)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(Constants.PUBLIC_URLS).permitAll()
-                        // 역할별 URL 제한은 팀과 역할 이름 확정 후 여기에 추가
-                        // 예) .requestMatchers("/api/v1/admin/**").hasRole("GOD")
-                        .anyRequest().hasRole(Constants.PRIMARY_ADMIN) // 최고 관리자는 모든 기능 접근 가능
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(authenticationEntryPoint) // 401

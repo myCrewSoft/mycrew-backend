@@ -98,7 +98,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 null,
                 session.isEnabled(),
                 session.getAuthVersion(),
-                authorities);
+                authorities,
+                session.getScopedPermissions());
     }
 
     private void writeErrorResponse(HttpServletResponse response, CustomException exception) throws IOException {
