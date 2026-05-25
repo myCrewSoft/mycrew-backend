@@ -1,7 +1,7 @@
 package com.mycrewsoft.domain.notification.mapper;
 
 import com.mycrewsoft.domain.notification.dto.response.NotificationResponse;
-import com.mycrewsoft.domain.notification.vo.NotificationVo;
+import com.mycrewsoft.domain.notification.vo.AlrmVo;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import java.util.List;
@@ -17,12 +17,12 @@ import java.util.List;
 public interface NotificationMapper {
 
     /** 필드명이 같으면 자동 매핑된다. */
-    NotificationResponse toResponseDto(NotificationVo vo);
+    NotificationResponse toResponseDto(AlrmVo vo);
 
     /** 필드명이 다르면 @Mapping 으로 명시한다. */
     @Mapping(source = "createdAt", target = "registeredDate")
-    NotificationResponse toResponseDtoWithMapping(NotificationVo vo);
+    NotificationResponse toResponseDtoWithMapping(AlrmVo vo);
 
     /** 목록 변환. List<UserVo> → List<UserResponseDto> */
-    List<NotificationResponse> toResponseDtoList(List<NotificationVo> voList);
+    List<NotificationResponse> toResponseDtoList(List<AlrmVo> voList);
 }
