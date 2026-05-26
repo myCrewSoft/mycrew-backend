@@ -8,12 +8,12 @@ import lombok.Setter;
 @Getter
 @Setter
 public class MsngrChtrmPtcptVO {
-	private Long ChtrmId;			// 채팅방 ID(MSNGR_CHTRM) - PK, FK
+	private Long chtrmId;			// 채팅방 ID(MSNGR_CHTRM) - PK, FK
 	
-	private Long MbrId;				// 참여자 ID(TB_MEMBER)
-	private String PtcptSttusCd;	// 참여자 상태(로그인, 비로그인, 자리비움)
-	private Long LastCfmtnMsgId;	// 마지막 확인 메시지(MSNGR_MSG)
+	private Long cbrId;				// 참여자 ID(TB_MEMBER)
+	private String ptcptSttusCd;	// 참여자 상태(로그인, 비로그인, 자리비움)
+	private Long lastCfmtnMsgId;	// 마지막 확인 메시지(MSNGR_MSG)
 	
-	private LocalDateTime JoinDt;	// 참여 일시
-	private LocalDateTime LeavDt;	// 퇴장 일시
+	private LocalDateTime joinDt;	// 참여 일시
+	private LocalDateTime leavDt;	// 퇴장 일시
 }
