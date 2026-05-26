@@ -12,20 +12,17 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mycrewsoft.common.constant.Constants;
 import com.mycrewsoft.security.handler.CustomAccessDeniedHandler;
 import com.mycrewsoft.security.handler.CustomAuthenticationEntryPoint;
 import com.mycrewsoft.security.jwt.JwtAuthenticationFilter;
 import com.mycrewsoft.security.jwt.JwtTokenProvider;
+import com.mycrewsoft.security.rbac.RbacSessionRefreshService;
+import com.mycrewsoft.security.service.RefreshTokenService;
 
 import lombok.RequiredArgsConstructor;
 
-/**
- * Spring Security 의 핵심 설정 클래스.
- * JWT 기반 Stateless 인증, 권한별 URL 접근 제어, 예외 처리 핸들러를 설정한다.
- *
- * @EnableMethodSecurity: @PreAuthorize 어노테이션을 활성화한다.
- */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -36,42 +33,31 @@ public class SecurityConfig {
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
     private final CorsConfigurationSource corsConfigurationSource;
+    private final RefreshTokenService refreshTokenService;
+    private final ObjectMapper objectMapper;
+    private final RbacSessionRefreshService rbacSessionRefreshService;
 
-    /**
-     * Security 필터 체인을 구성한다.
-     * CSRF 비활성화, 세션 미사용, URL 권한 설정, JWT 필터 등록을 처리한다.
-     *
-     * @param http HttpSecurity 빌더
-     * @return 구성된 SecurityFilterChain
-     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource)) // cors 적용
-                .csrf(csrf -> csrf.disable()) // csrf 미사용
-                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 서버 세션 미사용
-                                                                                                  // (Stateless)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(Constants.PUBLIC_URLS).permitAll()
-                        // 역할별 URL 제한은 팀과 역할 이름 확정 후 여기에 추가
-                        // 예) .requestMatchers("/api/v1/admin/**").hasRole("GOD")
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
-                        .authenticationEntryPoint(authenticationEntryPoint) // 401
-                        .accessDeniedHandler(accessDeniedHandler) // 403
-                )
-                // JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 등록
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
+                .addFilterBefore(new JwtAuthenticationFilter(
+                                jwtTokenProvider,
+                                refreshTokenService,
+                                objectMapper,
+                                rbacSessionRefreshService),
                         UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
-    /**
-     * 저장된 비밀번호의 prefix({bcrypt}, {noop} 등)를 기반으로
-     * 적절한 PasswordEncoder를 선택하여 동작한다.
-     *
-     * @return passwordEncoder 구현체
-     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return PasswordEncoderFactories.createDelegatingPasswordEncoder();

@@ -7,20 +7,10 @@ import com.nimbusds.jose.crypto.*;
 import com.nimbusds.jwt.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * JWT Access Token 과 Refresh Token 의 생성, 파싱, 검증을 담당하는 컴포넌트.
@@ -29,6 +19,12 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 public class JwtTokenProvider {
+
+    private static final String AUTH_VERSION_CLAIM = "authVersion";
+    private static final String TOKEN_TYPE_CLAIM = "tokenType";
+    private static final String SESSION_ID_CLAIM = "sessionId";
+    private static final String ACCESS_TOKEN_TYPE = "access";
+    private static final String REFRESH_TOKEN_TYPE = "refresh";
 
     private final byte[] sharedSecret;
     private final long accessTokenExpiration;
@@ -43,23 +39,16 @@ public class JwtTokenProvider {
         this.refreshTokenExpiration = refreshTokenExpiration;
     }
 
-    /**
-     * Access Token 을 생성한다.
-     * roles 클레임에 권한 목록을 담는다. roles 누락 시 @PreAuthorize 동작 안 함.
-     */
-    public String createAccessToken(Authentication authentication) {
+    /** Access Token 을 생성한다. WT 에는 사용자 ID 와 권한 버전, Session ID만 담는다. */
+    public String createAccessToken(Long empId, Integer authVersion, String sessionId) {
         try {
             JWSSigner signer = new MACSigner(sharedSecret);
 
-            // Authentication 에서 직접 뽑아씀
-            String username = authentication.getName();
-            List<String> roles = authentication.getAuthorities().stream()
-                    .map(GrantedAuthority::getAuthority)
-                    .collect(Collectors.toList());
-
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-                    .subject(username)
-                    .claim("roles", roles)
+                    .subject(String.valueOf(empId))
+                    .claim(AUTH_VERSION_CLAIM, authVersion)
+                    .claim(TOKEN_TYPE_CLAIM, ACCESS_TOKEN_TYPE)
+                    .claim(SESSION_ID_CLAIM, sessionId)
                     .issueTime(new Date())
                     .expirationTime(new Date(System.currentTimeMillis() + accessTokenExpiration))
                     .build();
@@ -73,13 +62,16 @@ public class JwtTokenProvider {
         }
     }
 
-    /** Refresh Token 을 생성한다. roles 클레임을 포함하지 않는다. */
-    public String createRefreshToken(String username) {
+    /** Refresh Token 을 생성한다. JWT 에는 사용자 ID 와 권한 버전, Session ID만 담는다. */
+    public String createRefreshToken(Long empId, Integer authVersion, String sessionId) {
         try {
             JWSSigner signer = new MACSigner(sharedSecret);
 
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-                    .subject(username)
+                    .subject(String.valueOf(empId))
+                    .claim(AUTH_VERSION_CLAIM, authVersion)
+                    .claim(TOKEN_TYPE_CLAIM, REFRESH_TOKEN_TYPE)
+                    .claim(SESSION_ID_CLAIM, sessionId)
                     .issueTime(new Date())
                     .expirationTime(new Date(System.currentTimeMillis() + refreshTokenExpiration))
                     .build();
@@ -92,30 +84,67 @@ public class JwtTokenProvider {
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
-
-    /** 토큰에서 username 을 추출한다. */
-    public String getUsername(String token) {
-        return parseClaims(token).getSubject();
+    /** 토큰에서 사용자 ID 를 추출한다. */
+    public Long getEmpId(String token) {
+        try {
+            return Long.valueOf(parseClaims(token).getSubject());
+        } catch (Exception e) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
     }
 
-    /**
-     * 토큰을 파싱하여 Spring Security 의 Authentication 객체를 생성한다.
-     * roles 클레임에서 권한 정보를 꺼내 GrantedAuthority 목록을 구성한다.
-     * SecurityContextHolder 에 저장할 인증 객체로 사용한다.
-     *
-     * @param token 파싱할 JWT 토큰 문자열
-     * @return 인증 정보가 담긴 Authentication 객체
-     */
-    public Authentication getAuthentication(String token) {
-        JWTClaimsSet claims = parseClaims(token);
+    /** 토큰에서 세션 ID를 추출한다. */
+    public String getSessionId(String token) {
+        Object sessionId = parseClaims(token).getClaim(SESSION_ID_CLAIM);
 
-        List<SimpleGrantedAuthority> authorities = ((List<?>) claims.getClaim("roles")).stream()
-                .map(role -> new SimpleGrantedAuthority(role.toString()))
-                .collect(Collectors.toList());
+        if (sessionId instanceof String value && !value.isBlank()) {
+            return value;
+        }
 
-        UserDetails userDetails = new User(claims.getSubject(), "", authorities);
-        
-        return new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
+        throw new CustomException(ErrorCode.INVALID_TOKEN);
+    }
+    /** 토큰에서 권한 버전을 추출한다. */
+    public Integer getAuthVersion(String token) {
+        Object authVersion = parseClaims(token).getClaim(AUTH_VERSION_CLAIM);
+
+        if (authVersion instanceof Number number) {
+            return number.intValue();
+        }
+
+        throw new CustomException(ErrorCode.INVALID_TOKEN);
+    }
+
+    /** 토큰 용도(access/refresh)를 추출한다. */
+    public String getTokenType(String token) {
+        Object tokenType = parseClaims(token).getClaim(TOKEN_TYPE_CLAIM);
+
+        if (tokenType instanceof String value) {
+            return value;
+        }
+
+        throw new CustomException(ErrorCode.INVALID_TOKEN);
+    }
+    
+    /** 토큰 용도(access)를 검증한다. */
+    public boolean validateAccessToken(String token) {
+        validateToken(token);
+
+        if (!ACCESS_TOKEN_TYPE.equals(getTokenType(token))) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+
+        return true;
+    }
+    
+    /** 토큰 용도(refresh)를 검증한다. */
+    public boolean validateRefreshToken(String token) {
+        validateToken(token);
+
+        if (!REFRESH_TOKEN_TYPE.equals(getTokenType(token))) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+
+        return true;
     }
 
     /**
