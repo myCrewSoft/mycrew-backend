@@ -1,5 +1,5 @@
-package com.mycrewsoft.domain.rolemembermapping.vo;
+package com.mycrewsoft.domain.roleassignment.vo;
 
-public class RoleMemberMappingVO {
+public class RoleAssignmentVO {
 
 }

@@ -36,7 +36,7 @@ mybatis:
 
 jwt:
 #HS256 알고리즘을 사용하여 토큰을 서명하기 위한 비밀 키.
-  secret: 710f1bf06936f58507553368351b154101cce24baacb5271638577844f9438de
+  secret: ${JWT_SECRET}
   access-token-expiration: 1800000
   refresh-token-expiration: 604800000
 

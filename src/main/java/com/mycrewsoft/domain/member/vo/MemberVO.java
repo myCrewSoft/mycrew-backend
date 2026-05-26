@@ -12,7 +12,7 @@ import com.mycrewsoft.domain.empstat.vo.EmpStatVO;
 import com.mycrewsoft.domain.jobgrade.vo.JobGradeVO;
 import com.mycrewsoft.domain.jobposition.vo.JobPositionVO;
 import com.mycrewsoft.domain.messenger.vo.MsngrChtrmPtcptVO;
-import com.mycrewsoft.domain.rolemembermapping.vo.RoleMemberMappingVO;
+import com.mycrewsoft.domain.roleassignment.vo.RoleAssignmentVO;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -114,7 +114,7 @@ public class MemberVO {
     /** 사원의 권한버전 */
     private AuthVersionVO authVersion;
     /** 사원의 역할매핑 */
-    private List<RoleMemberMappingVO> roleMemberMappingList;
+    private List<RoleAssignmentVO> roleMemberMappingList;
 //    private List<DriveVO> driveList;
 //    private List<MailAccountVO> mailAccountList;
 //    private List<AprvlDocVO> draftedAprvlDocList;
