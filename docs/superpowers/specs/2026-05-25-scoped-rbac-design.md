@@ -95,57 +95,57 @@ new: EMP_ID=100, ROLE_ID=5, SCOPE_TYPE_CD='GLOBAL', SCOPE_ID='*', ENABLED='Y'
 
 ## Permission Code Model
 
-Permission codes use the format `DOMAIN:ACTION`.
+Permission codes use the format `DOMAIN_ACTION`.
 
 Initial permission set:
 
 ```text
-BOARD:READ
-BOARD:CREATE
-BOARD:UPDATE
-BOARD:DELETE
-BOARD:MANAGE
+BOARD_READ
+BOARD_CREATE
+BOARD_UPDATE
+BOARD_DELETE
+BOARD_MANAGE
 
-PROJECT:READ
-PROJECT:CREATE
-PROJECT:UPDATE
-PROJECT:DELETE
-PROJECT:MANAGE
+PROJECT_READ
+PROJECT_CREATE
+PROJECT_UPDATE
+PROJECT_DELETE
+PROJECT_MANAGE
 
-TASK:READ
-TASK:CREATE
-TASK:UPDATE
-TASK:DELETE
-TASK:MANAGE
+TASK_READ
+TASK_CREATE
+TASK_UPDATE
+TASK_DELETE
+TASK_MANAGE
 
-SCHEDULE:READ
-SCHEDULE:CREATE
-SCHEDULE:UPDATE
-SCHEDULE:DELETE
-SCHEDULE:MANAGE
+SCHEDULE_READ
+SCHEDULE_CREATE
+SCHEDULE_UPDATE
+SCHEDULE_DELETE
+SCHEDULE_MANAGE
 
-DRIVE:READ
-DRIVE:UPLOAD
-DRIVE:UPDATE
-DRIVE:DELETE
-DRIVE:MANAGE
+DRIVE_READ
+DRIVE_UPLOAD
+DRIVE_UPDATE
+DRIVE_DELETE
+DRIVE_MANAGE
 
-APPROVAL:READ
-APPROVAL:DRAFT
-APPROVAL:APPROVE
-APPROVAL:MANAGE
+APPROVAL_READ
+APPROVAL_DRAFT
+APPROVAL_APPROVE
+APPROVAL_MANAGE
 
-EMPLOYEE:READ
-EMPLOYEE:CREATE
-EMPLOYEE:UPDATE
-EMPLOYEE:DELETE
-EMPLOYEE:MANAGE
+EMPLOYEE_READ
+EMPLOYEE_CREATE
+EMPLOYEE_UPDATE
+EMPLOYEE_DELETE
+EMPLOYEE_MANAGE
 
-ROLE:READ
-ROLE:CREATE
-ROLE:UPDATE
-ROLE:DELETE
-ROLE:ASSIGN
+ROLE_READ
+ROLE_CREATE
+ROLE_UPDATE
+ROLE_DELETE
+ROLE_ASSIGN
 ```
 
 Roles are permission bundles. Scope is not stored on the role itself.
@@ -160,44 +160,44 @@ System administrator
 Department board manager
   Expected scope: DEPT
   Permissions:
-    BOARD:READ
-    BOARD:CREATE
-    BOARD:UPDATE
-    BOARD:DELETE
-    BOARD:MANAGE
+    BOARD_READ
+    BOARD_CREATE
+    BOARD_UPDATE
+    BOARD_DELETE
+    BOARD_MANAGE
 
 Department schedule manager
   Expected scope: DEPT
   Permissions:
-    SCHEDULE:READ
-    SCHEDULE:CREATE
-    SCHEDULE:UPDATE
-    SCHEDULE:DELETE
-    SCHEDULE:MANAGE
+    SCHEDULE_READ
+    SCHEDULE_CREATE
+    SCHEDULE_UPDATE
+    SCHEDULE_DELETE
+    SCHEDULE_MANAGE
 
 Project manager
   Expected scope: PROJECT
   Permissions:
-    PROJECT:READ
-    PROJECT:UPDATE
-    PROJECT:MANAGE
-    TASK:READ
-    TASK:CREATE
-    TASK:UPDATE
-    TASK:DELETE
-    TASK:MANAGE
-    DRIVE:READ
-    DRIVE:UPLOAD
-    DRIVE:UPDATE
-    DRIVE:DELETE
+    PROJECT_READ
+    PROJECT_UPDATE
+    PROJECT_MANAGE
+    TASK_READ
+    TASK_CREATE
+    TASK_UPDATE
+    TASK_DELETE
+    TASK_MANAGE
+    DRIVE_READ
+    DRIVE_UPLOAD
+    DRIVE_UPDATE
+    DRIVE_DELETE
 
 General employee
   Expected scope: SELF
   Permissions:
-    EMPLOYEE:READ
-    EMPLOYEE:UPDATE
-    DRIVE:READ
-    DRIVE:UPLOAD
+    EMPLOYEE_READ
+    EMPLOYEE_UPDATE
+    DRIVE_READ
+    DRIVE_UPLOAD
 ```
 
 The same role can be assigned with different scopes.
@@ -250,7 +250,7 @@ BoardService.deleteBoard(boardId)
 1. Resolve current employee id from SecurityContext.
 2. Load TB_BOARD by boardId.
 3. Build ResourceContext with resourceType=BOARD, resourceId, deptCd, projId, ownerEmpId.
-4. Call authorizationService.assertPermission(empId, "BOARD:DELETE", context).
+4. Call authorizationService.assertPermission(empId, "BOARD_DELETE", context).
 5. Delete only if authorization succeeds.
 ```
 
@@ -274,7 +274,7 @@ SELF:
 Implementation starts with explicit service calls:
 
 ```java
-authorizationService.assertPermission(currentEmpId, "BOARD:DELETE", boardContext);
+authorizationService.assertPermission(currentEmpId, "BOARD_DELETE", boardContext);
 ```
 
 This is preferred over immediate `@PreAuthorize` usage because resource context construction requires domain queries. Once patterns stabilize, method-security helpers can be added.
@@ -323,14 +323,14 @@ Example:
   "authorities": ["ROLE_USER"],
   "scopedPermissions": [
     {
-      "permCd": "BOARD:READ",
+      "permCd": "BOARD_READ",
       "roleId": 10,
       "roleName": "board manager",
       "scopeType": "DEPT",
       "scopeId": "10"
     },
     {
-      "permCd": "BOARD:DELETE",
+      "permCd": "BOARD_DELETE",
       "roleId": 10,
       "roleName": "board manager",
       "scopeType": "DEPT",
@@ -356,43 +356,43 @@ When role assignments or role-permission mappings change for a user:
 5. The user signs in again or goes through a reauthentication flow.
 ```
 
-For changes that affect a role globally, such as adding `BOARD:DELETE` to a role, all employees with active assignments for that role are affected and their sessions should be invalidated.
+For changes that affect a role globally, such as adding `BOARD_DELETE` to a role, all employees with active assignments for that role are affected and their sessions should be invalidated.
 
 ## Examples
 
 Department board manager:
 
 ```text
-Request: BOARD:DELETE, boardId=55
+Request: BOARD_DELETE, boardId=55
 Resource: TB_BOARD.DEPT_CD=10
-User permission: BOARD:DELETE, scope=DEPT, scopeId=10
+User permission: BOARD_DELETE, scope=DEPT, scopeId=10
 Result: allow
 ```
 
 Wrong department:
 
 ```text
-Request: BOARD:DELETE, boardId=56
+Request: BOARD_DELETE, boardId=56
 Resource: TB_BOARD.DEPT_CD=11
-User permission: BOARD:DELETE, scope=DEPT, scopeId=10
+User permission: BOARD_DELETE, scope=DEPT, scopeId=10
 Result: deny
 ```
 
 Project task update:
 
 ```text
-Request: TASK:UPDATE, taskId=800
+Request: TASK_UPDATE, taskId=800
 Resource: TB_TASK.PROJ_ID=300
-User permission: TASK:UPDATE, scope=PROJECT, scopeId=300
+User permission: TASK_UPDATE, scope=PROJECT, scopeId=300
 Result: allow
 ```
 
 Self profile update:
 
 ```text
-Request: EMPLOYEE:UPDATE, targetEmpId=100
+Request: EMPLOYEE_UPDATE, targetEmpId=100
 Resource: ownerEmpId=100
-User permission: EMPLOYEE:UPDATE, scope=SELF, scopeId=*
+User permission: EMPLOYEE_UPDATE, scope=SELF, scopeId=*
 Result: allow
 ```
 
@@ -442,7 +442,7 @@ Integration tests:
 The design intentionally leaves these as implementation details:
 
 - Whether `ScopedPermission` is stored directly inside `AuthorizationUserDetails` or resolved from Redis inside `AuthorizationService`.
-- Whether `ROLE:ASSIGN` must always be `GLOBAL` or can be delegated by `DEPT`.
-- Whether project membership grants implicit read access or is represented as explicit `PROJECT:READ` assignments.
+- Whether `ROLE_ASSIGN` must always be `GLOBAL` or can be delegated by `DEPT`.
+- Whether project membership grants implicit read access or is represented as explicit `PROJECT_READ` assignments.
 
 These choices should be resolved during implementation planning for the first protected resource, likely board management.

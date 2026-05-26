@@ -17,13 +17,13 @@ class JwtTokenProviderTest {
         Object jwtTokenProvider = newJwtTokenProvider();
         String token = invoke(jwtTokenProvider, "createAccessToken", 10L, 3, "session-1");
 
-        assertThat((Long) invoke(jwtTokenProvider, "getUserId", token)).isEqualTo(10L);
+        assertThat((Long) invoke(jwtTokenProvider, "getEmpId", token)).isEqualTo(10L);
         assertThat((String) invoke(jwtTokenProvider, "getSessionId", token)).isEqualTo("session-1");
         assertThat((Integer) invoke(jwtTokenProvider, "getAuthVersion", token)).isEqualTo(3);
         assertThat((String) invoke(jwtTokenProvider, "getTokenType", token)).isEqualTo("access");
         log.info("Access Token: {}", token);
         log.info("Parsed User ID: {}, Auth Version: {}, Token Type: {}",
-				invoke(jwtTokenProvider, "getUserId", token),
+				invoke(jwtTokenProvider, "getEmpId", token),
 				invoke(jwtTokenProvider, "getAuthVersion", token),
 				invoke(jwtTokenProvider, "getTokenType", token));
     }

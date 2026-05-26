@@ -33,9 +33,9 @@ class AuthorizationServiceTest {
                 .deptCd("11")
                 .build();
         List<ScopedPermission> permissions = List.of(
-                ScopedPermission.of("BOARD:DELETE", 1L, "system admin", ScopeType.GLOBAL, "*"));
+                ScopedPermission.of("BOARD_DELETE", 1L, "system admin", ScopeType.GLOBAL, "*"));
 
-        assertThat(authorizationService.hasPermission(100L, permissions, "BOARD:DELETE", resource)).isTrue();
+        assertThat(authorizationService.hasPermission(100L, permissions, "BOARD_DELETE", resource)).isTrue();
     }
 
     @Test
@@ -46,9 +46,9 @@ class AuthorizationServiceTest {
                 .deptCd("10")
                 .build();
         List<ScopedPermission> permissions = List.of(
-                ScopedPermission.of("BOARD:DELETE", 2L, "board manager", ScopeType.DEPT, "10"));
+                ScopedPermission.of("BOARD_DELETE", 2L, "board manager", ScopeType.DEPT, "10"));
 
-        assertThat(authorizationService.hasPermission(100L, permissions, "BOARD:DELETE", resource)).isTrue();
+        assertThat(authorizationService.hasPermission(100L, permissions, "BOARD_DELETE", resource)).isTrue();
     }
 
     @Test
@@ -59,9 +59,9 @@ class AuthorizationServiceTest {
                 .deptCd("11")
                 .build();
         List<ScopedPermission> permissions = List.of(
-                ScopedPermission.of("BOARD:DELETE", 2L, "board manager", ScopeType.DEPT, "10"));
+                ScopedPermission.of("BOARD_DELETE", 2L, "board manager", ScopeType.DEPT, "10"));
 
-        assertThat(authorizationService.hasPermission(100L, permissions, "BOARD:DELETE", resource)).isFalse();
+        assertThat(authorizationService.hasPermission(100L, permissions, "BOARD_DELETE", resource)).isFalse();
     }
 
     @Test
@@ -72,9 +72,9 @@ class AuthorizationServiceTest {
                 .projId("300")
                 .build();
         List<ScopedPermission> permissions = List.of(
-                ScopedPermission.of("TASK:UPDATE", 3L, "project manager", ScopeType.PROJECT, "300"));
+                ScopedPermission.of("TASK_UPDATE", 3L, "project manager", ScopeType.PROJECT, "300"));
 
-        assertThat(authorizationService.hasPermission(100L, permissions, "TASK:UPDATE", resource)).isTrue();
+        assertThat(authorizationService.hasPermission(100L, permissions, "TASK_UPDATE", resource)).isTrue();
     }
 
     @Test
@@ -85,9 +85,9 @@ class AuthorizationServiceTest {
                 .ownerEmpId(100L)
                 .build();
         List<ScopedPermission> permissions = List.of(
-                ScopedPermission.of("EMPLOYEE:UPDATE", 4L, "employee", ScopeType.SELF, "*"));
+                ScopedPermission.of("EMPLOYEE_UPDATE", 4L, "employee", ScopeType.SELF, "*"));
 
-        assertThat(authorizationService.hasPermission(100L, permissions, "EMPLOYEE:UPDATE", resource)).isTrue();
+        assertThat(authorizationService.hasPermission(100L, permissions, "EMPLOYEE_UPDATE", resource)).isTrue();
     }
 
     @Test
@@ -98,9 +98,9 @@ class AuthorizationServiceTest {
                 .ownerEmpId(101L)
                 .build();
         List<ScopedPermission> permissions = List.of(
-                ScopedPermission.of("EMPLOYEE:UPDATE", 4L, "employee", ScopeType.SELF, "*"));
+                ScopedPermission.of("EMPLOYEE_UPDATE", 4L, "employee", ScopeType.SELF, "*"));
 
-        assertThat(authorizationService.hasPermission(100L, permissions, "EMPLOYEE:UPDATE", resource)).isFalse();
+        assertThat(authorizationService.hasPermission(100L, permissions, "EMPLOYEE_UPDATE", resource)).isFalse();
     }
 
     @Test
@@ -111,7 +111,7 @@ class AuthorizationServiceTest {
                 .deptCd("10")
                 .build();
 
-        assertThatThrownBy(() -> authorizationService.assertPermission(100L, List.of(), "BOARD:DELETE", resource))
+        assertThatThrownBy(() -> authorizationService.assertPermission(100L, List.of(), "BOARD_DELETE", resource))
                 .isInstanceOf(CustomException.class)
                 .satisfies(error -> assertThat(((CustomException) error).getErrorCode())
                         .isEqualTo(ErrorCode.ACCESS_DENIED));
@@ -120,27 +120,27 @@ class AuthorizationServiceTest {
     @Test
     void hasCurrentUserPermissionUsesSecurityContextPrincipalPermissions() {
         setAuthenticatedUserWithPermission(
-                ScopedPermission.of("BOARD:DELETE", 2L, "board manager", ScopeType.DEPT, "10"));
+                ScopedPermission.of("BOARD_DELETE", 2L, "board manager", ScopeType.DEPT, "10"));
         ResourceContext resource = ResourceContext.builder()
                 .resourceType(ResourceType.BOARD)
                 .resourceId("55")
                 .deptCd("10")
                 .build();
 
-        assertThat(authorizationService.hasCurrentUserPermission("BOARD:DELETE", resource)).isTrue();
+        assertThat(authorizationService.hasCurrentUserPermission("BOARD_DELETE", resource)).isTrue();
     }
 
     @Test
     void assertCurrentUserPermissionThrowsAccessDeniedForWrongScope() {
         setAuthenticatedUserWithPermission(
-                ScopedPermission.of("BOARD:DELETE", 2L, "board manager", ScopeType.DEPT, "10"));
+                ScopedPermission.of("BOARD_DELETE", 2L, "board manager", ScopeType.DEPT, "10"));
         ResourceContext resource = ResourceContext.builder()
                 .resourceType(ResourceType.BOARD)
                 .resourceId("56")
                 .deptCd("11")
                 .build();
 
-        assertThatThrownBy(() -> authorizationService.assertCurrentUserPermission("BOARD:DELETE", resource))
+        assertThatThrownBy(() -> authorizationService.assertCurrentUserPermission("BOARD_DELETE", resource))
                 .isInstanceOf(CustomException.class)
                 .satisfies(error -> assertThat(((CustomException) error).getErrorCode())
                         .isEqualTo(ErrorCode.ACCESS_DENIED));

@@ -40,6 +40,11 @@ jwt:
   access-token-expiration: 1800000
   refresh-token-expiration: 604800000
 
+security:
+  rbac:
+    permission-sync:
+      enabled: false
+
 logging:
   level:
     com.projectname.app.mapper: DEBUG

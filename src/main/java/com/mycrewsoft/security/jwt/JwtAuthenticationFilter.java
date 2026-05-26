@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.response.ApiResponse;
+import com.mycrewsoft.security.rbac.RbacSessionRefreshService;
 import com.mycrewsoft.security.service.RefreshTokenService;
 import com.mycrewsoft.security.users.AuthSession;
 import com.mycrewsoft.security.users.AuthorizationUserDetails;
@@ -24,11 +25,9 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
@@ -36,6 +35,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
     private final ObjectMapper objectMapper;
+    private final RbacSessionRefreshService rbacSessionRefreshService;
+
+    public JwtAuthenticationFilter(
+            JwtTokenProvider jwtTokenProvider,
+            RefreshTokenService refreshTokenService,
+            ObjectMapper objectMapper) {
+        this(jwtTokenProvider, refreshTokenService, objectMapper, null);
+    }
+
+    public JwtAuthenticationFilter(
+            JwtTokenProvider jwtTokenProvider,
+            RefreshTokenService refreshTokenService,
+            ObjectMapper objectMapper,
+            RbacSessionRefreshService rbacSessionRefreshService) {
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.refreshTokenService = refreshTokenService;
+        this.objectMapper = objectMapper;
+        this.rbacSessionRefreshService = rbacSessionRefreshService;
+    }
 
     @Override
     protected void doFilterInternal(
@@ -46,17 +64,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             if (token != null && jwtTokenProvider.validateAccessToken(token)) {
-                Long userId = jwtTokenProvider.getUserId(token);
+                Long empId = jwtTokenProvider.getEmpId(token);
                 String sessionId = jwtTokenProvider.getSessionId(token);
                 Integer tokenAuthVersion = jwtTokenProvider.getAuthVersion(token);
                 AuthSession session = refreshTokenService.getSessionOrThrow(sessionId);
 
-                if (!userId.equals(session.getUserId())) {
+                if (!empId.equals(session.getEmpId())) {
                     throw new CustomException(ErrorCode.INVALID_TOKEN);
                 }
-                if (!tokenAuthVersion.equals(session.getAuthVersion())) {
-                    throw new CustomException(ErrorCode.AUTH_VERSION_MISMATCH);
-                }
+                session = refreshSessionIfNeeded(session, tokenAuthVersion);
                 if (!session.isEnabled()) {
                 	throw new CustomException(ErrorCode.USER_DISABLED);
                 }
@@ -67,7 +83,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         null,
                         userDetails.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("Authentication completed - userId: {}", userId);
+                log.debug("Authentication completed - empId: {}", empId);
             }
         } catch (CustomException e) {
             writeErrorResponse(response, e);
@@ -93,13 +109,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 .toList();
 
         return new AuthorizationUserDetails(
-                session.getUserId(),
+                session.getEmpId(),
                 session.getUsername(),
                 null,
                 session.isEnabled(),
                 session.getAuthVersion(),
                 authorities,
                 session.getScopedPermissions());
+    }
+
+    private AuthSession refreshSessionIfNeeded(AuthSession session, Integer tokenAuthVersion) {
+        AuthSession refreshedSession = rbacSessionRefreshService == null
+                ? session
+                : rbacSessionRefreshService.refreshIfStale(session);
+
+        if (tokenAuthVersion != null
+                && refreshedSession.getAuthVersion() != null
+                && tokenAuthVersion > refreshedSession.getAuthVersion()) {
+            throw new CustomException(ErrorCode.AUTH_VERSION_MISMATCH);
+        }
+
+        return refreshedSession;
     }
 
     private void writeErrorResponse(HttpServletResponse response, CustomException exception) throws IOException {

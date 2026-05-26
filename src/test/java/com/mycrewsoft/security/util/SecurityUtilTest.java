@@ -38,7 +38,7 @@ class SecurityUtilTest {
 
         assertThat(SecurityUtil.getCurrentScopedPermissions())
                 .extracting("permCd", "scopeType", "scopeId")
-                .containsExactly(org.assertj.core.api.Assertions.tuple("BOARD:DELETE", ScopeType.DEPT, "10"));
+                .containsExactly(org.assertj.core.api.Assertions.tuple("BOARD_DELETE", ScopeType.DEPT, "10"));
     }
 
     @Test
@@ -57,7 +57,7 @@ class SecurityUtilTest {
                 true,
                 1,
                 Set.of(new SimpleGrantedAuthority("ROLE_USER")),
-                List.of(ScopedPermission.of("BOARD:DELETE", 10L, "board manager", ScopeType.DEPT, "10")));
+                List.of(ScopedPermission.of("BOARD_DELETE", 10L, "board manager", ScopeType.DEPT, "10")));
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
     }

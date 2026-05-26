@@ -1,7 +1,7 @@
 package com.mycrewsoft.security.users;
 
-import java.util.Collection;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.security.core.GrantedAuthority;
@@ -14,51 +14,63 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Spring Security 인증에 사용하는 사용자 Principal.
+ *
+ * 역할:
+ * - 인증된 사원의 EMP_ID, 로그인명, 권한 목록, 세션 ID, 권한 버전 정보를 담는다.
+ * - AuthorizationService가 사용할 scopedPermissions를 제공한다.
+ *
+ * 포함 권한:
+ * - authorities: Spring Security의 전역 권한 정보
+ * - scopedPermissions: 리소스 범위 기반 인가 판단에 사용하는 동적 권한 정보
+ */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class AuthorizationUserDetails implements UserDetails{
-	private Long mbrId;
-	private String username;
-	private String password;
-	private boolean enabled;
-	private Integer authVersion;
-	private Collection<? extends GrantedAuthority> authorities;
-	private List<ScopedPermission> scopedPermissions = new ArrayList<>();
+public class AuthorizationUserDetails implements UserDetails {
 
-	public AuthorizationUserDetails(
-			Long mbrId,
-			String username,
-			String password,
-			boolean enabled,
-			Integer authVersion,
-			Collection<? extends GrantedAuthority> authorities) {
-		this.mbrId = mbrId;
-		this.username = username;
-		this.password = password;
-		this.enabled = enabled;
-		this.authVersion = authVersion;
-		this.authorities = authorities;
-	}
-	
-	@Override
-	public Collection<? extends GrantedAuthority> getAuthorities() {
-		return authorities;
-	}
+    private Long empId;
+    private String username;
+    private String password;
+    private boolean enabled;
+    private Integer authVersion;
+    private Collection<? extends GrantedAuthority> authorities;
+    private List<ScopedPermission> scopedPermissions = new ArrayList<>();
 
-	@Override
-	public String getPassword() {
-		return password;
-	}
+    public AuthorizationUserDetails(
+            Long empId,
+            String username,
+            String password,
+            boolean enabled,
+            Integer authVersion,
+            Collection<? extends GrantedAuthority> authorities) {
+        this.empId = empId;
+        this.username = username;
+        this.password = password;
+        this.enabled = enabled;
+        this.authVersion = authVersion;
+        this.authorities = authorities;
+    }
 
-	@Override
-	public String getUsername() {
-		return String.valueOf(mbrId);
-	}
-	
-	@Override
-	public boolean isEnabled() {
-		return enabled;
-	}
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return authorities;
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
+    }
+
+    @Override
+    public String getUsername() {
+        return username == null ? String.valueOf(empId) : username;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return enabled;
+    }
 }

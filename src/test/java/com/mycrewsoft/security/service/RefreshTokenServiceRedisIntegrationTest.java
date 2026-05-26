@@ -111,7 +111,7 @@ class RefreshTokenServiceRedisIntegrationTest {
         assertThat(ttlMillis).isNotNull().isPositive();
         assertThat(foundSession).isPresent();
         assertThat(foundSession.get().getSessionId()).isEqualTo(sessionId);
-        assertThat(foundSession.get().getUserId()).isEqualTo(1004L);
+        assertThat(foundSession.get().getEmpId()).isEqualTo(1004L);
         assertThat(foundSession.get().getUsername()).isEqualTo("redis-test-user");
         assertThat(foundSession.get().getAuthVersion()).isEqualTo(7);
         assertThat(foundSession.get().getAuthorities()).containsExactlyInAnyOrder("ROLE_USER", "ROLE_ADMIN");
@@ -122,9 +122,9 @@ class RefreshTokenServiceRedisIntegrationTest {
         log.info("Injected Refresh Token: {}", refreshToken);
         log.info("Stored Raw Session JSON: {}", rawSessionJson);
         log.info("Redis Session TTL(ms): {}", ttlMillis);
-        log.info("Loaded AuthSession: sessionId={}, userId={}, username={}, authVersion={}, authorities={}, refreshTokenHash={}",
+        log.info("Loaded AuthSession: sessionId={}, empId={}, username={}, authVersion={}, authorities={}, refreshTokenHash={}",
                 foundSession.get().getSessionId(),
-                foundSession.get().getUserId(),
+                foundSession.get().getEmpId(),
                 foundSession.get().getUsername(),
                 foundSession.get().getAuthVersion(),
                 foundSession.get().getAuthorities(),
@@ -143,12 +143,12 @@ class RefreshTokenServiceRedisIntegrationTest {
                 new LinkedHashSet<>(Set.of("ROLE_USER", "ROLE_MANAGER")),
                 null);
         session.setScopedPermissions(List.of(
-                ScopedPermission.of("BOARD:DELETE", 10L, "board manager", ScopeType.DEPT, "10")));
+                ScopedPermission.of("BOARD_DELETE", 10L, "board manager", ScopeType.DEPT, "10")));
         String refreshToken = "test-refresh-token-" + UUID.randomUUID();
         refreshTokenService.saveSession(session, refreshToken);
 
         JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, 600000L, 600000L);
-        String accessToken = jwtTokenProvider.createAccessToken(session.getUserId(), session.getAuthVersion(), sessionId);
+        String accessToken = jwtTokenProvider.createAccessToken(session.getEmpId(), session.getAuthVersion(), sessionId);
         JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtTokenProvider, refreshTokenService, objectMapper);
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -168,15 +168,15 @@ class RefreshTokenServiceRedisIntegrationTest {
                 .containsExactlyInAnyOrder("ROLE_USER", "ROLE_MANAGER");
 
         AuthorizationUserDetails principal = (AuthorizationUserDetails) authentication.getPrincipal();
-        assertThat(principal.getMbrId()).isEqualTo(2001L);
+        assertThat(principal.getEmpId()).isEqualTo(2001L);
         assertThat(principal.getUsername()).isEqualTo("authentication-test-user");
         assertThat(principal.getAuthVersion()).isEqualTo(11);
         assertThat(principal.getScopedPermissions())
                 .extracting("permCd", "scopeType", "scopeId")
-                .containsExactly(tuple("BOARD:DELETE", ScopeType.DEPT, "10"));
+                .containsExactly(tuple("BOARD_DELETE", ScopeType.DEPT, "10"));
 
-        log.info("Authentication Principal: userId={}, username={}, authVersion={}",
-                principal.getMbrId(),
+        log.info("Authentication Principal: empId={}, username={}, authVersion={}",
+                principal.getEmpId(),
                 principal.getUsername(),
                 principal.getAuthVersion());
         log.info("Authentication Authorities from Redis Session: {}", authentication.getAuthorities());

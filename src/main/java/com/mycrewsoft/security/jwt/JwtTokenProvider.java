@@ -40,12 +40,12 @@ public class JwtTokenProvider {
     }
 
     /** Access Token 을 생성한다. WT 에는 사용자 ID 와 권한 버전, Session ID만 담는다. */
-    public String createAccessToken(Long userId, Integer authVersion, String sessionId) {
+    public String createAccessToken(Long empId, Integer authVersion, String sessionId) {
         try {
             JWSSigner signer = new MACSigner(sharedSecret);
 
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-                    .subject(String.valueOf(userId))
+                    .subject(String.valueOf(empId))
                     .claim(AUTH_VERSION_CLAIM, authVersion)
                     .claim(TOKEN_TYPE_CLAIM, ACCESS_TOKEN_TYPE)
                     .claim(SESSION_ID_CLAIM, sessionId)
@@ -63,12 +63,12 @@ public class JwtTokenProvider {
     }
 
     /** Refresh Token 을 생성한다. JWT 에는 사용자 ID 와 권한 버전, Session ID만 담는다. */
-    public String createRefreshToken(Long userId, Integer authVersion, String sessionId) {
+    public String createRefreshToken(Long empId, Integer authVersion, String sessionId) {
         try {
             JWSSigner signer = new MACSigner(sharedSecret);
 
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-                    .subject(String.valueOf(userId))
+                    .subject(String.valueOf(empId))
                     .claim(AUTH_VERSION_CLAIM, authVersion)
                     .claim(TOKEN_TYPE_CLAIM, REFRESH_TOKEN_TYPE)
                     .claim(SESSION_ID_CLAIM, sessionId)
@@ -85,7 +85,7 @@ public class JwtTokenProvider {
         }
     }
     /** 토큰에서 사용자 ID 를 추출한다. */
-    public Long getUserId(String token) {
+    public Long getEmpId(String token) {
         try {
             return Long.valueOf(parseClaims(token).getSubject());
         } catch (Exception e) {
