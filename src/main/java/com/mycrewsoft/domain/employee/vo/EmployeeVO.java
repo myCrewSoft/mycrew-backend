@@ -1,4 +1,4 @@
-package com.mycrewsoft.domain.member.vo;
+package com.mycrewsoft.domain.employee.vo;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,7 +12,7 @@ import com.mycrewsoft.domain.empstat.vo.EmpStatVO;
 import com.mycrewsoft.domain.jobgrade.vo.JobGradeVO;
 import com.mycrewsoft.domain.jobposition.vo.JobPositionVO;
 import com.mycrewsoft.domain.messenger.vo.MsngrChtrmPtcptVO;
-import com.mycrewsoft.domain.rolemembermapping.vo.RoleMemberMappingVO;
+import com.mycrewsoft.domain.roleassignment.vo.RoleAssignmentVO;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,10 +30,10 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString(exclude = {"pswd", "rrno"})
-public class MemberVO {
+public class EmployeeVO {
 
     /** 회원ID, PK */
-    private Long mbrId;
+    private Long empId;
 
     /** 부서코드 */
     private String deptCd;
@@ -114,7 +114,7 @@ public class MemberVO {
     /** 사원의 권한버전 */
     private AuthVersionVO authVersion;
     /** 사원의 역할매핑 */
-    private List<RoleMemberMappingVO> roleMemberMappingList;
+    private List<RoleAssignmentVO> roleAssignmentList;
 //    private List<DriveVO> driveList;
 //    private List<MailAccountVO> mailAccountList;
 //    private List<AprvlDocVO> draftedAprvlDocList;
