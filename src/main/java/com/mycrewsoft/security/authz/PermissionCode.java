@@ -13,7 +13,10 @@ package com.mycrewsoft.security.authz;
  * - PermissionCode.MAIL_READ.getCode() -> "MAIL_READ"
  */
 public enum PermissionCode {
-
+	
+	//ADMIN
+	EMPLOYEE_CREATE,
+	
     // Department
     DEPT_CREATE,
     DEPT_READ,

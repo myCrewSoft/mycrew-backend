@@ -38,6 +38,7 @@ public enum ErrorCode {
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "USER_002", "이미 사용 중인 이메일입니다."),
     DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "USER_003", "이미 사용 중인 닉네임입니다."),
     USER_DISABLED(HttpStatus.FORBIDDEN, "USER_004", "사용자 계정이 비활성화되었습니다."),
+    DUPLICATE_EMPLOYEEID(HttpStatus.CONFLICT, "USER_005", "이미 사용 중인 사원번호입니다."),
 
     // FILE
     FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FILE_001", "파일 업로드에 실패했습니다."),
