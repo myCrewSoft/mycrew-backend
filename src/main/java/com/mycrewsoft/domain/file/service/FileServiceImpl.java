@@ -37,7 +37,7 @@ public class FileServiceImpl implements FileService {
 	 */
 	@Override
 	@Transactional
-	public void upload(FileUploadRequestDto reqDto) {
+	public void upload(FileUploadRequestDto reqDto, String bizCd) {
 		MultipartFile file = reqDto.getFile();
 		
 		String originalFileName = file.getOriginalFilename();
@@ -65,12 +65,11 @@ public class FileServiceImpl implements FileService {
 		}
 		
 		FileClsfVo fileClsfVo = new FileClsfVo();
+		fileClsfVo.setAtchFileBizCd(bizCd);
 		mapper.insertClsf(fileClsfVo);
 		
 		//사용자 정보
 		Long frstRgstrId = SecurityUtil.getCurrentEmpId();
-		//파일 내용
-		String fileCn = reqDto.getFileCn();	
 		
 		//reqDto -> VO 변환 및 VO 생성
 		FileDtlVo fileDtlVo = dtoMapper.toDto(reqDto, FileDtlVo.class);

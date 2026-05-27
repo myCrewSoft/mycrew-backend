@@ -11,11 +11,11 @@
 	INSERT INTO TB_CMMN_ATCH_FILE_CLSF(
 		ATCH_FILE_ID,
 		CREAT_DT,
-		USE_YN
+		ATCH_FILE_BIZ_CD
 	) VALUES (
 		#{atchFileId},
 		SYSDATE,
-		'Y'
+		#{atchFileBizCd}
 	)
 </insert>
 
@@ -36,10 +36,7 @@
 		FILE_SZ,
 		FILE_CN,
 		FRST_REGST_DT,
-		FRST_RGSTR_ID,
-		DEL_YN,
-		DEL_DT,
-		DLTRS_ID
+		FRST_RGSTR_ID
 	)
 	VALUES(
 		#{atchFileDtlId},
@@ -55,4 +52,5 @@
 		#{frstRgstrId}
 	)
 </insert>
+
 </mapper>
