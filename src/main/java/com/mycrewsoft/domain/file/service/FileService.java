@@ -7,7 +7,7 @@ import com.mycrewsoft.domain.file.dto.FileUploadRequestDto;
 
 public interface FileService {
 	//파일 업로드
-	void upload(FileUploadRequestDto reqDto);
+	void upload(FileUploadRequestDto reqDto, String bizCd);
 	
 	//파일 단건 조회
 	FileDtlResponseDto getFile(Long atchFileId);
