@@ -1,24 +1,36 @@
 package com.mycrewsoft.domain.file.service;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.mycrewsoft.common.exception.CustomException;
+import com.mycrewsoft.common.exception.ErrorCode;
+import com.mycrewsoft.common.util.DtoMapper;
 import com.mycrewsoft.common.util.FileUtil;
 import com.mycrewsoft.domain.file.dto.FileDtlResponseDto;
 import com.mycrewsoft.domain.file.dto.FileUploadRequestDto;
 import com.mycrewsoft.domain.file.mapper.FileMapper;
+import com.mycrewsoft.domain.file.vo.FileClsfVo;
+import com.mycrewsoft.domain.file.vo.FileDtlVo;
+import com.mycrewsoft.security.util.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class FileServiceImpl implements FileService {
-	
+	private final DtoMapper dtoMapper;
 	private final FileMapper mapper;
+	
+	@Value("${file.upload-path}")
+	private String uploadPath;
 	
 	/**
 	 * 파일 업로드 처리
@@ -28,25 +40,50 @@ public class FileServiceImpl implements FileService {
 	public void upload(FileUploadRequestDto reqDto) {
 		MultipartFile file = reqDto.getFile();
 		
-		//파일 검증
 		String originalFileName = file.getOriginalFilename();
 		String extension = FileUtil.getExtension(originalFileName);
 		
+		//파일 검증 및 첨부파일타입코드 설정
 		String atchFileTyCd;
+		
 		if(Set.of("jpg", "jpeg", "png", "gif", "webp").contains(extension)) {
+			FileUtil.validateImageFile(file);
 			atchFileTyCd = "01";
 		}else {
+			FileUtil.validateDocumentFile(file);
 			atchFileTyCd = "02";
 		}
 		
 		//저장용 파일명 생성
-				
+		String saveFileNm = FileUtil.generateStoredFileName(originalFileName);
 		//실제 파일 저장
-				
-		//확장자, 파일사이즈, 저장경로 세팅
+		try {
+			Path savePath = Paths.get(uploadPath, saveFileNm);
+			file.transferTo(savePath);
+		}catch(Exception e){
+			throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
+		}
 		
-		mapper.insertClsf();
-		mapper.insertDtl(reqDto);
+		FileClsfVo fileClsfVo = new FileClsfVo();
+		mapper.insertClsf(fileClsfVo);
+		
+		//사용자 정보
+		Long frstRgstrId = SecurityUtil.getCurrentEmpId();
+		//파일 내용
+		String fileCn = reqDto.getFileCn();	
+		
+		//reqDto -> VO 변환 및 VO 생성
+		FileDtlVo fileDtlVo = dtoMapper.toDto(reqDto, FileDtlVo.class);
+		fileDtlVo.setAtchFileId(fileClsfVo.getAtchFileId());
+		fileDtlVo.setAtchFileTyCd(atchFileTyCd);
+		fileDtlVo.setFileExtsn(extension);
+		fileDtlVo.setFileSz(file.getSize());
+		fileDtlVo.setFrstRgstrId(frstRgstrId);
+		fileDtlVo.setOrgnlFileNm(originalFileName);
+		fileDtlVo.setSaveFileNm(saveFileNm);
+		fileDtlVo.setSavePathNm(uploadPath);
+		
+		mapper.insertDtl(fileDtlVo);
 	}
 
 	@Override

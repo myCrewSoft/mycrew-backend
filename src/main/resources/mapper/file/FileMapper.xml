@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.file.mapper.FileMapper">
+
+<insert id="insertClsf" parameterType="com.mycrewsoft.domain.file.vo.FileClsfVo">
+	<selectKey keyProperty="atchFileId" resultType="long" order="BEFORE">
+		SELECT SEQ_ATCH_FILE_ID.NEXTVAL
+		FROM DUAL
+	</selectKey>
+	
+	INSERT INTO TB_CMMN_ATCH_FILE_CLSF(
+		ATCH_FILE_ID,
+		CREAT_DT,
+		USE_YN
+	) VALUES (
+		#{atchFileId},
+		SYSDATE,
+		'Y'
+	)
+</insert>
+
+<insert id="insertDtl" parameterType="com.mycrewsoft.domain.file.vo.FileDtlVo">
+	<selectKey keyProperty="atchFileDtlId" resultType="long" order="BEFORE">
+		SELECT SEQ_ATCH_FILE_DTL_ID.NEXTVAL
+		FROM DUAL
+	</selectKey>
+	
+	INSERT INTO TB_CMMN_ATCH_FILE_DTL(
+		ATCH_FILE_DTL_ID,
+		ATCH_FILE_ID,
+		ORGNL_FILE_NM,
+		ATCH_FILE_TY_CD,
+		SAVE_PATH_NM,
+		SAVE_FILE_NM,
+		FILE_EXTSN,
+		FILE_SZ,
+		FILE_CN,
+		FRST_REGST_DT,
+		FRST_RGSTR_ID,
+		DEL_YN,
+		DEL_DT,
+		DLTRS_ID
+	)
+	VALUES(
+		#{atchFileDtlId},
+		#{atchFileId}, 
+		#{orgnlFileNm}, 
+		#{atchFileTyCd}, 
+		#{savePathNm}, 
+		#{saveFileNm}, 
+		#{fileExtsn}, 
+		#{fileSz}, 
+		#{fileCn}, 
+		SYSDATE, 
+		#{frstRgstrId}
+	)
+</insert>
+</mapper>

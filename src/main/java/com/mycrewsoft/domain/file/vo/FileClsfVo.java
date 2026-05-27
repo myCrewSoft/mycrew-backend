@@ -3,9 +3,10 @@ package com.mycrewsoft.domain.file.vo;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import lombok.Data;
 import lombok.Getter;
 
-@Getter
+@Data
 public class FileClsfVo {
 	private Long atchFileId;	//첨부파일ID (PK)
 	private LocalDateTime creatDt;	//생성일시
