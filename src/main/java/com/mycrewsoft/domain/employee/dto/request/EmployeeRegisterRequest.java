@@ -5,13 +5,17 @@ import java.time.LocalDate;
 import com.mycrewsoft.validate.constraints.PhoneNumber;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * 사원 등록을 위한 DTO 클래스. 관리자가 사원을 등록할 때 필요한 정보를 담는다.
+ */
 @Getter
 @Setter
 public class EmployeeRegisterRequest {
-	@NotBlank(message = "사번은 필수 입력값입니다.")
+	@NotNull(message = "사번은 필수 입력값입니다.")
     private Long empId;          // 사번, 로그인 ID로도 사용
 	
 	@NotBlank(message = "사원명은 필수 입력값입니다.")
@@ -33,6 +37,6 @@ public class EmployeeRegisterRequest {
     @NotBlank(message = "주소는 필수 입력값입니다.")
     private String addr;         // 주소
     
-    @NotBlank(message = "입사일자는 필수 입력값입니다.")
+    @NotNull(message = "입사일자는 필수 입력값입니다.")
     private LocalDate entcoYmd;  // 입사일자
 }

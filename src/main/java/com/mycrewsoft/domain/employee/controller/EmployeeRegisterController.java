@@ -1,5 +1,6 @@
 package com.mycrewsoft.domain.employee.controller;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,11 +26,11 @@ public class EmployeeRegisterController {
 	 * @return ApiResponse 객체
 	 */
 	@PostMapping
-	public ApiResponse registerEmployee(
+	public ResponseEntity<ApiResponse<String>> registerEmployee(
 			@Valid @RequestBody EmployeeRegisterRequest request) {		
 		
 		employeeService.registerEmployee(request);
 		
-		return ApiResponse.success("사원 등록이 완료되었습니다.");
+		return ResponseEntity.ok(ApiResponse.success("사원 등록이 완료되었습니다."));
 	}
 }

@@ -54,7 +54,7 @@ public class EmployeeVO {
     private String pswd;
 
     /** 사원명 */
-    private String mbrNm;
+    private String empNm;
 
     /** 주민등록번호 */
     private String rrno;

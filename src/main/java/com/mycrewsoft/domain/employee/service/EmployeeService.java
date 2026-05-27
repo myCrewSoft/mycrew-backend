@@ -1,11 +1,8 @@
 package com.mycrewsoft.domain.employee.service;
 
-import org.springframework.stereotype.Service;
-
 import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequest;
 import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 
-@Service
 public interface EmployeeService {
 	 /**
 	  * 사원 정보를 등록하는 메서드
