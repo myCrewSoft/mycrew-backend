@@ -13,10 +13,12 @@ import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequest;
 import com.mycrewsoft.domain.employee.mapper.AdminEmployeeMapper;
 import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 import com.mycrewsoft.domain.empstat.code.EmpStatCode;
+import com.mycrewsoft.domain.roleassignment.service.RoleAssignmentService;
 import com.mycrewsoft.security.authz.AuthorizationService;
 import com.mycrewsoft.security.authz.PermissionCode;
 import com.mycrewsoft.security.authz.ResourceContext;
 import com.mycrewsoft.security.authz.ResourceType;
+import com.mycrewsoft.security.rbac.RbacAuthorizationChangeService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -28,10 +30,10 @@ import lombok.RequiredArgsConstructor;
 public class AdminEmployeeServiceImpl implements AdminEmployeeService {
 	private final DtoMapper DtoMapper;
 	private final AuthorizationService authorizationService;
-	
-	
 	private final AdminEmployeeMapper employeeMapper;
 	private final PasswordEncoder passwordEncoder;
+	private final RoleAssignmentService roleAssignmentService;
+	private final RbacAuthorizationChangeService rbacAuthorizationChangeService;
 	
 	/**
 	 * 관리자가 사원을 등록하는 서비스 메서드
@@ -70,9 +72,10 @@ public class AdminEmployeeServiceImpl implements AdminEmployeeService {
 	    employeeMapper.insertEmployee(employee);
 	    
 	    // 6. 사원 등록 후 기본 사원 역할 부여
-	    
+	    roleAssignmentService.assignDefaultEmployeeRole(employee.getEmpId());
+	    	    
 	    // 7. 역할 부여 후 버전 권한 생성
-	    
+	    rbacAuthorizationChangeService.refreshEmployeePermissions(employee.getEmpId());
 	}
 
 	@Override

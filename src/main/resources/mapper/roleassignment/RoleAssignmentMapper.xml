@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.domain.roleassignment.mapper.RoleAssignmentMapper">
+
+    <select id="selectRoleIdByRoleCode" resultType="java.lang.Long">
+        SELECT ROLE_ID
+        FROM TB_ROLE
+        WHERE ROLE_CD = #{roleCd}
+    </select>
+
+    <insert id="insertRoleAssignmentIfAbsent" parameterType="com.mycrewsoft.domain.roleassignment.vo.RoleAssignmentVO">
+        INSERT INTO TB_ROLE_ASSIGNMENT (
+            ROLE_ASSIGN_ID,
+            ROLE_ID,
+            EMP_ID,
+            SCOPE_TYPE_CD,
+            SCOPE_ID,
+            ENABLED
+        )
+        SELECT
+            (SELECT NVL(MAX(ROLE_ASSIGN_ID), 0) + 1 FROM TB_ROLE_ASSIGNMENT),
+            #{roleId},
+            #{empId},
+            #{scopeTypeCd},
+            #{scopeId},
+            #{enabled}
+        FROM DUAL
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM TB_ROLE_ASSIGNMENT RA
+            WHERE RA.ROLE_ID = #{roleId}
+              AND RA.EMP_ID = #{empId}
+              AND RA.SCOPE_TYPE_CD = #{scopeTypeCd}
+              AND RA.SCOPE_ID = #{scopeId}
+        )
+    </insert>
+</mapper>
