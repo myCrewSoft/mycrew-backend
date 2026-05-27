@@ -1,5 +1,6 @@
 package com.mycrewsoft.domain.employee.controller;
 
+import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -7,7 +8,8 @@ import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequest;
 import com.mycrewsoft.domain.employee.service.EmployeeService;
 
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -22,9 +24,12 @@ public class EmployeeRegisterController {
 	 * @param EmployeeRegisterRequest 객체
 	 * @return ApiResponse 객체
 	 */
+	@PostMapping
 	public ApiResponse registerEmployee(
-			@Valid @RequestBody EmployeeRegisterRequest request) {
+			@Valid @RequestBody EmployeeRegisterRequest request) {		
+		
 		employeeService.registerEmployee(request);
+		
 		return ApiResponse.success("사원 등록이 완료되었습니다.");
 	}
 }

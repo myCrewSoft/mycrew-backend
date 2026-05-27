@@ -19,19 +19,19 @@ public interface EmployeeService {
 	  * @param employeeVO 수정할 사원 정보가 담긴 VO 객체
 	  * @return 수정된 사원의 ID
 	  */
-	 void updateEmployee(EmployeeVO employeeVO);
+	 void updateEmployee();
 
 	 /**
 	  * 사원 정보를 삭제하는 메서드
 	  * @param mbrId 삭제할 사원의 ID
 	  * @return 삭제된 사원의 ID
 	  */
-	 void deleteEmployee(Long mbrId);
+	 void deleteEmployee();
 
 	 /**
 	  * 사원 정보를 조회하는 메서드
 	  * @param mbrId 조회할 사원의 ID
 	  * @return 조회된 사원 정보가 담긴 VO 객체
 	  */
-	 EmployeeVO getEmployeeById(Long mbrId);
+	 EmployeeVO getEmployeeById();
 }
