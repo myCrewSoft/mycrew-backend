@@ -3,7 +3,10 @@ package com.mycrewsoft.domain.employee.service;
 import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequest;
 import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 
-public interface EmployeeService {
+/**
+ * 관리자용 사원 관리 서비스 인터페이스
+ */
+public interface AdminEmployeeService {
 	 /**
 	  * 사원 정보를 등록하는 메서드
 	  * @param employeeVO 등록할 사원 정보가 담긴 VO 객체

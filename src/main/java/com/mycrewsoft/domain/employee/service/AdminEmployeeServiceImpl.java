@@ -10,7 +10,7 @@ import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DtoMapper;
 import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequest;
-import com.mycrewsoft.domain.employee.mapper.EmployeeMapper;
+import com.mycrewsoft.domain.employee.mapper.AdminEmployeeMapper;
 import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 import com.mycrewsoft.domain.empstat.code.EmpStatCode;
 import com.mycrewsoft.security.authz.AuthorizationService;
@@ -20,14 +20,17 @@ import com.mycrewsoft.security.authz.ResourceType;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * 관리자용 사원 관리 서비스 구현체
+ */
 @Service
 @RequiredArgsConstructor
-public class EmployeeServiceImpl implements EmployeeService {
+public class AdminEmployeeServiceImpl implements AdminEmployeeService {
 	private final DtoMapper DtoMapper;
 	private final AuthorizationService authorizationService;
 	
 	
-	private final EmployeeMapper employeeMapper;
+	private final AdminEmployeeMapper employeeMapper;
 	private final PasswordEncoder passwordEncoder;
 	
 	/**
@@ -66,6 +69,9 @@ public class EmployeeServiceImpl implements EmployeeService {
 	    // 5. 사원 정보 저장
 	    employeeMapper.insertEmployee(employee);
 	    
+	    // 6. 사원 등록 후 기본 사원 역할 부여
+	    
+	    // 7. 역할 부여 후 버전 권한 생성
 	    
 	}
 

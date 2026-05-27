@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequest;
-import com.mycrewsoft.domain.employee.service.EmployeeService;
+import com.mycrewsoft.domain.employee.service.AdminEmployeeService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,13 +18,16 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 관리자용 사원 관리 컨트롤러
+ */
 @Slf4j
 @Tag(name = "Admin", description = "관리자의 사원 관리 API")
 @RestController
 @RequestMapping("/admin/members")
 @RequiredArgsConstructor
 public class AdminEmployeeController {
-	private final EmployeeService employeeService;
+	private final AdminEmployeeService employeeService;
 	
 	/**
 	 * 관리자의 사원 등록 API 엔드포인트
