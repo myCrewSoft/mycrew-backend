@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DtoMapper;
-import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequest;
+import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequestDTO;
 import com.mycrewsoft.domain.employee.mapper.AdminEmployeeMapper;
 import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 import com.mycrewsoft.domain.empstat.code.EmpStatCode;
@@ -40,7 +40,7 @@ public class AdminEmployeeServiceImpl implements AdminEmployeeService {
 	 */
 	@Override
 	@Transactional
-	public void registerEmployee(EmployeeRegisterRequest employeeRequest) {
+	public void registerEmployee(EmployeeRegisterRequestDTO employeeRequest) {
 		// 1. 사원 ID 중복 확인
 		EmployeeVO existEmployee = employeeMapper.selectEmployeeById(employeeRequest.getEmpId());
 		

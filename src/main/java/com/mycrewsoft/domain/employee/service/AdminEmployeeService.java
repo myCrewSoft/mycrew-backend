@@ -1,6 +1,6 @@
 package com.mycrewsoft.domain.employee.service;
 
-import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequest;
+import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequestDTO;
 import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 
 /**
@@ -12,7 +12,7 @@ public interface AdminEmployeeService {
 	  * @param employeeVO 등록할 사원 정보가 담긴 VO 객체
 	  * @return 등록된 사원의 ID
 	  */
-	 void registerEmployee(EmployeeRegisterRequest employeeRequest);
+	 void registerEmployee(EmployeeRegisterRequestDTO employeeRequest);
 
 	 /**
 	  * 사원 정보를 수정하는 메서드

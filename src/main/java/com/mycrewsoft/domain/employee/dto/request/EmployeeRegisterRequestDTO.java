@@ -16,7 +16,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Schema(description = "사원 등록 요청 DTO")
-public class EmployeeRegisterRequest {
+public class EmployeeRegisterRequestDTO {
 	@NotNull(message = "사번은 필수 입력값입니다.")
 	@Schema(description = "사번", example = "01234567")
     private Long empId;          // 사번, 로그인 ID로도 사용

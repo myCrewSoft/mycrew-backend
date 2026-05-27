@@ -35,6 +35,7 @@ public class AuthorizationUserDetails implements UserDetails {
     private String username;
     private String password;
     private boolean enabled;
+    private String empStat;
     private Integer authVersion;
     private Collection<? extends GrantedAuthority> authorities;
     private List<ScopedPermission> scopedPermissions = new ArrayList<>();
@@ -45,11 +46,24 @@ public class AuthorizationUserDetails implements UserDetails {
             String password,
             boolean enabled,
             Integer authVersion,
+            Collection<? extends GrantedAuthority> authorities,
+            List<ScopedPermission> scopedPermissions) {
+        this(empId, username, password, enabled, null, authVersion, authorities, scopedPermissions);
+    }
+
+    public AuthorizationUserDetails(
+            Long empId,
+            String username,
+            String password,
+            boolean enabled,
+            String empStat,
+            Integer authVersion,
             Collection<? extends GrantedAuthority> authorities) {
         this.empId = empId;
         this.username = username;
         this.password = password;
         this.enabled = enabled;
+	    this.empStat = empStat;
         this.authVersion = authVersion;
         this.authorities = authorities;
     }
