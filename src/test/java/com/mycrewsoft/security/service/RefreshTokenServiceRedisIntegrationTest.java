@@ -170,6 +170,7 @@ class RefreshTokenServiceRedisIntegrationTest {
         AuthorizationUserDetails principal = (AuthorizationUserDetails) authentication.getPrincipal();
         assertThat(principal.getEmpId()).isEqualTo(2001L);
         assertThat(principal.getUsername()).isEqualTo("authentication-test-user");
+        assertThat(principal.getSessionId()).isEqualTo(sessionId);
         assertThat(principal.getAuthVersion()).isEqualTo(11);
         assertThat(principal.getScopedPermissions())
                 .extracting("permCd", "scopeType", "scopeId")

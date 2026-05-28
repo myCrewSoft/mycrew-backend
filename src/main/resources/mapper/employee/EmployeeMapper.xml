@@ -5,6 +5,7 @@
 	
 	<select id="selectEmpDeptCodeByEmpId">
 		SELECT 
-		
+		FROM EMPLOYEE
+        WHERE EMP_ID = #{empId}
 	</select>
 </mapper>

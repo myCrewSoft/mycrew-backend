@@ -24,10 +24,12 @@ import com.mycrewsoft.security.rbac.AuthSessionFactory;
 import com.mycrewsoft.security.rbac.RbacSessionRefreshService;
 import com.mycrewsoft.security.service.AuthorizationUserDetailsService;
 import com.mycrewsoft.security.service.RefreshTokenService;
+import com.mycrewsoft.security.util.SecurityUtil;
 import com.mycrewsoft.security.users.AuthSession;
 import com.mycrewsoft.security.users.AuthorizationUserDetails;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -160,6 +162,19 @@ public class AuthServiceImpl implements AuthService {
 	public void handleFirstLogin(FirstLoginRequestDTO request) {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	@Transactional
+	public void logout() {
+		AuthorizationUserDetails currentUser = SecurityUtil.getCurrentUser();
+		String sessionId = currentUser.getSessionId();
+
+		if (!StringUtils.hasText(sessionId)) {
+			throw new CustomException(ErrorCode.INVALID_TOKEN);
+		}
+
+		refreshTokenService.deleteSession(sessionId);
 	}
 
 }

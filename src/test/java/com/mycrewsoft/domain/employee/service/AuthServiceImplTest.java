@@ -13,12 +13,15 @@ import java.util.List;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.mycrewsoft.common.exception.CustomException;
@@ -53,6 +56,11 @@ class AuthServiceImplTest {
 
     @InjectMocks
     private AuthServiceImpl authService;
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
 
     @Test
     void loginCreatesTokensAndStoresRedisSessionWithScopedPermissionsSource() {
@@ -110,6 +118,29 @@ class AuthServiceImplTest {
                 .isEqualTo(ErrorCode.LOGIN_FAILED);
 
         verify(refreshTokenService, never()).saveSession(any(), any());
+    }
+
+    @Test
+    void logoutDeletesCurrentRedisSession() {
+        AuthorizationUserDetails currentUser = new AuthorizationUserDetails(
+                20260001L,
+                "20260001",
+                null,
+                true,
+                EmpStatCode.EMP_ACTIVE.getCode(),
+                7,
+                List.of(new SimpleGrantedAuthority("ROLE_USER")),
+                List.of(),
+                "session-logout-1");
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        currentUser,
+                        null,
+                        currentUser.getAuthorities()));
+
+        authService.logout();
+
+        verify(refreshTokenService).deleteSession("session-logout-1");
     }
 
     private LoginRequestDTO loginRequest() {
