@@ -53,7 +53,7 @@ public class AuthorizationUserDetailsService implements UserDetailsService {
                 user.empId(),
                 user.username(),
                 user.password(),
-                user.enabled(),
+                Boolean.TRUE.equals(user.enabled()),
                 user.empStat(),
                 authVersion == null ? 0 : authVersion,
                 (authorityCodes == null ? List.<String>of() : authorityCodes).stream()

@@ -50,7 +50,13 @@ public class AuthServiceImpl implements AuthService {
 		if (!userDetails.isEnabled()) {
 		    throw new CustomException(ErrorCode.USER_DISABLED);
 		}
-
+		String empStat = userDetails.getEmpStat();
+					
+		if(empStat.equals(EmpStatCode.EMP_INACTIVE.getCode()) || empStat.equals(EmpStatCode.EMP_RETIRED.getCode())) {
+			throw new CustomException(ErrorCode.USER_DISABLED);
+		}
+		
+		
 		String sessionId = UUID.randomUUID().toString();
 		Integer authVersion = userDetails.getAuthVersion();
 

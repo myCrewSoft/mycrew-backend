@@ -48,7 +48,7 @@ public class AdminEmployeeServiceImpl implements AdminEmployeeService {
 		if (existEmployee != null) {
 			throw new CustomException(ErrorCode.DUPLICATE_EMPLOYEEID);
 		}
-		
+
 		// 3. DTO를 VO로 변환
 		EmployeeVO employee = DtoMapper.toDto(employeeRequest, EmployeeVO.class);
 		String encodedPassword = passwordEncoder.encode(employee.getEmpId().toString());
