@@ -14,10 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.employee.dto.request.LoginRequestDTO;
+import com.mycrewsoft.domain.employee.dto.request.TokenRefreshRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.LoginResponseDTO;
+import com.mycrewsoft.domain.employee.dto.response.TokenRefreshResponseDTO;
 import com.mycrewsoft.domain.empstat.code.EmpStatCode;
 import com.mycrewsoft.security.jwt.JwtTokenProvider;
 import com.mycrewsoft.security.rbac.AuthSessionFactory;
+import com.mycrewsoft.security.rbac.RbacSessionRefreshService;
 import com.mycrewsoft.security.service.AuthorizationUserDetailsService;
 import com.mycrewsoft.security.service.RefreshTokenService;
 import com.mycrewsoft.security.users.AuthSession;
@@ -33,6 +36,7 @@ public class AuthServiceImpl implements AuthService {
 	private final RefreshTokenService refreshTokenService;
 	private final AuthSessionFactory authSessionFactory;
 	private final PasswordEncoder passwordEncoder;
+	private final RbacSessionRefreshService rbacSessionRefreshService;
 	
 	@Override
 	@Transactional
@@ -95,6 +99,60 @@ public class AuthServiceImpl implements AuthService {
 				.authVersion(authVersion)
 				.firstLoginRequired(EmpStatCode.EMP_INITIAL.getCode().equals(userDetails.getEmpStat()))
 				.build();
+	}
+
+	@Override
+	@Transactional
+	public TokenRefreshResponseDTO refreshToken(TokenRefreshRequestDTO request) {
+	    String refreshToken = request.getRefreshToken();
+
+	    if (!jwtTokenProvider.validateToken(refreshToken)) {
+	        throw new CustomException(ErrorCode.INVALID_TOKEN);
+	    }
+
+	    if (!"refresh".equals(jwtTokenProvider.getTokenType(refreshToken))) {
+	        throw new CustomException(ErrorCode.INVALID_TOKEN);
+	    }
+
+	    Long empId = jwtTokenProvider.getEmpId(refreshToken);
+	    String sessionId = jwtTokenProvider.getSessionId(refreshToken);
+
+	    AuthSession session = refreshTokenService.getSessionOrThrow(sessionId);
+
+	    if (!session.getEmpId().equals(empId)) {
+	        throw new CustomException(ErrorCode.INVALID_TOKEN);
+	    }
+
+	    if (!refreshTokenService.isValidRefreshToken(sessionId, refreshToken)) {
+	        throw new CustomException(ErrorCode.INVALID_TOKEN);
+	    }
+
+	    AuthSession latestSession =
+	            rbacSessionRefreshService.refreshIfStale(session);
+
+	    String newAccessToken = jwtTokenProvider.createAccessToken(
+	            latestSession.getEmpId(),
+	            latestSession.getAuthVersion(),
+	            latestSession.getSessionId()
+	    );
+
+	    String newRefreshToken = jwtTokenProvider.createRefreshToken(
+	            latestSession.getEmpId(),
+	            latestSession.getAuthVersion(),
+	            latestSession.getSessionId()
+	    );
+
+	    refreshTokenService.rotateRefreshToken(
+	            latestSession.getSessionId(),
+	            newRefreshToken
+	    );
+
+	    return TokenRefreshResponseDTO.builder()
+	            .accessToken(newAccessToken)
+	            .refreshToken(newRefreshToken)
+	            .empId(latestSession.getEmpId())
+	            .authVersion(latestSession.getAuthVersion())
+	            .build();
 	}
 
 }

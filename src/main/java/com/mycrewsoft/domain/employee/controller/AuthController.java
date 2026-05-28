@@ -8,7 +8,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.employee.dto.request.LoginRequestDTO;
+import com.mycrewsoft.domain.employee.dto.request.TokenRefreshRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.LoginResponseDTO;
+import com.mycrewsoft.domain.employee.dto.response.TokenRefreshResponseDTO;
 import com.mycrewsoft.domain.employee.service.AuthService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Tag(name = "Auth", description = "로그인, 로그아웃, 계정 찾기, 첫 로그인 처리 API")
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 	private final AuthService authService;
@@ -33,5 +35,17 @@ public class AuthController {
 		
 		LoginResponseDTO response = authService.login(request);
 	    return ResponseEntity.ok(ApiResponse.success("로그인 성공", response));
+	}
+	
+	@PostMapping("/refresh")
+	public ResponseEntity<ApiResponse<TokenRefreshResponseDTO>> refresh(
+	        @Valid @RequestBody TokenRefreshRequestDTO request) {
+
+	    TokenRefreshResponseDTO response =
+	            authService.refreshToken(request);
+
+	    return ResponseEntity.ok(
+	            ApiResponse.success("토큰 재발급이 완료되었습니다.", response)
+	    );
 	}
 }
