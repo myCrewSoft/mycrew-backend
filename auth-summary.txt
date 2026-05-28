@@ -1,0 +1,405 @@
+# MyCrew 인증/인가 요약
+
+이 문서는 Front 에이전트가 React에서 로그인, 토큰 저장, 요청 인증 헤더 처리, 권한 변경 대응을 구현할 수 있도록 현재 백엔드 인증/인가 구조를 정리한 문서다.
+
+## 1. 현재 공개 API
+
+### 로그인
+
+```http
+POST /api/v1/auth/login
+Content-Type: application/json
+```
+
+요청:
+
+```json
+{
+  "empId": 20260001,
+  "password": "20260001"
+}
+```
+
+응답:
+
+```json
+{
+  "success": true,
+  "message": "로그인 성공",
+  "data": {
+    "accessToken": "...",
+    "refreshToken": "...",
+    "empId": 20260001,
+    "authVersion": 1,
+    "firstLoginRequired": true
+  }
+}
+```
+
+현재 구현된 인증 API는 로그인이다. Refresh Token 저장/검증 서비스는 존재하지만 `/api/v1/auth/refresh`, `/api/v1/auth/logout` 컨트롤러는 아직 별도 구현이 필요하다.
+
+## 2. 계정 생성 흐름
+
+관리자가 사원 계정을 생성한다.
+
+```text
+POST /admin/members
+→ AdminEmployeeService.registerEmployee()
+→ EMPLOYEE_CREATE 권한 확인
+→ 사번 중복 확인
+→ 기본 비밀번호 = 사번
+→ PasswordEncoder로 비밀번호 암호화
+→ enabled = "Y"
+→ empStatCd = "EMP_INITIAL"
+→ TB_EMPLOYEE insert
+→ ROLE_EMPLOYEE_SELF 기본 역할 부여
+→ TB_AUTH_VERSION 생성 또는 증가
+```
+
+사원 등록 직후 사원 상태는 `EMP_INITIAL`이다. 프론트는 로그인 응답의 `firstLoginRequired`가 `true`이면 비밀번호 변경 및 이메일 등록 화면으로 이동시켜야 한다.
+
+## 3. 로그인 흐름
+
+```text
+클라이언트
+→ POST /api/v1/auth/login
+→ AuthService.login()
+→ AuthorizationUserDetailsService.loadUserByEmpId(empId)
+→ PasswordEncoder.matches(rawPassword, encodedPassword)
+→ JwtTokenProvider.createAccessToken(empId, authVersion, sessionId)
+→ JwtTokenProvider.createRefreshToken(empId, authVersion, sessionId)
+→ AuthSessionFactory.createSession()
+→ RefreshTokenService.saveSession()
+→ Redis에 AuthSession 저장
+→ AccessToken + RefreshToken 반환
+```
+
+로그인 실패 조건:
+
+```text
+없는 사번
+→ LOGIN_FAILED
+
+비밀번호 불일치
+→ LOGIN_FAILED
+
+enabled != "Y"
+→ USER_DISABLED
+```
+
+## 4. JWT 구조
+
+Access Token과 Refresh Token은 모두 JWT다.
+
+공통 claim:
+
+```json
+{
+  "sub": "20260001",
+  "authVersion": 1,
+  "tokenType": "access",
+  "sessionId": "uuid",
+  "iat": 1779860000,
+  "exp": 1779861800
+}
+```
+
+Access Token:
+
+```text
+tokenType = "access"
+만료 시간 = 30분
+용도 = API 요청 Authorization 헤더
+```
+
+Refresh Token:
+
+```text
+tokenType = "refresh"
+만료 시간 = 7일
+용도 = 현재는 Redis 세션 검증용으로 저장됨
+주의 = refresh API 컨트롤러는 아직 구현 필요
+```
+
+프론트는 JWT payload를 UI 힌트로 디코딩할 수는 있지만, 권한 판단의 최종 기준으로 사용하면 안 된다. 실제 권한 판단은 백엔드 Redis 세션과 DB 권한 기준으로 수행된다.
+
+## 5. Redis 세션 구조
+
+로그인 성공 시 Redis에 세션이 저장된다.
+
+Redis key:
+
+```text
+auth:session:{sessionId}
+auth:emp_sessions:{empId}
+```
+
+세션 예시:
+
+```json
+{
+  "sessionId": "uuid",
+  "empId": 20260001,
+  "username": "20260001",
+  "enabled": true,
+  "authVersion": 1,
+  "authorities": ["ROLE_USER"],
+  "scopedPermissions": [
+    {
+      "permCd": "MAIL_READ",
+      "roleId": 1,
+      "roleName": "기본 사원",
+      "scopeType": "SELF",
+      "scopeId": "20260001"
+    }
+  ],
+  "refreshTokenHash": "sha256-base64"
+}
+```
+
+Refresh Token 원문은 Redis에 저장하지 않는다. `RefreshTokenService`는 Refresh Token을 SHA-256 해시 후 Base64로 저장한다.
+
+## 6. API 요청 흐름
+
+프론트는 로그인 후 모든 보호 API 요청에 Access Token을 붙인다.
+
+```http
+Authorization: Bearer {accessToken}
+```
+
+백엔드 처리:
+
+```text
+JwtAuthenticationFilter
+→ Access Token 검증
+→ empId, sessionId, authVersion 추출
+→ Redis AuthSession 조회
+→ 토큰 empId와 세션 empId 비교
+→ DB authVersion이 더 최신이면 Redis 세션의 authorities/scopedPermissions 갱신
+→ AuthorizationUserDetails 생성
+→ SecurityContext 저장
+→ Controller/Service 진입
+```
+
+## 7. 권한 버전과 권한 최신화
+
+권한 변경 시 백엔드는 `TB_AUTH_VERSION.AUTH_VER`를 증가시킨다.
+
+예시:
+
+```text
+사원에게 새 역할 부여
+→ TB_ROLE_ASSIGNMENT 변경
+→ RbacAuthorizationChangeService.refreshEmployeePermissions(empId)
+→ TB_AUTH_VERSION +1
+```
+
+다음 API 요청 시:
+
+```text
+Redis session.authVersion < DB authVersion
+→ RbacSessionRefreshService가 DB에서 권한 재조회
+→ Redis AuthSession 갱신
+→ 사용자는 재로그인 없이 최신 권한 사용
+```
+
+즉, 권한 변경 후 프론트가 강제로 재로그인시킬 필요는 없다. 다음 요청부터 백엔드가 Redis 세션을 최신화한다.
+
+## 8. 인가 모델
+
+권한은 `PermissionCode` enum 이름과 DB `TB_PERMISSION.PERM_CD`가 동일하다.
+
+예:
+
+```text
+MAIL_READ
+PROJECT_DELETE
+EMPLOYEE_CREATE
+ATTENDANCE_READ
+```
+
+역할 부여는 `TB_ROLE_ASSIGNMENT`에 저장된다.
+
+주요 scope:
+
+```text
+GLOBAL  = 전체 범위
+SELF    = 자기 자신 소유 리소스
+DEPT    = 특정 부서
+PROJECT = 특정 프로젝트
+```
+
+기본 사원:
+
+```text
+ROLE_EMPLOYEE_SELF
+SCOPE_TYPE_CD = SELF
+SCOPE_ID = empId 문자열
+```
+
+최고 관리자:
+
+```text
+ROLE_SUPER_ADMIN
+SCOPE_TYPE_CD = GLOBAL
+SCOPE_ID = "*"
+```
+
+프론트는 `scopedPermissions`를 직접 내려받지 않는다. 권한 판단은 백엔드 서비스에서 `AuthorizationService.assertCurrentUserPermission()`으로 수행한다.
+
+## 9. React 토큰 관리 권장안
+
+### 저장 위치
+
+현재 백엔드는 토큰을 JSON body로 내려준다.
+
+권장:
+
+```text
+Access Token  → 메모리 상태 또는 sessionStorage
+Refresh Token → localStorage 또는 보안 요구가 높으면 추후 HttpOnly Cookie 방식으로 변경
+```
+
+현재 구조에서는 프론트가 Refresh Token을 보관해야 한다. 단, refresh API가 아직 없으므로 401 발생 시 자동 재발급은 구현 보류하거나, refresh API 구현 후 붙인다.
+
+### 로그인 처리
+
+```ts
+async function login(empId: number, password: string) {
+  const res = await api.post("/api/v1/auth/login", { empId, password });
+
+  const {
+    accessToken,
+    refreshToken,
+    empId: loggedInEmpId,
+    authVersion,
+    firstLoginRequired,
+  } = res.data.data;
+
+  tokenStore.setAccessToken(accessToken);
+  tokenStore.setRefreshToken(refreshToken);
+  tokenStore.setEmpId(loggedInEmpId);
+  tokenStore.setAuthVersion(authVersion);
+
+  if (firstLoginRequired) {
+    navigate("/first-login");
+    return;
+  }
+
+  navigate("/");
+}
+```
+
+### Axios 요청 인터셉터
+
+```ts
+api.interceptors.request.use((config) => {
+  const accessToken = tokenStore.getAccessToken();
+
+  if (accessToken) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  return config;
+});
+```
+
+### 401 처리
+
+현재 refresh API가 없으므로 우선 정책은 단순하다.
+
+```text
+401 발생
+→ 저장된 토큰 제거
+→ 로그인 화면 이동
+```
+
+임시 구현:
+
+```ts
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      tokenStore.clear();
+      navigate("/login");
+    }
+
+    return Promise.reject(error);
+  }
+);
+```
+
+refresh API가 구현되면 401 처리 흐름은 아래처럼 바꾼다.
+
+```text
+401
+→ POST /api/v1/auth/refresh
+→ 새 Access Token 저장
+→ 실패한 요청 재시도
+→ refresh 실패 시 로그아웃
+```
+
+## 10. 프론트 라우팅 기준
+
+로그인 응답의 `firstLoginRequired` 기준:
+
+```text
+true
+→ /first-login
+→ 비밀번호 변경, 이메일 등록 등 최초 설정 화면
+
+false
+→ 일반 메인 화면
+```
+
+인증 필요한 라우트:
+
+```text
+Access Token 없으면 /login
+Access Token 있으면 일단 진입
+API에서 401/403으로 최종 판단
+```
+
+403 처리:
+
+```text
+권한 없음
+→ 로그인으로 보내지 말고 접근 거부 화면 또는 이전 화면으로 이동
+```
+
+## 11. 백엔드 현재 구현 상태
+
+구현됨:
+
+```text
+로그인 API
+JWT 발급
+Redis AuthSession 저장
+scopedPermissions 적재
+권한 버전 기반 Redis 세션 자동 갱신
+관리자 사원 등록 후 기본 역할 부여 및 authVersion 갱신
+```
+
+아직 필요:
+
+```text
+POST /api/v1/auth/refresh
+POST /api/v1/auth/logout
+첫 로그인 완료 API
+비밀번호 변경 API
+메일 계정 등록 API
+```
+
+## 12. 프론트 구현 체크리스트
+
+```text
+1. 로그인 폼에서 empId/password 전송
+2. LoginResponseDTO의 data.accessToken 저장
+3. data.refreshToken 저장
+4. Axios 요청마다 Authorization: Bearer accessToken 추가
+5. firstLoginRequired=true면 최초 설정 화면 이동
+6. 401이면 토큰 삭제 후 로그인 화면 이동
+7. 403이면 접근 거부 처리
+8. refresh API 구현 전까지 자동 재발급 로직은 보류
+```
