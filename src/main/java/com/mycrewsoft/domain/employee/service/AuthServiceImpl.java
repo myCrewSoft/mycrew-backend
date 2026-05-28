@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
+import com.mycrewsoft.domain.employee.dto.request.FirstLoginRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.LoginRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.TokenRefreshRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.LoginResponseDTO;
@@ -153,6 +154,12 @@ public class AuthServiceImpl implements AuthService {
 	            .empId(latestSession.getEmpId())
 	            .authVersion(latestSession.getAuthVersion())
 	            .build();
+	}
+
+	@Override
+	public void handleFirstLogin(FirstLoginRequestDTO request) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

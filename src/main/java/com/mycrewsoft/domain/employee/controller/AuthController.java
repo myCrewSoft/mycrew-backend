@@ -1,12 +1,14 @@
 package com.mycrewsoft.domain.employee.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mycrewsoft.common.response.ApiResponse;
+import com.mycrewsoft.domain.employee.dto.request.FirstLoginRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.LoginRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.TokenRefreshRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.LoginResponseDTO;
@@ -47,5 +49,14 @@ public class AuthController {
 	    return ResponseEntity.ok(
 	            ApiResponse.success("토큰 재발급이 완료되었습니다.", response)
 	    );
+	}
+	
+	@PatchMapping("/first-login")
+	public ResponseEntity<ApiResponse> handleFirstLogin(
+	        @RequestBody FirstLoginRequestDTO request) {
+		
+		authService.handleFirstLogin(request);
+	    
+		return ResponseEntity.ok(ApiResponse.success("첫 로그인 처리 완료"));
 	}
 }
