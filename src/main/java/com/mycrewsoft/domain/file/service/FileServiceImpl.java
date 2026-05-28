@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
+import com.mycrewsoft.common.util.DateUtil;
 import com.mycrewsoft.common.util.DtoMapper;
 import com.mycrewsoft.common.util.FileUtil;
 import com.mycrewsoft.domain.file.dto.FileDtlResponseDto;
@@ -72,7 +73,8 @@ public class FileServiceImpl implements FileService {
 		Long frstRgstrId = SecurityUtil.getCurrentEmpId();
 		
 		//reqDto -> VO 변환 및 VO 생성
-		FileDtlVo fileDtlVo = dtoMapper.toDto(reqDto, FileDtlVo.class);
+		FileDtlVo fileDtlVo = new FileDtlVo();
+		fileDtlVo.setFileCn(reqDto.getFileCn());
 		fileDtlVo.setAtchFileId(fileClsfVo.getAtchFileId());
 		fileDtlVo.setAtchFileTyCd(atchFileTyCd);
 		fileDtlVo.setFileExtsn(extension);
@@ -85,22 +87,18 @@ public class FileServiceImpl implements FileService {
 		mapper.insertDtl(fileDtlVo);
 	}
 
+	/**
+	 * 파일 삭제 처리
+	 */
 	@Override
-	public FileDtlResponseDto getFile(Long atchFileId) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public List<FileDtlResponseDto> getFileList(Long atchFileId) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void deleteFile(Long atchFileDtlId, Long loginUserId) {
-		// TODO Auto-generated method stub
+	public void deleteFile(Long atchFileDtlId) {
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
 		
+		int result = mapper.deleteDtl(atchFileDtlId, currentEmpId);
+		
+		if(result == 0) {
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}
 	}
 
 }

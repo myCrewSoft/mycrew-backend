@@ -53,4 +53,13 @@
 	)
 </insert>
 
+<update id="deleteDtl">
+    UPDATE TB_CMMN_ATCH_FILE_DTL
+    SET
+        DEL_YN   = 'Y',
+        DEL_DT   = SYSDATE,
+        DLTRS_ID = #{dltrsId}
+    WHERE ATCH_FILE_DTL_ID = #{atchFileDtlId} AND DEL_YN = 'N'
+</update>
+
 </mapper>
