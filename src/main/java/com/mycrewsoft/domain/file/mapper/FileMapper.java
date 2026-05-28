@@ -19,4 +19,7 @@ public interface FileMapper {
 	
 	//삭제 (delYn 'Y'로 업데이트)
 	int deleteDtl(@Param("atchFileDtlId") Long atchFileDtlId, @Param("dltrsId") Long dltrsId);
+	
+	//파일 정보 조회
+	FileDtlVo selectDtlById(Long atchFiledtlId);
 }
