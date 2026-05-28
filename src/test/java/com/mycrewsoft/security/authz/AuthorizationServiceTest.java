@@ -33,9 +33,10 @@ class AuthorizationServiceTest {
                 .deptCd("11")
                 .build();
         List<ScopedPermission> permissions = List.of(
-                ScopedPermission.of("BOARD_DELETE", 1L, "system admin", ScopeType.GLOBAL, "*"));
+                ScopedPermission.of("BOARD_POST_DELETE", 1L, "system admin", ScopeType.GLOBAL, "*"));
 
-        assertThat(authorizationService.hasPermission(100L, permissions, "BOARD_DELETE", resource)).isTrue();
+        assertThat(authorizationService.canAccess(
+                100L, permissions, PermissionCode.BOARD_POST_DELETE, resource)).isTrue();
     }
 
     @Test
@@ -46,9 +47,10 @@ class AuthorizationServiceTest {
                 .deptCd("10")
                 .build();
         List<ScopedPermission> permissions = List.of(
-                ScopedPermission.of("BOARD_DELETE", 2L, "board manager", ScopeType.DEPT, "10"));
+                ScopedPermission.of("BOARD_POST_DELETE", 2L, "board manager", ScopeType.DEPT, "10"));
 
-        assertThat(authorizationService.hasPermission(100L, permissions, "BOARD_DELETE", resource)).isTrue();
+        assertThat(authorizationService.canAccess(
+                100L, permissions, PermissionCode.BOARD_POST_DELETE, resource)).isTrue();
     }
 
     @Test
@@ -59,9 +61,10 @@ class AuthorizationServiceTest {
                 .deptCd("11")
                 .build();
         List<ScopedPermission> permissions = List.of(
-                ScopedPermission.of("BOARD_DELETE", 2L, "board manager", ScopeType.DEPT, "10"));
+                ScopedPermission.of("BOARD_POST_DELETE", 2L, "board manager", ScopeType.DEPT, "10"));
 
-        assertThat(authorizationService.hasPermission(100L, permissions, "BOARD_DELETE", resource)).isFalse();
+        assertThat(authorizationService.canAccess(
+                100L, permissions, PermissionCode.BOARD_POST_DELETE, resource)).isFalse();
     }
 
     @Test
@@ -72,9 +75,10 @@ class AuthorizationServiceTest {
                 .projId("300")
                 .build();
         List<ScopedPermission> permissions = List.of(
-                ScopedPermission.of("TASK_UPDATE", 3L, "project manager", ScopeType.PROJECT, "300"));
+                ScopedPermission.of("PROJECT_UPDATE", 3L, "project manager", ScopeType.PROJECT, "300"));
 
-        assertThat(authorizationService.hasPermission(100L, permissions, "TASK_UPDATE", resource)).isTrue();
+        assertThat(authorizationService.canAccess(
+                100L, permissions, PermissionCode.PROJECT_UPDATE, resource)).isTrue();
     }
 
     @Test
@@ -85,9 +89,10 @@ class AuthorizationServiceTest {
                 .ownerEmpId(100L)
                 .build();
         List<ScopedPermission> permissions = List.of(
-                ScopedPermission.of("EMPLOYEE_UPDATE", 4L, "employee", ScopeType.SELF, "*"));
+                ScopedPermission.of("MAIL_READ", 4L, "employee", ScopeType.SELF, "*"));
 
-        assertThat(authorizationService.hasPermission(100L, permissions, "EMPLOYEE_UPDATE", resource)).isTrue();
+        assertThat(authorizationService.canAccess(
+                100L, permissions, PermissionCode.MAIL_READ, resource)).isTrue();
     }
 
     @Test
@@ -98,52 +103,92 @@ class AuthorizationServiceTest {
                 .ownerEmpId(101L)
                 .build();
         List<ScopedPermission> permissions = List.of(
-                ScopedPermission.of("EMPLOYEE_UPDATE", 4L, "employee", ScopeType.SELF, "*"));
+                ScopedPermission.of("MAIL_READ", 4L, "employee", ScopeType.SELF, "*"));
 
-        assertThat(authorizationService.hasPermission(100L, permissions, "EMPLOYEE_UPDATE", resource)).isFalse();
+        assertThat(authorizationService.canAccess(
+                100L, permissions, PermissionCode.MAIL_READ, resource)).isFalse();
     }
 
     @Test
-    void assertPermissionThrowsAccessDeniedWhenPermissionIsMissing() {
+    void assertCanAccessThrowsAccessDeniedWhenPermissionIsMissing() {
         ResourceContext resource = ResourceContext.builder()
                 .resourceType(ResourceType.BOARD)
                 .resourceId("55")
                 .deptCd("10")
                 .build();
 
-        assertThatThrownBy(() -> authorizationService.assertPermission(100L, List.of(), "BOARD_DELETE", resource))
+        assertThatThrownBy(() -> authorizationService.assertCanAccess(
+                100L, List.of(), PermissionCode.BOARD_POST_DELETE, resource))
                 .isInstanceOf(CustomException.class)
                 .satisfies(error -> assertThat(((CustomException) error).getErrorCode())
                         .isEqualTo(ErrorCode.ACCESS_DENIED));
     }
 
     @Test
-    void hasCurrentUserPermissionUsesSecurityContextPrincipalPermissions() {
+    void canAccessUsesSecurityContextPrincipalPermissions() {
         setAuthenticatedUserWithPermission(
-                ScopedPermission.of("BOARD_DELETE", 2L, "board manager", ScopeType.DEPT, "10"));
+                ScopedPermission.of("BOARD_POST_DELETE", 2L, "board manager", ScopeType.DEPT, "10"));
         ResourceContext resource = ResourceContext.builder()
                 .resourceType(ResourceType.BOARD)
                 .resourceId("55")
                 .deptCd("10")
                 .build();
 
-        assertThat(authorizationService.hasCurrentUserPermission("BOARD_DELETE", resource)).isTrue();
+        assertThat(authorizationService.canAccess(PermissionCode.BOARD_POST_DELETE, resource)).isTrue();
     }
 
     @Test
-    void assertCurrentUserPermissionThrowsAccessDeniedForWrongScope() {
+    void assertCanAccessThrowsAccessDeniedForWrongScope() {
         setAuthenticatedUserWithPermission(
-                ScopedPermission.of("BOARD_DELETE", 2L, "board manager", ScopeType.DEPT, "10"));
+                ScopedPermission.of("BOARD_POST_DELETE", 2L, "board manager", ScopeType.DEPT, "10"));
         ResourceContext resource = ResourceContext.builder()
                 .resourceType(ResourceType.BOARD)
                 .resourceId("56")
                 .deptCd("11")
                 .build();
 
-        assertThatThrownBy(() -> authorizationService.assertCurrentUserPermission("BOARD_DELETE", resource))
+        assertThatThrownBy(() -> authorizationService.assertCurrentUserPermission(
+                PermissionCode.BOARD_POST_DELETE, resource))
                 .isInstanceOf(CustomException.class)
                 .satisfies(error -> assertThat(((CustomException) error).getErrorCode())
                         .isEqualTo(ErrorCode.ACCESS_DENIED));
+    }
+
+    @Test
+    void getPermissionScopesCollectsOnlyRequestedPermissionScopes() {
+        List<ScopedPermission> permissions = List.of(
+                ScopedPermission.of("BOARD_POST_READ", 1L, "employee", ScopeType.DEPT, "HR"),
+                ScopedPermission.of("BOARD_POST_READ", 2L, "cross dept", ScopeType.DEPT, "ACCOUNTING"),
+                ScopedPermission.of("BOARD_POST_READ", 3L, "project", ScopeType.PROJECT, "300"),
+                ScopedPermission.of("BOARD_POST_DELETE", 4L, "other", ScopeType.DEPT, "DEV"));
+
+        PermissionScopeSet scopeSet = authorizationService.getPermissionScopes(
+                permissions, PermissionCode.BOARD_POST_READ);
+
+        assertThat(scopeSet.hasGlobal()).isFalse();
+        assertThat(scopeSet.getDepartmentScopeIds()).containsExactly("HR", "ACCOUNTING");
+        assertThat(scopeSet.getProjectScopeIds()).containsExactly("300");
+    }
+
+    @Test
+    void getCurrentPermissionScopesReadsSecurityContextPrincipalPermissions() {
+        AuthorizationUserDetails principal = new AuthorizationUserDetails(
+                100L,
+                "user-100",
+                null,
+                true,
+                1,
+                Set.of(new SimpleGrantedAuthority("ROLE_USER")),
+                List.of(
+                        ScopedPermission.of("BOARD_POST_READ", 1L, "employee", ScopeType.DEPT, "HR"),
+                        ScopedPermission.of("BOARD_POST_READ", 2L, "admin", ScopeType.GLOBAL, "*")));
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
+
+        PermissionScopeSet scopeSet = authorizationService.getCurrentPermissionScopes(PermissionCode.BOARD_POST_READ);
+
+        assertThat(scopeSet.hasGlobal()).isTrue();
+        assertThat(scopeSet.getDepartmentScopeIds()).containsExactly("HR");
     }
 
     private void setAuthenticatedUserWithPermission(ScopedPermission scopedPermission) {
