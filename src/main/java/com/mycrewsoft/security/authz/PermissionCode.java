@@ -16,6 +16,7 @@ public enum PermissionCode {
 	
 	//ADMIN
 	EMPLOYEE_CREATE,
+	EMPLOYEE_READ,
 	
     // Department
     DEPT_CREATE,
