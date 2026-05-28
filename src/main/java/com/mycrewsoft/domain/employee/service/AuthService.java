@@ -27,4 +27,6 @@ public interface AuthService {
 	 * @return 첫 로그인 시점에 필요한 처리를 수행하는 메서드.
 	 */
 	void handleFirstLogin(FirstLoginRequestDTO request);
+
+	void logout();
 }

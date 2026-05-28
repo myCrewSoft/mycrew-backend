@@ -59,4 +59,11 @@ public class AuthController {
 	    
 		return ResponseEntity.ok(ApiResponse.success("첫 로그인 처리 완료"));
 	}
+	
+	@PostMapping("/logout")
+	public ResponseEntity<ApiResponse> logout() {
+		authService.logout();
+		
+		return ResponseEntity.ok(ApiResponse.success("로그아웃 성공"));
+	}
 }
