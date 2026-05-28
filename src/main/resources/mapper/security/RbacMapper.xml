@@ -29,6 +29,7 @@
           ON P.PERM_ID = PRM.PERM_ID
         WHERE RA.EMP_ID = #{empId}
           AND RA.ENABLED = 'Y'
+          AND P.PERM_ENABLED = 'Y'
     </select>
 
     <select id="selectAuthVersionByEmpId" resultType="java.lang.Integer">
@@ -48,10 +49,7 @@
         WHERE RA.EMP_ID = #{empId}
           AND RA.ENABLED = 'Y'
           AND RA.SCOPE_TYPE_CD = 'GLOBAL'
-          AND (
-                UPPER(R.ROLE_NM) LIKE '%ADMIN%'
-             OR UPPER(R.ROLE_NM) LIKE '%관리자%'
-          )
+          AND R.ROLE_CD = 'ROLE_SUPER_ADMIN'
     </select>
 
     <update id="incrementAuthVersionForEmpId">

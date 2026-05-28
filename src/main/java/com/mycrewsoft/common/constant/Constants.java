@@ -12,9 +12,12 @@ package com.mycrewsoft.common.constant;
     private Constants() {}
 		// Auth
     public static final String ROLE_ADMIN = "ROLE_ADMIN";
-    public static final String PRIMARY_ADMIN = "PRIMARY_ADMIN";
     public static final String ROLE_USER = "ROLE_USER";
-		// Member
+    
+    public static final String SUPER_ADMIN = "ROLE_SUPER_ADMIN";
+    public static final String ROLE_EMPLOYEE_SELF = "ROLE_EMPLOYEE_SELF";
+	
+    // Member
     public static final String Member = "member";
 
     // Security

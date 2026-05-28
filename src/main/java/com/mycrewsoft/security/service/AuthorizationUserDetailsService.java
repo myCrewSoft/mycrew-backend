@@ -54,6 +54,7 @@ public class AuthorizationUserDetailsService implements UserDetailsService {
                 user.username(),
                 user.password(),
                 user.enabled(),
+                user.empStat(),
                 authVersion == null ? 0 : authVersion,
                 (authorityCodes == null ? List.<String>of() : authorityCodes).stream()
                         .map(SimpleGrantedAuthority::new)

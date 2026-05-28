@@ -8,14 +8,24 @@ package com.mycrewsoft.security.users;
  * - Spring Security UserDetails를 만들기 전 단계의 순수 조회 모델이다.
  *
  * 포함 정보:
- * - empId: 사원 고유 ID
+ * - empId: 사원 번호 고유 ID
  * - username: 로그인 식별자
  * - password: 암호화된 비밀번호
  * - enabled: 계정 사용 가능 여부
+ * - empStat: 사원 상태 (예: 재직, 휴직, 퇴사 등)
  */
 public record AuthorizationUserRecord(
         Long empId,
         String username,
         String password,
-        boolean enabled) {
+        boolean enabled,
+        String empStat) {
+
+    public AuthorizationUserRecord(
+            Long empId,
+            String username,
+            String password,
+            boolean enabled) {
+        this(empId, username, password, enabled, null);
+    }
 }
