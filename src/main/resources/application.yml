@@ -59,3 +59,6 @@ cors:
   allowed-headers: Authorization,Content-Type,Accept
   allow-credentials: true
   max-age: 3600
+
+file:
+  upload-path: ${LOCAL_STORAGE}
