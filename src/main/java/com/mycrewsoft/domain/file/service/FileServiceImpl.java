@@ -1,17 +1,22 @@
 package com.mycrewsoft.domain.file.service;
 
+import java.net.MalformedURLException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
+import com.mycrewsoft.common.util.DateUtil;
 import com.mycrewsoft.common.util.DtoMapper;
 import com.mycrewsoft.common.util.FileUtil;
 import com.mycrewsoft.domain.file.dto.FileDtlResponseDto;
@@ -72,7 +77,8 @@ public class FileServiceImpl implements FileService {
 		Long frstRgstrId = SecurityUtil.getCurrentEmpId();
 		
 		//reqDto -> VO 변환 및 VO 생성
-		FileDtlVo fileDtlVo = dtoMapper.toDto(reqDto, FileDtlVo.class);
+		FileDtlVo fileDtlVo = new FileDtlVo();
+		fileDtlVo.setFileCn(reqDto.getFileCn());
 		fileDtlVo.setAtchFileId(fileClsfVo.getAtchFileId());
 		fileDtlVo.setAtchFileTyCd(atchFileTyCd);
 		fileDtlVo.setFileExtsn(extension);
@@ -85,22 +91,44 @@ public class FileServiceImpl implements FileService {
 		mapper.insertDtl(fileDtlVo);
 	}
 
+	/**
+	 * 파일 삭제 처리
+	 */
 	@Override
-	public FileDtlResponseDto getFile(Long atchFileId) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public List<FileDtlResponseDto> getFileList(Long atchFileId) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void deleteFile(Long atchFileDtlId, Long loginUserId) {
-		// TODO Auto-generated method stub
+	public void deleteFile(Long atchFileDtlId) {
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
 		
+		int result = mapper.deleteDtl(atchFileDtlId, currentEmpId);
+		
+		if(result == 0) {
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}
+	}
+
+	/**
+	 * 파일 다운로드
+	 */
+	@Override
+	@Transactional
+	public Resource download(Long atchFileDtlId) {
+		//파일이 존재하는지 정보 조회
+		FileDtlVo fileDtlVo = mapper.selectDtlById(atchFileDtlId);
+		if(fileDtlVo == null || fileDtlVo.getDelYn() == "Y") {
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}
+		
+		//실제 파일 경로 확인
+		Path savePathNm = Paths.get(fileDtlVo.getSavePathNm(), fileDtlVo.getSaveFileNm());
+		if (!Files.exists(savePathNm)) {
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}
+		
+		//검증에 다 통과를 한다면 실제 파일 반환
+		try {
+			return new UrlResource(savePathNm.toUri());
+		}catch(MalformedURLException e){
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}
 	}
 
 }
