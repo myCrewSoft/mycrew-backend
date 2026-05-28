@@ -5,7 +5,7 @@ import org.apache.ibatis.annotations.Mapper;
 import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 
 @Mapper
-public interface EmployeeMapper {
+public interface AdminEmployeeMapper {
 	/**
 	 * 관리자의 사원 등록을 위한 데이터베이스 삽입 메서드
 	 * @param employee
