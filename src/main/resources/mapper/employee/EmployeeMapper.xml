@@ -4,7 +4,7 @@
 	namespace="com.mycrewsoft.domain.employee.mapper.EmployeeMapper">
 	
 	<select id="selectEmpDeptCodeByEmpId">
-		SELECT 
+		SELECT DEPT_CD
 		FROM EMPLOYEE
         WHERE EMP_ID = #{empId}
 	</select>

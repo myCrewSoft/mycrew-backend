@@ -1,9 +1,206 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper
-	namespace="com.mycrewsoft.domain.employee.mapper.AdminEmployeeMapper">
-	
-	<insert id="insertEmployee" parameterType="com.mycrewsoft.domain.employee.vo.EmployeeVO">
-        
-    </insert>    
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.domain.employee.mapper.AdminEmployeeMapper">
+
+    <resultMap id="EmployeeResultMap" type="com.mycrewsoft.domain.employee.vo.EmployeeVO">
+        <id property="empId" column="EMP_ID"/>
+        <result property="deptCd" column="DEPT_CD"/>
+        <result property="jobPstnCd" column="JOB_PSTN_CD"/>
+        <result property="jobGrdCd" column="JOB_GRD_CD"/>
+        <result property="empStatCd" column="EMP_STAT_CD"/>
+        <result property="jobDutyCn" column="JOB_DUTY_CN"/>
+        <result property="pswd" column="PSWD"/>
+        <result property="empNm" column="EMP_NM"/>
+        <result property="rrno" column="RRNO"/>
+        <result property="genderCd" column="GENDER_CD"/>
+        <result property="mblTelno" column="MBL_TELNO"/>
+        <result property="zip" column="ZIP"/>
+        <result property="addr" column="ADDR"/>
+        <result property="prflImgFileId" column="PRFL_IMG_FILE_ID"/>
+        <result property="execYn" column="EXEC_YN"/>
+        <result property="entcoYmd" column="ENTCO_YMD"/>
+        <result property="retcoYmd" column="RETCO_YMD"/>
+        <result property="frstRegDt" column="FRST_REG_DT"/>
+        <result property="lastMdfcnDt" column="LAST_MDFCN_DT"/>
+        <result property="enabled" column="ENABLED"/>
+        <result property="mbrStampFileId" column="EMP_STAMP_FILE_ID"/>
+    </resultMap>
+
+    <resultMap id="EmployeeListResultMap" type="com.mycrewsoft.domain.employee.dto.response.EmployeeListDTO">
+        <id property="empId" column="EMP_ID"/>
+        <result property="deptCd" column="DEPT_CD"/>
+        <result property="jobPstnCd" column="JOB_PSTN_CD"/>
+        <result property="jobGrdCd" column="JOB_GRD_CD"/>
+        <result property="empStatCd" column="EMP_STAT_CD"/>
+        <result property="jobDutyCn" column="JOB_DUTY_CN"/>
+        <result property="empNm" column="EMP_NM"/>
+        <result property="genderCd" column="GENDER_CD"/>
+        <result property="mblTelno" column="MBL_TELNO"/>
+        <result property="zip" column="ZIP"/>
+        <result property="addr" column="ADDR"/>
+        <result property="prflImgFileId" column="PRFL_IMG_FILE_ID"/>
+        <result property="execYn" column="EXEC_YN"/>
+        <result property="entcoYmd" column="ENTCO_YMD"/>
+        <result property="retcoYmd" column="RETCO_YMD"/>
+        <result property="frstRegDt" column="FRST_REG_DT"/>
+        <result property="lastMdfcnDt" column="LAST_MDFCN_DT"/>
+        <result property="enabled" column="ENABLED"/>
+    </resultMap>
+
+    <sql id="EmployeeColumns">
+        E.EMP_ID,
+        E.DEPT_CD,
+        E.JOB_PSTN_CD,
+        E.JOB_GRD_CD,
+        E.EMP_STAT_CD,
+        E.JOB_DUTY_CN,
+        E.PSWD,
+        E.EMP_NM,
+        E.RRNO,
+        E.GENDER_CD,
+        E.MBL_TELNO,
+        E.ZIP,
+        E.ADDR,
+        E.PRFL_IMG_FILE_ID,
+        E.EXEC_YN,
+        E.ENTCO_YMD,
+        E.RETCO_YMD,
+        E.FRST_REG_DT,
+        E.LAST_MDFCN_DT,
+        E.ENABLED,
+        E.EMP_STAMP_FILE_ID
+    </sql>
+
+    <sql id="EmployeeListColumns">
+        E.EMP_ID,
+        E.DEPT_CD,
+        E.JOB_PSTN_CD,
+        E.JOB_GRD_CD,
+        E.EMP_STAT_CD,
+        E.JOB_DUTY_CN,
+        E.EMP_NM,
+        E.GENDER_CD,
+        E.MBL_TELNO,
+        E.ZIP,
+        E.ADDR,
+        E.PRFL_IMG_FILE_ID,
+        E.EXEC_YN,
+        E.ENTCO_YMD,
+        E.RETCO_YMD,
+        E.FRST_REG_DT,
+        E.LAST_MDFCN_DT,
+        E.ENABLED
+    </sql>
+
+    <sql id="EmployeeSearchWhere">
+        <where>
+            <if test="condition.keyword != null and condition.keyword != ''">
+                AND (
+                    TO_CHAR(E.EMP_ID) LIKE '%' || #{condition.keyword} || '%'
+                    OR E.EMP_NM LIKE '%' || #{condition.keyword} || '%'
+                    OR E.MBL_TELNO LIKE '%' || #{condition.keyword} || '%'
+                    OR E.ADDR LIKE '%' || #{condition.keyword} || '%'
+                )
+            </if>
+
+            <if test="condition.deptCd != null and condition.deptCd != ''">
+                AND TRIM(E.DEPT_CD) = TRIM(#{condition.deptCd})
+            </if>
+
+            <if test="condition.empStatCd != null and condition.empStatCd != ''">
+                AND E.EMP_STAT_CD = #{condition.empStatCd}
+            </if>
+
+            <if test="condition.jobGrdCd != null and condition.jobGrdCd != ''">
+                AND TRIM(E.JOB_GRD_CD) = TRIM(#{condition.jobGrdCd})
+            </if>
+
+            <if test="condition.jobPstnCd != null and condition.jobPstnCd != ''">
+                AND TRIM(E.JOB_PSTN_CD) = TRIM(#{condition.jobPstnCd})
+            </if>
+
+            <if test="condition.execYn != null and condition.execYn != ''">
+                AND E.EXEC_YN = #{condition.execYn}
+            </if>
+
+            <if test="condition.enabled != null and condition.enabled != ''">
+                AND E.ENABLED = #{condition.enabled}
+            </if>
+        </where>
+    </sql>
+
+    <insert id="insertEmployee" parameterType="com.mycrewsoft.domain.employee.vo.EmployeeVO">
+        INSERT INTO TB_EMPLOYEE (
+            EMP_ID,
+            EMP_STAT_CD,
+            JOB_GRD_CD,
+            JOB_PSTN_CD,
+            DEPT_CD,
+            JOB_DUTY_CN,
+            PSWD,
+            EMP_NM,
+            RRNO,
+            GENDER_CD,
+            MBL_TELNO,
+            ZIP,
+            ADDR,
+            PRFL_IMG_FILE_ID,
+            EXEC_YN,
+            ENTCO_YMD,
+            RETCO_YMD,
+            FRST_REG_DT,
+            LAST_MDFCN_DT,
+            ENABLED,
+            EMP_STAMP_FILE_ID
+        )
+        VALUES (
+            #{empId},
+            #{empStatCd},
+            #{jobGrdCd},
+            #{jobPstnCd},
+            #{deptCd},
+            #{jobDutyCn},
+            #{pswd},
+            #{empNm},
+            #{rrno},
+            #{genderCd},
+            #{mblTelno},
+            #{zip},
+            #{addr},
+            #{prflImgFileId},
+            #{execYn},
+            #{entcoYmd},
+            #{retcoYmd},
+            NVL(#{frstRegDt}, SYSDATE),
+            #{lastMdfcnDt},
+            #{enabled},
+            #{mbrStampFileId}
+        )
+    </insert>
+
+    <select id="selectEmployeeById" resultMap="EmployeeResultMap">
+        SELECT
+            <include refid="EmployeeColumns"/>
+        FROM TB_EMPLOYEE E
+        WHERE E.EMP_ID = #{empId}
+    </select>
+
+    <select id="countEmployees" resultType="long">
+        SELECT COUNT(1)
+        FROM TB_EMPLOYEE E
+        <include refid="EmployeeSearchWhere"/>
+    </select>
+
+    <select id="selectEmployees" resultMap="EmployeeListResultMap">
+        SELECT
+            <include refid="EmployeeListColumns"/>
+        FROM TB_EMPLOYEE E
+        <include refid="EmployeeSearchWhere"/>
+        ORDER BY E.FRST_REG_DT DESC, E.EMP_ID DESC
+        OFFSET #{offset} ROWS FETCH NEXT #{size} ROWS ONLY
+    </select>
+
 </mapper>

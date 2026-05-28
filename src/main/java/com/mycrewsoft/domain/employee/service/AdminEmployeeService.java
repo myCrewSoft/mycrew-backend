@@ -1,6 +1,10 @@
 package com.mycrewsoft.domain.employee.service;
 
+import org.springframework.data.domain.Page;
+
 import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequestDTO;
+import com.mycrewsoft.domain.employee.dto.request.EmployeeSearchDTO;
+import com.mycrewsoft.domain.employee.dto.response.EmployeeListDTO;
 import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 
 /**
@@ -9,29 +13,33 @@ import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 public interface AdminEmployeeService {
 	 /**
 	  * 사원 정보를 등록하는 메서드
-	  * @param employeeVO 등록할 사원 정보가 담긴 VO 객체
-	  * @return 등록된 사원의 ID
+	  * @param EmployeeRegisterRequestDTO 
 	  */
 	 void registerEmployee(EmployeeRegisterRequestDTO employeeRequest);
 
 	 /**
 	  * 사원 정보를 수정하는 메서드
 	  * @param employeeVO 수정할 사원 정보가 담긴 VO 객체
-	  * @return 수정된 사원의 ID
 	  */
 	 void updateEmployee();
 
 	 /**
 	  * 사원 정보를 삭제하는 메서드
 	  * @param mbrId 삭제할 사원의 ID
-	  * @return 삭제된 사원의 ID
 	  */
 	 void deleteEmployee();
 
 	 /**
 	  * 사원 정보를 조회하는 메서드
 	  * @param mbrId 조회할 사원의 ID
-	  * @return 조회된 사원 정보가 담긴 VO 객체
+	  * @return EmployeeVO 
 	  */
 	 EmployeeVO getEmployeeById();
+	 
+	/**
+	 * 관리자가 사원 목록을 검색하는 메서드. 검색 조건에 따라 사원 목록을 페이지 형태로 반환한다.
+	 * @param EmployeeSearchDTO condition
+	 * @return Page<EmployeeListDTO>
+	 */
+	 Page<EmployeeListDTO> getEmployees(EmployeeSearchDTO condition);
 }

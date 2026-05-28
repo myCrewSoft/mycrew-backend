@@ -1,7 +1,12 @@
 package com.mycrewsoft.domain.employee.service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,6 +15,8 @@ import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DtoMapper;
 import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequestDTO;
+import com.mycrewsoft.domain.employee.dto.request.EmployeeSearchDTO;
+import com.mycrewsoft.domain.employee.dto.response.EmployeeListDTO;
 import com.mycrewsoft.domain.employee.mapper.AdminEmployeeMapper;
 import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 import com.mycrewsoft.domain.empstat.code.EmpStatCode;
@@ -30,7 +37,7 @@ import lombok.RequiredArgsConstructor;
 public class AdminEmployeeServiceImpl implements AdminEmployeeService {
 	private final DtoMapper DtoMapper;
 	private final AuthorizationService authorizationService;
-	private final AdminEmployeeMapper employeeMapper;
+	private final AdminEmployeeMapper adminEmployeeMapper;
 	private final PasswordEncoder passwordEncoder;
 	private final RoleAssignmentService roleAssignmentService;
 	private final RbacAuthorizationChangeService rbacAuthorizationChangeService;
@@ -42,7 +49,7 @@ public class AdminEmployeeServiceImpl implements AdminEmployeeService {
 	@Transactional
 	public void registerEmployee(EmployeeRegisterRequestDTO employeeRequest) {
 		// 1. 사원 ID 중복 확인
-		EmployeeVO existEmployee = employeeMapper.selectEmployeeById(employeeRequest.getEmpId());
+		EmployeeVO existEmployee = adminEmployeeMapper.selectEmployeeById(employeeRequest.getEmpId());
 		
 		// 2. 중복된 사원 ID가 존재하면 예외 발생
 		if (existEmployee != null) {
@@ -69,7 +76,7 @@ public class AdminEmployeeServiceImpl implements AdminEmployeeService {
 	    );
 	    
 	    // 5. 사원 정보 저장
-	    employeeMapper.insertEmployee(employee);
+	    adminEmployeeMapper.insertEmployee(employee);
 	    
 	    // 6. 사원 등록 후 기본 사원 역할 부여
 	    roleAssignmentService.assignDefaultEmployeeRole(employee.getEmpId());
@@ -94,6 +101,32 @@ public class AdminEmployeeServiceImpl implements AdminEmployeeService {
 	public EmployeeVO getEmployeeById() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Page<EmployeeListDTO> getEmployees(EmployeeSearchDTO condition) {
+		ResourceContext resource = ResourceContext.builder()
+										        .resourceType(ResourceType.EMPLOYEE)
+										        .build();
+		
+		authorizationService.assertCurrentUserPermission(
+	            PermissionCode.EMPLOYEE_READ,
+	            resource
+	    );
+
+	    int page = Math.max(condition.getPage(), 0);
+	    int size = Math.min(Math.max(condition.getSize(), 1), 100);
+	    int offset = page * size;
+
+	    long total = adminEmployeeMapper.countEmployees(condition);
+
+	    List<EmployeeListDTO> content =
+	    		adminEmployeeMapper.selectEmployees(condition, offset, size);
+
+	    Pageable pageable = PageRequest.of(page, size);
+
+	    return new PageImpl<>(content, pageable, total);
 	}
 
 }
