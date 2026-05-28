@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 
 import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.EmployeeSearchDTO;
+import com.mycrewsoft.domain.employee.dto.response.EmployeeDetailDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeListDTO;
 import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 
@@ -42,4 +43,6 @@ public interface AdminEmployeeService {
 	 * @return Page<EmployeeListDTO>
 	 */
 	 Page<EmployeeListDTO> getEmployees(EmployeeSearchDTO condition);
+	 
+	 EmployeeDetailDTO getEmployeeDetailById(Long empId);
 }
