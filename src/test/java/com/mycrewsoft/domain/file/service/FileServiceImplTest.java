@@ -51,7 +51,7 @@ class FileServiceImplTest {
 	            null,
 	            true,
 	            1,
-	            List.of(new SimpleGrantedAuthority("ROLE_USER"))
+	            List.of(new SimpleGrantedAuthority("ROLE_USER")), null
 	    );
 
 	    SecurityContextHolder.getContext().setAuthentication(

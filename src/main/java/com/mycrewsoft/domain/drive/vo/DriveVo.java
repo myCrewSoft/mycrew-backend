@@ -3,9 +3,10 @@ package com.mycrewsoft.domain.drive.vo;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import lombok.Data;
 import lombok.Getter;
 
-@Getter
+@Data
 public class DriveVo {
 	private Long driveItemId;        // 드라이브아이템ID (PK)
     private Long prntDriveItemId;    // 상위드라이브아이템ID (부모 폴더)
