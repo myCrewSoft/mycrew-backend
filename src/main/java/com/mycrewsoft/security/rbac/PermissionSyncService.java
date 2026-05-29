@@ -18,8 +18,8 @@ import lombok.RequiredArgsConstructor;
  * - TB_PERMISSION에 아직 없는 권한 코드만 추가한다.
  *
  * 주의:
- * - 역할과 권한의 연결(TB_PERMISSION_ROLE_MAPPING)은 자동으로 만들지 않는다.
- * - 어떤 역할에 어떤 권한을 줄지는 관리자/시드 데이터에서 명시적으로 결정해야 한다.
+ * - PermissionCode에 새 권한이 추가되면 ROLE_SUPER_ADMIN에는 자동으로 연결한다.
+ * - 일반 역할과 권한의 연결은 관리자/시드 데이터에서 명시적으로 결정해야 한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -37,6 +37,9 @@ public class PermissionSyncService {
             return 0;
         }
 
-        return permissionSyncMapper.mergePermissions(permissions);
+        int insertedCount = permissionSyncMapper.mergePermissions(permissions);
+        permissionSyncMapper.mergeSuperAdminPermissions();
+
+        return insertedCount;
     }
 }

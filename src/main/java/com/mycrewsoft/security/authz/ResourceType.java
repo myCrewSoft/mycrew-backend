@@ -12,6 +12,7 @@ package com.mycrewsoft.security.authz;
  * - ResourceType은 인가 로그, 예외 메시지, 도메인 구분을 위한 보조 정보다.
  */
 public enum ResourceType {
+	ADMIN,
     BOARD,
     PROJECT,
     TASK,

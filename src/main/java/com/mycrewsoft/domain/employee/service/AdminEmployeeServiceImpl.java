@@ -16,6 +16,7 @@ import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DtoMapper;
 import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.EmployeeSearchDTO;
+import com.mycrewsoft.domain.employee.dto.response.EmployeeDetailDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeListDTO;
 import com.mycrewsoft.domain.employee.mapper.AdminEmployeeMapper;
 import com.mycrewsoft.domain.employee.vo.EmployeeVO;
@@ -127,6 +128,26 @@ public class AdminEmployeeServiceImpl implements AdminEmployeeService {
 	    Pageable pageable = PageRequest.of(page, size);
 
 	    return new PageImpl<>(content, pageable, total);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public EmployeeDetailDTO getEmployeeDetailById(Long empId) {
+		ResourceContext resource = ResourceContext.builder()
+									        .resourceType(ResourceType.EMPLOYEE)
+									        .build();
+
+		authorizationService.assertCurrentUserPermission(
+	            PermissionCode.EMPLOYEE_READ,
+	            resource
+	    );
+
+		EmployeeDetailDTO employee = adminEmployeeMapper.selectEmployeeDetailById(empId);
+		if (employee == null) {
+			throw new CustomException(ErrorCode.USER_NOT_FOUND);
+		}
+
+		return employee;
 	}
 
 }

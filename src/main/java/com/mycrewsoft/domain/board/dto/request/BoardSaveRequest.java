@@ -55,4 +55,6 @@ public class BoardSaveRequest {
 	@Schema(description = "댓글 허용 여부 (Y / N)", example = "Y", defaultValue = "Y")
 	private String cmntUseYn ="Y";
 
+	
+
 }
