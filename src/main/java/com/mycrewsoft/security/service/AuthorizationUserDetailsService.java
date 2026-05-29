@@ -56,6 +56,7 @@ public class AuthorizationUserDetailsService implements UserDetailsService {
                 Boolean.TRUE.equals(user.enabled()),
                 user.empStat(),
                 authVersion == null ? 0 : authVersion,
+                user.exec(),
                 (authorityCodes == null ? List.<String>of() : authorityCodes).stream()
                         .map(SimpleGrantedAuthority::new)
                         .toList(),

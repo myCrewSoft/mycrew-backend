@@ -89,6 +89,7 @@ public class AuthServiceImpl implements AuthService {
 		        userDetails.getUsername(),
 		        userDetails.isEnabled(),
 		        authVersion,
+		        userDetails.isExec(),
 		        authorities,
 		        null
 		);

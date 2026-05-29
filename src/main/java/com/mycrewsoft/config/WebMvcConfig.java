@@ -26,7 +26,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loggingInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/css/**", "/js/**", "/images/**", "/favicon.ico");
+                .excludePathPatterns("/css/**", "/js/**", "/images/**", "/favicon.ico", "/swagger-ui/**", "/v3/api-docs/**");
     }
 
     // Rest컨트롤러의 URL에 preFix로 /api 추가

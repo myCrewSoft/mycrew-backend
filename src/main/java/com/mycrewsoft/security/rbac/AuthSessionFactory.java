@@ -32,6 +32,7 @@ public class AuthSessionFactory {
             String username,
             boolean enabled,
             Integer authVersion,
+            boolean exec,
             Set<String> authorities,
             String refreshTokenHash) {
         AuthSession session = new AuthSession(
@@ -40,6 +41,7 @@ public class AuthSessionFactory {
                 username,
                 enabled,
                 authVersion,
+                exec,
                 authorities == null ? new LinkedHashSet<>() : new LinkedHashSet<>(authorities),
                 refreshTokenHash);
         session.setScopedPermissions(rbacPermissionService.loadScopedPermissions(empId));
