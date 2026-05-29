@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.EmployeeSearchDTO;
+import com.mycrewsoft.domain.employee.dto.response.EmployeeDetailDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeListDTO;
 import com.mycrewsoft.domain.employee.service.AdminEmployeeService;
 
@@ -19,6 +20,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import jakarta.validation.Valid;
@@ -34,7 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/admin/members")
 @RequiredArgsConstructor
 public class AdminEmployeeController {
-	private final AdminEmployeeService employeeService;
+	private final AdminEmployeeService adminEmployeeService;
 	
 	/**
 	 * 관리자의 사원 등록 API 엔드포인트
@@ -46,7 +48,7 @@ public class AdminEmployeeController {
 	public ResponseEntity<ApiResponse<String>> registerEmployee(
 			@Valid @RequestBody EmployeeRegisterRequestDTO request) {		
 		
-		employeeService.registerEmployee(request);
+		adminEmployeeService.registerEmployee(request);
 		
 		return ResponseEntity.ok(ApiResponse.success("사원 등록이 완료되었습니다."));
 	}
@@ -56,8 +58,17 @@ public class AdminEmployeeController {
 	public ResponseEntity<ApiResponse<List<EmployeeListDTO>>> getEmployees(
 			@ModelAttribute EmployeeSearchDTO condition) {
 		
-		Page<EmployeeListDTO> page = employeeService.getEmployees(condition);
+		Page<EmployeeListDTO> page = adminEmployeeService.getEmployees(condition);
 
 		return ResponseEntity.ok(ApiResponse.success(page.getContent(), page));
 	}
+	
+	@GetMapping("/{memberId}")
+	@Operation(summary = "사원 상세 조회", description = "관리자가 사원을 상세 조회하는 API입니다.")
+    public ApiResponse<EmployeeDetailDTO> getEmployee(
+            @PathVariable("memberId") Long empId
+    ) {
+        EmployeeDetailDTO response = adminEmployeeService.getEmployeeDetailById(empId);
+        return ApiResponse.success(response);
+    }
 }
