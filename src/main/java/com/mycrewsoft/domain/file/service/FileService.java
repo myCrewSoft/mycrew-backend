@@ -9,7 +9,7 @@ import com.mycrewsoft.domain.file.dto.FileUploadRequestDto;
 
 public interface FileService {
 	//파일 업로드
-	void upload(FileUploadRequestDto reqDto, String bizCd);
+	Long upload(FileUploadRequestDto reqDto, String bizCd);
 	
 	//파일 삭제
 	void deleteFile(Long atchFileDtlId);
