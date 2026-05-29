@@ -24,7 +24,11 @@ public class BoardSearchRequest {
     @Schema(description = "부서 코드 (부서게시판 조회 시 사용)", example = "DEV")
 	private String deptCd; //부서코드
 	
-	
+    
+    @Schema(description = "요청 페이지 번호 (1부터 시작)", example = "0", defaultValue = "0")
+    private int page = 0;
+    @Schema(description = "한 페이지당 조회할 게시글 개수", example = "10", defaultValue = "10")
+    private int size = 10;
 	
 	
 }

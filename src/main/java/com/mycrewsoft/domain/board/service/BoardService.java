@@ -1,8 +1,11 @@
 package com.mycrewsoft.domain.board.service;
 
 import java.util.List;
+
+import org.springframework.data.domain.Page;
+
 import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
-import com.mycrewsoft.domain.board.vo.BoardVO;
+import com.mycrewsoft.domain.board.dto.response.BoardResponse;
 
 public interface BoardService {
     
@@ -13,7 +16,17 @@ public interface BoardService {
      */
 
     
-    List<BoardVO> selectBoardList(BoardSearchRequest searchRequest);
+ 
 
+    
+    /**
+	 * 관리자가 게시글 목록을 검색하는 메서드. 검색 조건에 따라 게시글 목록을 페이지 형태로 반환한다.
+	 * @param BoardResponse condition
+	 * @return Page<BoardResponse>
+	 */
+    
+    
+    
+   Page<BoardResponse> getBoard(BoardSearchRequest condition);
 
 }

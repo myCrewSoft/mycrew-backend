@@ -4,31 +4,27 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param; // 💡 반드시 org.apache.ibatis.annotations.Param 이어야 합니다!
 
 import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
-import com.mycrewsoft.domain.board.vo.BoardVO;
+import com.mycrewsoft.domain.board.dto.response.BoardResponse;
 
-/**
- * SQL 쿼리를 찾아서 DB에 대신 실행해주는 것
- */
 @Mapper
 public interface BoardMapper {
     
+    long countBoard(@Param("condition") BoardSearchRequest condition);
+	
     /**
-     * 💡 하나로 합친 통합 게시글 목록 조회 (동적 검색 및 유형별 필터링)
-     * @param searchRequest 검색어, 게시판유형코드, 부서코드가 담긴 요청 DTO
-     * @return 필터링된 게시글 목록
+     * 권한 스코프와 페이징 처리가 결합된 통합 게시글 목록 조회
      */
-    List<BoardVO> selectBoardList(
-    	BoardSearchRequest condition,
-    	Long currentEmpId, 
-    	String myDeptCd,
-    	boolean global,
-        Set<String>  deptScopeIds,
-        Set<String>  projectScopeIds
-        
+    List<BoardResponse> selectBoard(
+        @Param("condition") BoardSearchRequest condition,
+        @Param("currentEmpId") Long currentEmpId, 
+        @Param("myDeptCd") String myDeptCd,
+        @Param("global") boolean global,
+        @Param("deptScopeIds") Set<String> deptScopeIds,
+        @Param("projectScopeIds") Set<String> projectScopeIds,
+        @Param("offset") int offset,
+        @Param("size") int size
     );
-    
-    
-    
 }
