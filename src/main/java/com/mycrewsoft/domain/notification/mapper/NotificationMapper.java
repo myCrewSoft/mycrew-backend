@@ -16,13 +16,4 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface NotificationMapper {
 
-    /** 필드명이 같으면 자동 매핑된다. */
-    NotificationResponse toResponseDto(AlrmVo vo);
-
-    /** 필드명이 다르면 @Mapping 으로 명시한다. */
-    @Mapping(source = "createdAt", target = "registeredDate")
-    NotificationResponse toResponseDtoWithMapping(AlrmVo vo);
-
-    /** 목록 변환. List<UserVo> → List<UserResponseDto> */
-    List<NotificationResponse> toResponseDtoList(List<AlrmVo> voList);
 }
