@@ -126,7 +126,7 @@ public class ScheduleServiceImpl implements ScheduleService{
 	    // 전사 일정 - 타겟 행 하나로 전체 의미
 	    if ("C001".equals(dto.getSchdClsfCd())) {
 	        targets.add(SchdTargetVO.builder()
-	                .schdId(schdId).targetTypeCd("01").targetId(null).build());
+	                .schdId(schdId).targetTypeCd("01").targetId("0").build());
 
 	    // 개인 일정 - 본인 사번 자동 추가
 	    } else if ("C002".equals(dto.getSchdClsfCd())) {
