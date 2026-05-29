@@ -26,6 +26,8 @@ package com.mycrewsoft.common.constant;
             "/api/v1/auth/**", // 로그인, 회원가입, 토큰 재발급
             "/swagger-ui/**", // Swagger UI
             "/swagger-ui.html",
-            "/v3/api-docs/**" // Swagger API 문서 JSON
+            "/v3/api-docs/**", // Swagger API 문서 JSON
+            "/api/boards",
+            "/api/boards/**"
     };
 }
