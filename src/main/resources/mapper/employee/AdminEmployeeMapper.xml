@@ -107,24 +107,9 @@
             <result property="empStatExpln" column="EMP_STAT_EMP_STAT_EXPLN"/>
         </association>
 
-        <collection property="roleAssignmentList" ofType="com.mycrewsoft.domain.roleassignment.vo.RoleAssignmentVO">
-            <id property="roleAssignId" column="ROLE_ASSIGNMENT_ROLE_ASSIGN_ID"/>
-            <result property="roleId" column="ROLE_ASSIGNMENT_ROLE_ID"/>
-            <result property="empId" column="ROLE_ASSIGNMENT_EMP_ID"/>
-            <result property="scopeTypeCd" column="ROLE_ASSIGNMENT_SCOPE_TYPE_CD"/>
-            <result property="scopeId" column="ROLE_ASSIGNMENT_SCOPE_ID"/>
-            <result property="enabled" column="ROLE_ASSIGNMENT_ENABLED"/>
-            <association property="role" javaType="com.mycrewsoft.domain.role.vo.RoleVO">
-                <id property="roleId" column="ROLE_ROLE_ID"/>
-                <result property="roleCd" column="ROLE_ROLE_CD"/>
-                <result property="roleNm" column="ROLE_ROLE_NM"/>
-                <result property="roleExpln" column="ROLE_ROLE_EXPLN"/>
-                <result property="frstRgtrId" column="ROLE_FRST_RGTR_ID"/>
-                <result property="frstRegDt" column="ROLE_FRST_REG_DT"/>
-                <result property="lastMdfrId" column="ROLE_LAST_MDFR_ID"/>
-                <result property="lastMdfcnDt" column="ROLE_LAST_MDFCN_DT"/>
-            </association>
-        </collection>
+        <collection property="roleAssignmentList"
+                    column="{empId=EMP_ID}"
+                    select="com.mycrewsoft.domain.roleassignment.mapper.RoleAssignmentMapper.selectRoleAssignmentsByEmpId"/>
 
         <collection property="mailAccountList" ofType="com.mycrewsoft.domain.mail.vo.MailAccountVO">
             <id property="empId" column="MAIL_ACCOUNT_EMP_ID"/>
@@ -321,20 +306,6 @@
             ES.EMP_STAT_CD AS EMP_STAT_EMP_STAT_CD,
             ES.EMP_STAT_NM AS EMP_STAT_EMP_STAT_NM,
             ES.EMP_STAT_EXPLN AS EMP_STAT_EMP_STAT_EXPLN,
-            RA.ROLE_ASSIGN_ID AS ROLE_ASSIGNMENT_ROLE_ASSIGN_ID,
-            RA.ROLE_ID AS ROLE_ASSIGNMENT_ROLE_ID,
-            RA.EMP_ID AS ROLE_ASSIGNMENT_EMP_ID,
-            RA.SCOPE_TYPE_CD AS ROLE_ASSIGNMENT_SCOPE_TYPE_CD,
-            RA.SCOPE_ID AS ROLE_ASSIGNMENT_SCOPE_ID,
-            RA.ENABLED AS ROLE_ASSIGNMENT_ENABLED,
-            R.ROLE_ID AS ROLE_ROLE_ID,
-            R.ROLE_CD AS ROLE_ROLE_CD,
-            R.ROLE_NM AS ROLE_ROLE_NM,
-            R.ROLE_EXPLN AS ROLE_ROLE_EXPLN,
-            R.FRST_RGTR_ID AS ROLE_FRST_RGTR_ID,
-            R.FRST_REG_DT AS ROLE_FRST_REG_DT,
-            R.LAST_MDFR_ID AS ROLE_LAST_MDFR_ID,
-            R.LAST_MDFCN_DT AS ROLE_LAST_MDFCN_DT,
             MA.EMP_ID AS MAIL_ACCOUNT_EMP_ID,
             MA.PROVIDER_CD AS MAIL_ACCOUNT_PROVIDER_CD,
             MA.EMAIL_ADDR AS MAIL_ACCOUNT_EMAIL_ADDR,
@@ -355,10 +326,6 @@
             ON JG.JOB_GRD_CD = E.JOB_GRD_CD
         LEFT JOIN TB_EMP_STAT ES
             ON ES.EMP_STAT_CD = E.EMP_STAT_CD
-        LEFT JOIN TB_ROLE_ASSIGNMENT RA
-            ON RA.EMP_ID = E.EMP_ID
-        LEFT JOIN TB_ROLE R
-            ON R.ROLE_ID = RA.ROLE_ID
         LEFT JOIN TB_MAIL_ACCOUNT MA
             ON MA.EMP_ID = E.EMP_ID
         WHERE E.EMP_ID = #{empId}
