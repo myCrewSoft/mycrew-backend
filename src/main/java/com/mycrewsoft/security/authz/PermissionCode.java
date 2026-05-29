@@ -71,8 +71,15 @@ public enum PermissionCode {
     ATTENDANCE_UPDATE,
     ATTENDANCE_DEPT_READ,
     ATTENDANCE_APPROVE,
-    ATTENDANCE_MANAGE;
+    ATTENDANCE_MANAGE,
 
+	// Schedule
+	SCHEDULE_CREATE,
+	SCHEDULE_READ,
+	SCHEDULE_UPDATE,
+	SCHEDULE_DELETE,
+	SCHEDULE_MANAGE;
+	
     public String getCode() {
         return name();
     }

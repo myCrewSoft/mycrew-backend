@@ -34,7 +34,7 @@
          // 전역 보안 요구사항 (모든 API 에 자물쇠 아이콘 표시)
          SecurityRequirement securityRequirement = new SecurityRequirement().addList("bearerAuth");
          return new OpenAPI()
-                 .info(new Info().title("프로젝트명 API").description("API 명세서").version("v1.0.0"))
+                 .info(new Info().title("myCrewSoft").description("API 명세서").version("v1.0.0"))
                  .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                  .components(new Components().addSecuritySchemes("bearerAuth", securityScheme));
      }
