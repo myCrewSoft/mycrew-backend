@@ -42,7 +42,7 @@ public class FileServiceImpl implements FileService {
 	 */
 	@Override
 	@Transactional
-	public void upload(FileUploadRequestDto reqDto, String bizCd) {
+	public Long upload(FileUploadRequestDto reqDto, String bizCd) {
 		MultipartFile file = reqDto.getFile();
 		
 		String originalFileName = file.getOriginalFilename();
@@ -89,6 +89,9 @@ public class FileServiceImpl implements FileService {
 		fileDtlVo.setSavePathNm(uploadPath);
 		
 		mapper.insertDtl(fileDtlVo);
+		
+		return fileClsfVo.getAtchFileId();
+		//호출하는 쪽에서 첨부파일ID를 사용할 수 있도록 반환 (첨부파일ID 논리FK로 사용하는 경우)
 	}
 
 	/**
