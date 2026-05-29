@@ -115,6 +115,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 session.isEnabled(),
                 null,
                 session.getAuthVersion(),
+                session.isExec(),
                 authorities,
                 session.getScopedPermissions(),
                 session.getSessionId());
