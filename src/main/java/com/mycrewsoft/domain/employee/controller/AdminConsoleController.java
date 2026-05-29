@@ -1,0 +1,44 @@
+package com.mycrewsoft.domain.employee.controller;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.mycrewsoft.common.response.ApiResponse;
+import com.mycrewsoft.domain.employee.dto.response.AdminMeResponseDTO;
+import com.mycrewsoft.security.authz.AuthorizationService;
+import com.mycrewsoft.security.authz.PermissionCode;
+import com.mycrewsoft.security.authz.ResourceContext;
+import com.mycrewsoft.security.authz.ResourceType;
+import com.mycrewsoft.security.util.SecurityUtil;
+
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequestMapping("/admin")
+@RequiredArgsConstructor
+public class AdminConsoleController {
+
+    private final AuthorizationService authorizationService;
+
+    @GetMapping("/access")
+    public ApiResponse<AdminMeResponseDTO> getAdminMe() {
+        ResourceContext resource = ResourceContext.builder()
+                .resourceType(ResourceType.ADMIN)
+                .build();
+
+        authorizationService.assertCurrentUserPermission(
+                PermissionCode.ADMIN_CONSOLE_ACCESS,
+                resource
+        );
+
+        Long empId = SecurityUtil.getCurrentEmpId();
+
+        AdminMeResponseDTO response = AdminMeResponseDTO.builder()
+                .empId(empId)
+                .adminAccessible(true)
+                .build();
+
+        return ApiResponse.success(response);
+    }
+}
