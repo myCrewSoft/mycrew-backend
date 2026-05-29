@@ -16,6 +16,7 @@ import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DtoMapper;
 import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.EmployeeSearchDTO;
+import com.mycrewsoft.domain.employee.dto.request.EmployeeStatusUpdateRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeDetailDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeListDTO;
 import com.mycrewsoft.domain.employee.mapper.AdminEmployeeMapper;
@@ -87,9 +88,25 @@ public class AdminEmployeeServiceImpl implements AdminEmployeeService {
 	}
 
 	@Override
-	public void updateEmployee() {
-		// TODO Auto-generated method stub
+	@Transactional
+	public void updateEmployeeStatus(Long empId, EmployeeStatusUpdateRequestDTO request) {
+		ResourceContext resource = ResourceContext.builder()
+		        .resourceType(ResourceType.EMPLOYEE)
+		        .resourceId(String.valueOf(empId))
+		        .build();
 
+		authorizationService.assertCurrentUserPermission(
+				PermissionCode.EMPLOYEE_UPDATE,
+				resource
+		);
+		
+		EmployeeVO employee = adminEmployeeMapper.selectEmployeeById(empId);
+		if (employee == null) {
+			throw new CustomException(ErrorCode.USER_NOT_FOUND);
+		}
+
+		EmpStatCode empStatCode = parseEmpStatCode(request.getEmpStatCd());
+		adminEmployeeMapper.updateEmployeeStatus(empId, empStatCode.getCode());
 	}
 
 	@Override
@@ -148,6 +165,16 @@ public class AdminEmployeeServiceImpl implements AdminEmployeeService {
 		}
 
 		return employee;
+	}
+
+	private EmpStatCode parseEmpStatCode(String empStatCd) {
+		for (EmpStatCode empStatCode : EmpStatCode.values()) {
+			if (empStatCode.getCode().equals(empStatCd)) {
+				return empStatCode;
+			}
+		}
+
+		throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
 	}
 
 }
