@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.schedule.mapper.IntgSchdMapper">
+	<resultMap type="IntgSchdVo" id="intgSchdResultMap" autoMapping="true">
+	    <id property="schdId" column="SCHD_ID"/>
+	    <collection property="targets" ofType="SchdTargetVo" autoMapping="true">
+	        <id property="targetTypeCd" column="TARGET_TYPE_CD"/>
+	        <id property="targetId"     column="TARGET_ID"/>
+	    </collection>
+	</resultMap>
+	
+	<sql id="schdColumns">
+        S.SCHD_ID,
+        S.SCHD_CLSF_CD,
+        S.SCHD_NM,
+        S.SCHD_DETAIL_CN,
+        S.BEGIN_DT,
+        S.END_DT,
+        S.SCHD_WRTR_ID,
+        S.SCHD_REGST_DT,
+        S.SCHD_CHGR_ID,
+        S.SCHD_CHG_DT,
+        S.ALL_DAY_YN,
+        S.DEL_YN,
+        S.DEL_DT,
+        S.REPT_YN,
+        S.REPT_TYPE_CD,
+        S.REPT_END_DT
+    </sql>
+    
+    <sql id="whereNotDeleted">
+        S.DEL_YN = 'n'
+    </sql>
+    
+    <!-- 일정 단건 조회 -->
+	<select id="selectIntgSchd" resultMap="intgSchdResultMap">
+		SELECT
+			<include refid="schdColumns"/>
+			, T.TARGET_TYPE_CD
+			, T.TARGET_ID
+		FROM TB_INTG_SCHD S
+		LEFT JOIN TB_SCHD_TARGET T ON S.SCHD_ID = T.SCHD_ID
+		WHERE <include refid="whereNotDeleted"/>
+		  AND S.SCHD_ID = #{schdId}
+	</select>
+	
+	<select id="selectIntgSchdList" resultType="IntgSchdVo">
+	    SELECT DISTINCT
+	        <include refid="schdColumns"/>
+	    FROM TB_INTG_SCHD S
+	    WHERE <include refid="whereNotDeleted"/>
+	      AND S.BEGIN_DT &lt;= #{endDt}
+	      AND S.END_DT   &gt;= #{beginDt}
+	      AND (
+	            S.SCHD_WRTR_ID = #{empId}
+	            OR S.SCHD_ID IN (
+	                SELECT T.SCHD_ID
+	                  FROM TB_SCHD_TARGET T
+	                 WHERE (T.TARGET_TYPE_CD = '01')
+	                    OR (T.TARGET_TYPE_CD = '02' AND T.TARGET_ID = TO_CHAR(#{empId}))
+	                    OR (T.TARGET_TYPE_CD = '04' AND T.TARGET_ID = #{deptCd})
+	                    <if test="execYn == true">
+				            OR (T.TARGET_TYPE_CD = '03')
+				        </if>
+	                    <if test="projIds != null and projIds.size() > 0">
+	                        OR (T.TARGET_TYPE_CD = '05' AND T.TARGET_ID IN
+	                            <foreach collection="projIds" item="projId" open="(" separator="," close=")">
+	                                #{projId}
+	                            </foreach>
+	                        )
+	                    </if>
+	                    <if test="taskIds != null and taskIds.size() > 0">
+	                        OR (T.TARGET_TYPE_CD = '06' AND T.TARGET_ID IN
+	                            <foreach collection="taskIds" item="taskId" open="(" separator="," close=")">
+	                                #{taskId}
+	                            </foreach>
+	                        )
+	                    </if>
+	            )
+	          )
+	    ORDER BY S.BEGIN_DT ASC
+	</select>
+	
+	<insert id="insertIntgSchd">
+		<selectKey keyProperty="schdId" resultType="long" order="BEFORE">
+            SELECT SEQ_TB_INTG_SCHD.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_INTG_SCHD (
+            SCHD_ID,
+            SCHD_CLSF_CD,
+            SCHD_NM,
+            SCHD_DETAIL_CN,
+            BEGIN_DT,
+            END_DT,
+            SCHD_WRTR_ID,
+            SCHD_REGST_DT,
+            ALL_DAY_YN,
+            DEL_YN,
+            REPT_YN,
+            REPT_TYPE_CD,
+            REPT_END_DT
+        ) VALUES (
+            #{schdId},
+            #{schdClsfCd},
+            #{schdNm},
+            #{schdDetailCn},
+            #{beginDt},
+            #{endDt},
+            #{schdWrtrId},
+            SYSDATE,
+            #{allDayYn},
+            'N',
+            #{reptYn},
+            #{reptTypeCd},
+            #{reptEndDt}
+        )
+	</insert>
+	
+	<update id="updateIntgSchd">
+		UPDATE TB_INTG_SCHD
+           SET SCHD_CLSF_CD   = #{schdClsfCd},
+               SCHD_NM        = #{schdNm},
+               SCHD_DETAIL_CN = #{schdDetailCn},
+               BEGIN_DT       = #{beginDt},
+               END_DT         = #{endDt},
+               ALL_DAY_YN     = #{allDayYn},
+               REPT_YN        = #{reptYn},
+               REPT_TYPE_CD   = #{reptTypeCd},
+               REPT_END_DT    = #{reptEndDt},
+               SCHD_CHGR_ID   = #{schdChgrId},
+               SCHD_CHG_DT    = SYSDATE
+         WHERE SCHD_ID = #{schdId}
+           AND DEL_YN  = 'N'
+	</update>
+	
+	<delete id="deleteIntgSchd">
+		UPDATE TB_INTG_SCHD
+           SET DEL_YN       = 'Y',
+               DEL_DT       = SYSDATE,
+               SCHD_CHGR_ID = #{schdChgrId},
+               SCHD_CHG_DT  = SYSDATE
+         WHERE SCHD_ID = #{schdId}
+           AND DEL_YN  = 'N'
+	</delete>
+	
+</mapper>

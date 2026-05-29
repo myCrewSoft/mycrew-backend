@@ -9,13 +9,14 @@ package com.mycrewsoft.security.authz;
  * - 권한 코드 문자열은 getCode() 또는 name()으로 얻는다.
  *
  * 사용 예:
- * - authorizationService.assertCanAccess(PermissionCode.MAIL_READ, resource)
+ * - authorizationService.assertCurrentUserPermission(PermissionCode.MAIL_READ, resource)
  * - PermissionCode.MAIL_READ.getCode() -> "MAIL_READ"
  */
 public enum PermissionCode {
 	
 	//ADMIN
 	EMPLOYEE_CREATE,
+	EMPLOYEE_READ,
 	
     // Department
     DEPT_CREATE,
@@ -70,8 +71,15 @@ public enum PermissionCode {
     ATTENDANCE_UPDATE,
     ATTENDANCE_DEPT_READ,
     ATTENDANCE_APPROVE,
-    ATTENDANCE_MANAGE;
+    ATTENDANCE_MANAGE,
 
+	// Schedule
+	SCHEDULE_CREATE,
+	SCHEDULE_READ,
+	SCHEDULE_UPDATE,
+	SCHEDULE_DELETE,
+	SCHEDULE_MANAGE;
+	
     public String getCode() {
         return name();
     }

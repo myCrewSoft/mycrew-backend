@@ -115,8 +115,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 session.isEnabled(),
                 null,
                 session.getAuthVersion(),
+                session.isExec(),
                 authorities,
-                session.getScopedPermissions());
+                session.getScopedPermissions(),
+                session.getSessionId());
     }
 
     private AuthSession refreshSessionIfNeeded(AuthSession session, Integer tokenAuthVersion) {

@@ -41,6 +41,10 @@ public final class SecurityUtil {
     public static Long getCurrentEmpId() {
         return getCurrentUser().getEmpId();
     }
+    
+    public static Boolean isCurrentExec() {
+    	return getCurrentUser().isExec();
+    }
 
     public static List<ScopedPermission> getCurrentScopedPermissions() {
         List<ScopedPermission> scopedPermissions = getCurrentUser().getScopedPermissions();

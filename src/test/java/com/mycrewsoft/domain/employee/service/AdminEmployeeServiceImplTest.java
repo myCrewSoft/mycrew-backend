@@ -9,7 +9,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
+import java.util.List;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -17,12 +19,15 @@ import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DtoMapper;
 import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequestDTO;
+import com.mycrewsoft.domain.employee.dto.request.EmployeeSearchDTO;
+import com.mycrewsoft.domain.employee.dto.response.EmployeeListDTO;
 import com.mycrewsoft.domain.employee.mapper.AdminEmployeeMapper;
 import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 import com.mycrewsoft.domain.empstat.code.EmpStatCode;
@@ -55,6 +60,14 @@ class AdminEmployeeServiceImplTest {
 
     @InjectMocks
     private AdminEmployeeServiceImpl adminEmployeeService;
+
+    @BeforeEach
+    void setUp() {
+        org.springframework.test.util.ReflectionTestUtils.setField(
+                adminEmployeeService,
+                "adminEmployeeMapper",
+                employeeMapper);
+    }
 
     @Test
     void registerEmployeeCreatesEmployeeThenAssignsDefaultRoleAndRefreshesAuthVersion() {
@@ -101,6 +114,54 @@ class AdminEmployeeServiceImplTest {
         verify(employeeMapper, never()).insertEmployee(any(EmployeeVO.class));
         verify(roleAssignmentService, never()).assignDefaultEmployeeRole(any());
         verify(rbacAuthorizationChangeService, never()).refreshEmployeePermissions(any());
+    }
+
+    @Test
+    void getEmployeesChecksPermissionAndReturnsPagedEmployees() {
+        EmployeeSearchDTO condition = new EmployeeSearchDTO();
+        condition.setPage(1);
+        condition.setSize(2);
+
+        EmployeeListDTO firstEmployee = new EmployeeListDTO();
+        firstEmployee.setEmpId(20260003L);
+        firstEmployee.setEmpNm("Kim");
+        EmployeeListDTO secondEmployee = new EmployeeListDTO();
+        secondEmployee.setEmpId(20260002L);
+        secondEmployee.setEmpNm("Lee");
+        List<EmployeeListDTO> employees = List.of(firstEmployee, secondEmployee);
+
+        when(employeeMapper.countEmployees(condition)).thenReturn(5L);
+        when(employeeMapper.selectEmployees(condition, 2, 2)).thenReturn(employees);
+
+        Page<EmployeeListDTO> page = adminEmployeeService.getEmployees(condition);
+
+        assertThat(page.getContent()).containsExactlyElementsOf(employees);
+        assertThat(page.getNumber()).isEqualTo(1);
+        assertThat(page.getSize()).isEqualTo(2);
+        assertThat(page.getTotalElements()).isEqualTo(5L);
+        assertThat(page.getTotalPages()).isEqualTo(3);
+
+        verify(authorizationService).assertCurrentUserPermission(
+                org.mockito.ArgumentMatchers.eq(PermissionCode.EMPLOYEE_READ),
+                any(ResourceContext.class));
+        verify(employeeMapper).selectEmployees(condition, 2, 2);
+    }
+
+    @Test
+    void getEmployeesNormalizesPageAndSize() {
+        EmployeeSearchDTO condition = new EmployeeSearchDTO();
+        condition.setPage(-1);
+        condition.setSize(1000);
+
+        when(employeeMapper.countEmployees(condition)).thenReturn(0L);
+        when(employeeMapper.selectEmployees(condition, 0, 100)).thenReturn(List.of());
+
+        Page<EmployeeListDTO> page = adminEmployeeService.getEmployees(condition);
+
+        assertThat(page.getNumber()).isZero();
+        assertThat(page.getSize()).isEqualTo(100);
+        assertThat(page.getTotalElements()).isZero();
+        verify(employeeMapper).selectEmployees(condition, 0, 100);
     }
 
     private EmployeeRegisterRequestDTO registerRequest() {

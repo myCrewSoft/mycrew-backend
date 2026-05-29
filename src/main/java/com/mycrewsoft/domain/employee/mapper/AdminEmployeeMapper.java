@@ -1,7 +1,12 @@
 package com.mycrewsoft.domain.employee.mapper;
 
-import org.apache.ibatis.annotations.Mapper;
+import java.util.List;
 
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import com.mycrewsoft.domain.employee.dto.request.EmployeeSearchDTO;
+import com.mycrewsoft.domain.employee.dto.response.EmployeeListDTO;
 import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 
 @Mapper
@@ -12,5 +17,30 @@ public interface AdminEmployeeMapper {
 	 */
 	void insertEmployee(EmployeeVO employee);
 	
+	/**
+	 * 사번으로 사원 정보를 조회하는 메서드
+	 * @param Long empId
+	 * @return EmployeeVO
+	 */
 	EmployeeVO selectEmployeeById(Long empId);
+	
+	/**
+	 * 관리자가 사원 목록을 검색할 때, 검색 조건에 맞는 사원의 총 수를 반환하는 메서드
+	 * @param EmployeeSearchDTO condition
+	 * @return long
+	 */
+	long countEmployees(@Param("condition") EmployeeSearchDTO condition);
+
+	/**
+	 * 관리자가 사원 목록을 검색할 때, 검색 조건에 맞는 사원들의 목록을 반환하는 메서드
+	 * @param EmployeeSearchDTO condition
+	 * @param int offset
+	 * @param int size
+	 * @return List<EmployeeListDTO>
+	 */
+	List<EmployeeListDTO> selectEmployees(
+	        @Param("condition") EmployeeSearchDTO condition,
+	        @Param("offset") int offset,
+	        @Param("size") int size
+	);
 }

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.board.mapper.BoardMapper">
+	
+<sql id="boardColumn">
+		board_id, board_type_cd, board_sj, board_cn, frst_rgtr_id, frst_reg_dt, last_mdfr_dt, 
+		board_atch_file_id, dept_cd, proj_id, imprtnt_yn, cmnt_use_yn, view_cnt
+	</sql>
+	
+											
+	<select id="selectBoardList" resultType="com.mycrewsoft.domain.board.vo.BoardVO">
+		SELECT 
+	   		<include refid="boardColumn"/>
+		FROM tb_board B
+		
+	    WHERE 1 = 1
+	      AND (
+	            #{global} = 1
+	
+	            OR B.BOARD_TYPE_CD IN ('FREE', 'ANON', 'NOTICE')
+	
+	            OR B.FRST_RGTR_ID = #{currentEmpId}
+	
+	            OR B.DEPT_CD = #{myDeptCd}
+	
+	            <if test="deptScopeIds != null and deptScopeIds.size() > 0">
+	                OR B.DEPT_CD IN
+	                <foreach collection="deptScopeIds" item="deptCd" open="(" separator="," close=")">
+	                    #{deptCd}
+	                </foreach>
+	            </if>
+	
+	            <if test="projectScopeIds != null and projectScopeIds.size() > 0">
+	                OR TO_CHAR(B.PROJ_ID) IN
+	                <foreach collection="projectScopeIds" item="projId" open="(" separator="," close=")">
+	                    #{projId}
+	                </foreach>
+	            </if>
+	      )
+	
+	    <if test="condition.keyword != null and condition.keyword != ''">
+	        AND (
+	            B.BOARD_SJ LIKE '%' || #{condition.keyword} || '%'
+	            OR B.BOARD_CN LIKE '%' || #{condition.keyword} || '%'
+	        )
+	    </if>
+	
+	    ORDER BY B.FRST_REG_DT DESC
+	</select>
+	
+
+
+</mapper>
+
+

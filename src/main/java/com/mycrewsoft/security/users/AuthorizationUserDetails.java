@@ -9,7 +9,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import com.mycrewsoft.security.authz.ScopedPermission;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -28,7 +27,6 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class AuthorizationUserDetails implements UserDetails {
 
     private Long empId;
@@ -37,8 +35,10 @@ public class AuthorizationUserDetails implements UserDetails {
     private boolean enabled;
     private String empStat;
     private Integer authVersion;
+    private boolean exec;
     private Collection<? extends GrantedAuthority> authorities;
     private List<ScopedPermission> scopedPermissions = new ArrayList<>();
+    private String sessionId;
 
     public AuthorizationUserDetails(
             Long empId,
@@ -46,9 +46,10 @@ public class AuthorizationUserDetails implements UserDetails {
             String password,
             boolean enabled,
             Integer authVersion,
+            boolean exec,
             Collection<? extends GrantedAuthority> authorities,
             List<ScopedPermission> scopedPermissions) {
-        this(empId, username, password, enabled, null, authVersion, authorities, scopedPermissions);
+        this(empId, username, password, enabled, null, authVersion, exec, authorities, scopedPermissions, null);
     }
 
     public AuthorizationUserDetails(
@@ -58,14 +59,55 @@ public class AuthorizationUserDetails implements UserDetails {
             boolean enabled,
             String empStat,
             Integer authVersion,
-            Collection<? extends GrantedAuthority> authorities) {
+            boolean exec,
+            Collection<? extends GrantedAuthority> authorities,
+            List<ScopedPermission> scopedPermissions
+    		) {
+        this(empId, username, password, enabled, empStat, authVersion, exec, authorities, scopedPermissions, null);
+    }
+
+    public AuthorizationUserDetails(
+            Long empId,
+            String username,
+            String password,
+            boolean enabled,
+            String empStat,
+            Integer authVersion,
+            boolean exec,
+            Collection<? extends GrantedAuthority> authorities,
+            List<ScopedPermission> scopedPermissions,
+            String sessionId) {
+        this.empId = empId;
+        this.username = username;
+        this.password = password;
+        this.enabled = enabled;
+        this.empStat = empStat;
+        this.authVersion = authVersion;
+        this.authorities = authorities;
+        this.scopedPermissions = scopedPermissions == null ? new ArrayList<>() : scopedPermissions;
+        this.sessionId = sessionId;
+    }
+
+    public AuthorizationUserDetails(
+            Long empId,
+            String username,
+            String password,
+            boolean enabled,
+            String empStat,
+            Integer authVersion,
+            boolean exec,
+            Collection<? extends GrantedAuthority> authorities,
+            String sessionId
+    		) {
         this.empId = empId;
         this.username = username;
         this.password = password;
         this.enabled = enabled;
 	    this.empStat = empStat;
         this.authVersion = authVersion;
+        this.exec = exec;
         this.authorities = authorities;
+        this.sessionId = sessionId;
     }
 
     @Override
