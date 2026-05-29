@@ -18,16 +18,16 @@ public record AuthorizationUserRecord(
         Long empId,
         String username,
         String password,
-        boolean enabled,
+        Boolean enabled,
         String empStat,
-        boolean exec) {
+        Boolean exec) {
 
     public AuthorizationUserRecord(
             Long empId,
             String username,
             String password,
-            boolean enabled,
-    		boolean exec) {
+            Boolean enabled,
+            Boolean exec) {
         this(empId, username, password, enabled, null, exec);
     }
 }
