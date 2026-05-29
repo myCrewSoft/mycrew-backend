@@ -26,6 +26,19 @@ public interface AdminEmployeeMapper {
 	 */
 	EmployeeVO selectEmployeeById(Long empId);
 
+	void updateEmployeeStatus(
+	        @Param("empId") Long empId,
+	        @Param("empStatCd") String empStatCd);
+
+	void updateEmployeeStatusIfNotInitial(
+	        @Param("empId") Long empId,
+	        @Param("empStatCd") String empStatCd);
+
+	void updateFirstLoginInfo(
+	        @Param("empId") Long empId,
+	        @Param("password") String password,
+	        @Param("empStatCd") String empStatCd);
+
 	/**
 	 * 사번으로 사원 상세 정보를 조회하는 메서드.
 	 * 사원 기본 정보 + 부서명, 직급명, 사원 상태명, 역할, 이메일 등이 들어있다.

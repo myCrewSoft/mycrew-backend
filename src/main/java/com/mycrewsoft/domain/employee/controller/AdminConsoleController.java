@@ -13,7 +13,9 @@ import com.mycrewsoft.security.authz.ResourceType;
 import com.mycrewsoft.security.util.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @RequestMapping("/admin")
 @RequiredArgsConstructor
@@ -38,7 +40,9 @@ public class AdminConsoleController {
                 .empId(empId)
                 .adminAccessible(true)
                 .build();
-
+        log.info("Admin console accessed by empId={}", empId);
+        log.info("AdminMeResponseDTO: {}", response.isAdminAccessible());
+        
         return ApiResponse.success(response);
     }
 }

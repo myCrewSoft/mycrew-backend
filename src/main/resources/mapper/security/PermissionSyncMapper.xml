@@ -42,4 +42,24 @@
                SRC.PERM_ENABLED
            )
     </insert>
+
+    <insert id="mergeSuperAdminPermissions">
+        INSERT INTO TB_PERMISSION_ROLE_MAPPING (
+            PERM_ID,
+            ROLE_ID
+        )
+        SELECT
+            P.PERM_ID,
+            R.ROLE_ID
+        FROM TB_PERMISSION P
+        JOIN TB_ROLE R
+          ON R.ROLE_CD = 'ROLE_SUPER_ADMIN'
+        WHERE P.PERM_ENABLED = 'Y'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM TB_PERMISSION_ROLE_MAPPING M
+              WHERE M.PERM_ID = P.PERM_ID
+                AND M.ROLE_ID = R.ROLE_ID
+          )
+    </insert>
 </mapper>

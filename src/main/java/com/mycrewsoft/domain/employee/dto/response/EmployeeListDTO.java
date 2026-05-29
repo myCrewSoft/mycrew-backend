@@ -7,6 +7,10 @@ import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import com.mycrewsoft.common.util.DateUtil;
+import com.mycrewsoft.domain.department.vo.DepartmentVO;
+import com.mycrewsoft.domain.empstat.vo.EmpStatVO;
+import com.mycrewsoft.domain.jobgrade.vo.JobGradeVO;
+import com.mycrewsoft.domain.jobposition.vo.JobPositionVO;
 import com.mycrewsoft.domain.roleassignment.vo.RoleAssignmentVO;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -50,5 +54,18 @@ public class EmployeeListDTO {
     private LocalDateTime lastMdfcnDt;
 
     private String enabled;
+
+    @Schema(description = "부서")
+    private DepartmentVO department;
+
+    @Schema(description = "직책")
+    private JobPositionVO jobPosition;
+
+    @Schema(description = "직급")
+    private JobGradeVO jobGrade;
+
+    @Schema(description = "직원상태")
+    private EmpStatVO empStat;
+
     private List<RoleAssignmentVO> roleAssignmentList;
 }

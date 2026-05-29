@@ -50,6 +50,43 @@
         <result property="frstRegDt" column="FRST_REG_DT"/>
         <result property="lastMdfcnDt" column="LAST_MDFCN_DT"/>
         <result property="enabled" column="ENABLED"/>
+
+        <association property="department" javaType="com.mycrewsoft.domain.department.vo.DepartmentVO">
+            <id property="deptCd" column="DEPARTMENT_DEPT_CD"/>
+            <result property="prntDeptCd" column="DEPARTMENT_PRNT_DEPT_CD"/>
+            <result property="deptNm" column="DEPARTMENT_DEPT_NM"/>
+            <result property="useYn" column="DEPARTMENT_USE_YN"/>
+            <result property="frstRegDt" column="DEPARTMENT_FRST_REG_DT"/>
+            <result property="frstRgtrId" column="DEPARTMENT_FRST_RGTR_ID"/>
+            <result property="lastMdfcnDt" column="DEPARTMENT_LAST_MDFCN_DT"/>
+            <result property="lastMdfrId" column="DEPARTMENT_LAST_MDFR_ID"/>
+        </association>
+
+        <association property="jobPosition" javaType="com.mycrewsoft.domain.jobposition.vo.JobPositionVO">
+            <id property="jobPstnCd" column="JOB_POSITION_JOB_PSTN_CD"/>
+            <result property="jobPstnNm" column="JOB_POSITION_JOB_PSTN_NM"/>
+            <result property="useYn" column="JOB_POSITION_USE_YN"/>
+            <result property="frstRgtrId" column="JOB_POSITION_FRST_RGTR_ID"/>
+            <result property="frstRegDt" column="JOB_POSITION_FRST_REG_DT"/>
+            <result property="lastMdfrId" column="JOB_POSITION_LAST_MDFR_ID"/>
+            <result property="lastMdfcnDt" column="JOB_POSITION_LAST_MDFCN_DT"/>
+        </association>
+
+        <association property="jobGrade" javaType="com.mycrewsoft.domain.jobgrade.vo.JobGradeVO">
+            <id property="jobGrdCd" column="JOB_GRADE_JOB_GRD_CD"/>
+            <result property="jobGrdNm" column="JOB_GRADE_JOB_GRD_NM"/>
+            <result property="useYn" column="JOB_GRADE_USE_YN"/>
+            <result property="frstRgtrId" column="JOB_GRADE_FRST_RGTR_ID"/>
+            <result property="frstRegDt" column="JOB_GRADE_FRST_REG_DT"/>
+            <result property="lastMdfrId" column="JOB_GRADE_LAST_MDFR_ID"/>
+            <result property="lastMdfcnDt" column="JOB_GRADE_LAST_MDFCN_DT"/>
+        </association>
+
+        <association property="empStat" javaType="com.mycrewsoft.domain.empstat.vo.EmpStatVO">
+            <id property="empStatCd" column="EMP_STAT_EMP_STAT_CD"/>
+            <result property="empStatNm" column="EMP_STAT_EMP_STAT_NM"/>
+            <result property="empStatExpln" column="EMP_STAT_EMP_STAT_EXPLN"/>
+        </association>
     </resultMap>
 
     <resultMap id="EmployeeDetailResultMap" type="com.mycrewsoft.domain.employee.dto.response.EmployeeDetailDTO">
@@ -168,7 +205,32 @@
         E.RETCO_YMD,
         E.FRST_REG_DT,
         E.LAST_MDFCN_DT,
-        E.ENABLED
+        E.ENABLED,
+        D.DEPT_CD AS DEPARTMENT_DEPT_CD,
+        D.PRNT_DEPT_CD AS DEPARTMENT_PRNT_DEPT_CD,
+        D.DEPT_NM AS DEPARTMENT_DEPT_NM,
+        D.USE_YN AS DEPARTMENT_USE_YN,
+        D.FRST_REG_DT AS DEPARTMENT_FRST_REG_DT,
+        D.FRST_RGTR_ID AS DEPARTMENT_FRST_RGTR_ID,
+        D.LAST_MDFCN_DT AS DEPARTMENT_LAST_MDFCN_DT,
+        D.LAST_MDFR_ID AS DEPARTMENT_LAST_MDFR_ID,
+        JP.JOB_PSTN_CD AS JOB_POSITION_JOB_PSTN_CD,
+        JP.JOB_PSTN_NM AS JOB_POSITION_JOB_PSTN_NM,
+        JP.USE_YN AS JOB_POSITION_USE_YN,
+        JP.FRST_RGTR_ID AS JOB_POSITION_FRST_RGTR_ID,
+        JP.FRST_REG_DT AS JOB_POSITION_FRST_REG_DT,
+        JP.LAST_MDFR_ID AS JOB_POSITION_LAST_MDFR_ID,
+        JP.LAST_MDFCN_DT AS JOB_POSITION_LAST_MDFCN_DT,
+        JG.JOB_GRD_CD AS JOB_GRADE_JOB_GRD_CD,
+        JG.JOB_GRD_NM AS JOB_GRADE_JOB_GRD_NM,
+        JG.USE_YN AS JOB_GRADE_USE_YN,
+        JG.FRST_RGTR_ID AS JOB_GRADE_FRST_RGTR_ID,
+        JG.FRST_REG_DT AS JOB_GRADE_FRST_REG_DT,
+        JG.LAST_MDFR_ID AS JOB_GRADE_LAST_MDFR_ID,
+        JG.LAST_MDFCN_DT AS JOB_GRADE_LAST_MDFCN_DT,
+        ES.EMP_STAT_CD AS EMP_STAT_EMP_STAT_CD,
+        ES.EMP_STAT_NM AS EMP_STAT_EMP_STAT_NM,
+        ES.EMP_STAT_EXPLN AS EMP_STAT_EMP_STAT_EXPLN
     </sql>
 
     <sql id="EmployeeSearchWhere">
@@ -264,6 +326,30 @@
         WHERE E.EMP_ID = #{empId}
     </select>
 
+    <update id="updateEmployeeStatus">
+        UPDATE TB_EMPLOYEE
+        SET EMP_STAT_CD = #{empStatCd},
+            LAST_MDFCN_DT = SYSDATE
+        WHERE EMP_ID = #{empId}
+    </update>
+
+    <update id="updateEmployeeStatusIfNotInitial">
+        UPDATE TB_EMPLOYEE
+        SET EMP_STAT_CD = #{empStatCd},
+            LAST_MDFCN_DT = SYSDATE
+        WHERE EMP_ID = #{empId}
+          AND EMP_STAT_CD != 'EMP_INITIAL'
+    </update>
+
+    <update id="updateFirstLoginInfo">
+        UPDATE TB_EMPLOYEE
+        SET PSWD = #{password},
+            EMP_STAT_CD = #{empStatCd},
+            LAST_MDFCN_DT = SYSDATE
+        WHERE EMP_ID = #{empId}
+          AND EMP_STAT_CD = 'EMP_INITIAL'
+    </update>
+
     <select id="selectEmployeeDetailById" resultMap="EmployeeDetailResultMap">
         SELECT
             E.EMP_ID,
@@ -337,10 +423,18 @@
         <include refid="EmployeeSearchWhere"/>
     </select>
 
-    <select id="selectEmployees" resultMap="EmployeeSimpleResultMap">
+    <select id="selectEmployees" resultMap="EmployeeListResultMap">
         SELECT
             <include refid="EmployeeListColumns"/>
         FROM TB_EMPLOYEE E
+        LEFT JOIN TB_DEPARTMENT D
+            ON D.DEPT_CD = E.DEPT_CD
+        LEFT JOIN TB_JOB_POSITION JP
+            ON JP.JOB_PSTN_CD = E.JOB_PSTN_CD
+        LEFT JOIN TB_JOB_GRADE JG
+            ON JG.JOB_GRD_CD = E.JOB_GRD_CD
+        LEFT JOIN TB_EMP_STAT ES
+            ON ES.EMP_STAT_CD = E.EMP_STAT_CD
         <include refid="EmployeeSearchWhere"/>
         ORDER BY E.FRST_REG_DT DESC, E.EMP_ID DESC
         OFFSET #{offset} ROWS FETCH NEXT #{size} ROWS ONLY
