@@ -41,6 +41,7 @@ public class AuthSession {
     private String username;
     private boolean enabled;
     private Integer authVersion;
+    private boolean exec;
     private Set<String> authorities = new LinkedHashSet<>();
     private List<ScopedPermission> scopedPermissions = new ArrayList<>();
     private String refreshTokenHash;
@@ -51,6 +52,7 @@ public class AuthSession {
             String username,
             boolean enabled,
             Integer authVersion,
+            boolean exec,
             Set<String> authorities,
             String refreshTokenHash) {
         this.sessionId = sessionId;
@@ -58,6 +60,7 @@ public class AuthSession {
         this.username = username;
         this.enabled = enabled;
         this.authVersion = authVersion;
+        this.exec = exec;
         this.authorities = authorities;
         this.refreshTokenHash = refreshTokenHash;
     }

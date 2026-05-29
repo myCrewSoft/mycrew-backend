@@ -35,6 +35,7 @@ public class AuthorizationUserDetails implements UserDetails {
     private boolean enabled;
     private String empStat;
     private Integer authVersion;
+    private boolean exec;
     private Collection<? extends GrantedAuthority> authorities;
     private List<ScopedPermission> scopedPermissions = new ArrayList<>();
     private String sessionId;
@@ -45,9 +46,10 @@ public class AuthorizationUserDetails implements UserDetails {
             String password,
             boolean enabled,
             Integer authVersion,
+            boolean exec,
             Collection<? extends GrantedAuthority> authorities,
             List<ScopedPermission> scopedPermissions) {
-        this(empId, username, password, enabled, null, authVersion, authorities, scopedPermissions, null);
+        this(empId, username, password, enabled, null, authVersion, exec, authorities, scopedPermissions, null);
     }
 
     public AuthorizationUserDetails(
@@ -57,9 +59,11 @@ public class AuthorizationUserDetails implements UserDetails {
             boolean enabled,
             String empStat,
             Integer authVersion,
+            boolean exec,
             Collection<? extends GrantedAuthority> authorities,
-            List<ScopedPermission> scopedPermissions) {
-        this(empId, username, password, enabled, empStat, authVersion, authorities, scopedPermissions, null);
+            List<ScopedPermission> scopedPermissions
+    		) {
+        this(empId, username, password, enabled, empStat, authVersion, exec, authorities, scopedPermissions, null);
     }
 
     public AuthorizationUserDetails(
@@ -69,6 +73,7 @@ public class AuthorizationUserDetails implements UserDetails {
             boolean enabled,
             String empStat,
             Integer authVersion,
+            boolean exec,
             Collection<? extends GrantedAuthority> authorities,
             List<ScopedPermission> scopedPermissions,
             String sessionId) {
@@ -90,14 +95,19 @@ public class AuthorizationUserDetails implements UserDetails {
             boolean enabled,
             String empStat,
             Integer authVersion,
-            Collection<? extends GrantedAuthority> authorities) {
+            boolean exec,
+            Collection<? extends GrantedAuthority> authorities,
+            String sessionId
+    		) {
         this.empId = empId;
         this.username = username;
         this.password = password;
         this.enabled = enabled;
 	    this.empStat = empStat;
         this.authVersion = authVersion;
+        this.exec = exec;
         this.authorities = authorities;
+        this.sessionId = sessionId;
     }
 
     @Override

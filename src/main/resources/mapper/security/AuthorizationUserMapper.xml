@@ -12,6 +12,7 @@
             <arg column="PASSWORD" javaType="java.lang.String"/>
             <arg column="ENABLED" javaType="boolean"/>
             <arg column="EMP_STAT" javaType="java.lang.String"/>
+            <arg column="EXEC" javaType="boolean"/>
         </constructor>
     </resultMap>
 
@@ -21,7 +22,8 @@
             TO_CHAR(EMP_ID) AS USERNAME,
             PSWD AS PASSWORD,
             CASE WHEN UPPER(NVL(ENABLED, 'N')) = 'Y' THEN 1 ELSE 0 END AS ENABLED,
-            EMP_STAT_CD AS EMP_STAT
+            EMP_STAT_CD AS EMP_STAT,
+            EXEC_YN AS EXEC
         FROM TB_EMPLOYEE
         WHERE TO_CHAR(EMP_ID) = #{username}
     </select>

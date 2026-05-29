@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.schedule.mapper.SchdTargetMapper">
+	
+	<insert id="insertSchdTargetList">
+		<foreach collection="list" item="t" open="INSERT ALL" separator=" " close="SELECT 1 FROM DUAL">
+            INTO TB_SCHD_TARGET (
+                TARGET_TYPE_CD,
+                TARGET_ID,
+                SCHD_ID
+            ) VALUES (
+                #{t.targetTypeCd},
+                #{t.targetId},
+                #{t.schdId}
+            )
+        </foreach>
+	</insert>
+	
+	<delete id="deleteSchdTarget">
+		DELETE FROM TB_SCHD_TARGET
+         WHERE SCHD_ID = #{schdId}
+	</delete>
+	
+</mapper>
