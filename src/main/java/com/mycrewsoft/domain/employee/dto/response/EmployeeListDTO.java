@@ -15,14 +15,14 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Employee list response DTO for admin employee search.
+ * 사원의 목록 조회 응답을 위한 DTO 클래스
  */
 @Getter
 @Setter
 @NoArgsConstructor
-@Schema(description = "Employee list response DTO")
+@Schema(description = "사원 목록 조회 응답 DTO")
 public class EmployeeListDTO {
-
+	
     private Long empId;
     private String deptCd;
     private String jobPstnCd;

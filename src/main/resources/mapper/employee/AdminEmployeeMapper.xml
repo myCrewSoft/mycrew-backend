@@ -5,7 +5,7 @@
 
 <mapper namespace="com.mycrewsoft.domain.employee.mapper.AdminEmployeeMapper">
 
-    <resultMap id="EmployeeResultMap" type="com.mycrewsoft.domain.employee.vo.EmployeeVO">
+    <resultMap id="EmployeeSimpleResultMap" type="com.mycrewsoft.domain.employee.vo.EmployeeVO">
         <id property="empId" column="EMP_ID"/>
         <result property="deptCd" column="DEPT_CD"/>
         <result property="jobPstnCd" column="JOB_PSTN_CD"/>
@@ -28,7 +28,9 @@
         <result property="enabled" column="ENABLED"/>
         <result property="mbrStampFileId" column="EMP_STAMP_FILE_ID"/>
     </resultMap>
-
+	
+	
+	
     <resultMap id="EmployeeListResultMap" type="com.mycrewsoft.domain.employee.dto.response.EmployeeListDTO">
         <id property="empId" column="EMP_ID"/>
         <result property="deptCd" column="DEPT_CD"/>
@@ -48,6 +50,95 @@
         <result property="frstRegDt" column="FRST_REG_DT"/>
         <result property="lastMdfcnDt" column="LAST_MDFCN_DT"/>
         <result property="enabled" column="ENABLED"/>
+    </resultMap>
+
+    <resultMap id="EmployeeDetailResultMap" type="com.mycrewsoft.domain.employee.dto.response.EmployeeDetailDTO">
+        <id property="empId" column="EMP_ID"/>
+        <result property="jobDutyCn" column="JOB_DUTY_CN"/>
+        <result property="empNm" column="EMP_NM"/>
+        <result property="rrno" column="RRNO"/>
+        <result property="genderCd" column="GENDER_CD"/>
+        <result property="mblTelno" column="MBL_TELNO"/>
+        <result property="zip" column="ZIP"/>
+        <result property="addr" column="ADDR"/>
+        <result property="prflImgFileId" column="PRFL_IMG_FILE_ID"/>
+        <result property="execYn" column="EXEC_YN"/>
+        <result property="entcoYmd" column="ENTCO_YMD"/>
+        <result property="retcoYmd" column="RETCO_YMD"/>
+        <result property="frstRegDt" column="FRST_REG_DT"/>
+        <result property="lastMdfcnDt" column="LAST_MDFCN_DT"/>
+        <result property="enabled" column="ENABLED"/>
+        <result property="mbrStampFileId" column="EMP_STAMP_FILE_ID"/>
+
+        <association property="department" javaType="com.mycrewsoft.domain.department.vo.DepartmentVO">
+            <id property="deptCd" column="DEPARTMENT_DEPT_CD"/>
+            <result property="prntDeptCd" column="DEPARTMENT_PRNT_DEPT_CD"/>
+            <result property="deptNm" column="DEPARTMENT_DEPT_NM"/>
+            <result property="useYn" column="DEPARTMENT_USE_YN"/>
+            <result property="frstRegDt" column="DEPARTMENT_FRST_REG_DT"/>
+            <result property="frstRgtrId" column="DEPARTMENT_FRST_RGTR_ID"/>
+            <result property="lastMdfcnDt" column="DEPARTMENT_LAST_MDFCN_DT"/>
+            <result property="lastMdfrId" column="DEPARTMENT_LAST_MDFR_ID"/>
+        </association>
+
+        <association property="jobPosition" javaType="com.mycrewsoft.domain.jobposition.vo.JobPositionVO">
+            <id property="jobPstnCd" column="JOB_POSITION_JOB_PSTN_CD"/>
+            <result property="jobPstnNm" column="JOB_POSITION_JOB_PSTN_NM"/>
+            <result property="useYn" column="JOB_POSITION_USE_YN"/>
+            <result property="frstRgtrId" column="JOB_POSITION_FRST_RGTR_ID"/>
+            <result property="frstRegDt" column="JOB_POSITION_FRST_REG_DT"/>
+            <result property="lastMdfrId" column="JOB_POSITION_LAST_MDFR_ID"/>
+            <result property="lastMdfcnDt" column="JOB_POSITION_LAST_MDFCN_DT"/>
+        </association>
+
+        <association property="jobGrade" javaType="com.mycrewsoft.domain.jobgrade.vo.JobGradeVO">
+            <id property="jobGrdCd" column="JOB_GRADE_JOB_GRD_CD"/>
+            <result property="jobGrdNm" column="JOB_GRADE_JOB_GRD_NM"/>
+            <result property="useYn" column="JOB_GRADE_USE_YN"/>
+            <result property="frstRgtrId" column="JOB_GRADE_FRST_RGTR_ID"/>
+            <result property="frstRegDt" column="JOB_GRADE_FRST_REG_DT"/>
+            <result property="lastMdfrId" column="JOB_GRADE_LAST_MDFR_ID"/>
+            <result property="lastMdfcnDt" column="JOB_GRADE_LAST_MDFCN_DT"/>
+        </association>
+
+        <association property="empStat" javaType="com.mycrewsoft.domain.empstat.vo.EmpStatVO">
+            <id property="empStatCd" column="EMP_STAT_EMP_STAT_CD"/>
+            <result property="empStatNm" column="EMP_STAT_EMP_STAT_NM"/>
+            <result property="empStatExpln" column="EMP_STAT_EMP_STAT_EXPLN"/>
+        </association>
+
+        <collection property="roleAssignmentList" ofType="com.mycrewsoft.domain.roleassignment.vo.RoleAssignmentVO">
+            <id property="roleAssignId" column="ROLE_ASSIGNMENT_ROLE_ASSIGN_ID"/>
+            <result property="roleId" column="ROLE_ASSIGNMENT_ROLE_ID"/>
+            <result property="empId" column="ROLE_ASSIGNMENT_EMP_ID"/>
+            <result property="scopeTypeCd" column="ROLE_ASSIGNMENT_SCOPE_TYPE_CD"/>
+            <result property="scopeId" column="ROLE_ASSIGNMENT_SCOPE_ID"/>
+            <result property="enabled" column="ROLE_ASSIGNMENT_ENABLED"/>
+            <association property="role" javaType="com.mycrewsoft.domain.role.vo.RoleVO">
+                <id property="roleId" column="ROLE_ROLE_ID"/>
+                <result property="roleCd" column="ROLE_ROLE_CD"/>
+                <result property="roleNm" column="ROLE_ROLE_NM"/>
+                <result property="roleExpln" column="ROLE_ROLE_EXPLN"/>
+                <result property="frstRgtrId" column="ROLE_FRST_RGTR_ID"/>
+                <result property="frstRegDt" column="ROLE_FRST_REG_DT"/>
+                <result property="lastMdfrId" column="ROLE_LAST_MDFR_ID"/>
+                <result property="lastMdfcnDt" column="ROLE_LAST_MDFCN_DT"/>
+            </association>
+        </collection>
+
+        <collection property="mailAccountList" ofType="com.mycrewsoft.domain.mail.vo.MailAccountVO">
+            <id property="empId" column="MAIL_ACCOUNT_EMP_ID"/>
+            <result property="providerCd" column="MAIL_ACCOUNT_PROVIDER_CD"/>
+            <result property="emailAddr" column="MAIL_ACCOUNT_EMAIL_ADDR"/>
+            <result property="googleSubId" column="MAIL_ACCOUNT_GOOGLE_SUB_ID"/>
+            <result property="accessToken" column="MAIL_ACCOUNT_ACCESS_TOKEN"/>
+            <result property="refreshToken" column="MAIL_ACCOUNT_REFRESH_TOKEN"/>
+            <result property="tokenExprDt" column="MAIL_ACCOUNT_TOKEN_EXPR_DT"/>
+            <result property="syncLastDt" column="MAIL_ACCOUNT_SYNC_LAST_DT"/>
+            <result property="useYn" column="MAIL_ACCOUNT_USE_YN"/>
+            <result property="frstRegDt" column="MAIL_ACCOUNT_FRST_REG_DT"/>
+            <result property="lastMdfcnDt" column="MAIL_ACCOUNT_LAST_MDFCN_DT"/>
+        </collection>
     </resultMap>
 
     <sql id="EmployeeColumns">
@@ -181,10 +272,95 @@
         )
     </insert>
 
-    <select id="selectEmployeeById" resultMap="EmployeeResultMap">
+    <select id="selectEmployeeById" resultMap="EmployeeSimpleResultMap">
         SELECT
             <include refid="EmployeeColumns"/>
         FROM TB_EMPLOYEE E
+        WHERE E.EMP_ID = #{empId}
+    </select>
+
+    <select id="selectEmployeeDetailById" resultMap="EmployeeDetailResultMap">
+        SELECT
+            E.EMP_ID,
+            E.JOB_DUTY_CN,
+            E.EMP_NM,
+            E.GENDER_CD,
+            E.MBL_TELNO,
+            E.ZIP,
+            E.ADDR,
+            E.PRFL_IMG_FILE_ID,
+            E.EXEC_YN,
+            E.ENTCO_YMD,
+            E.RETCO_YMD,
+            E.FRST_REG_DT,
+            E.LAST_MDFCN_DT,
+            E.ENABLED,
+            E.EMP_STAMP_FILE_ID,
+            D.DEPT_CD AS DEPARTMENT_DEPT_CD,
+            D.PRNT_DEPT_CD AS DEPARTMENT_PRNT_DEPT_CD,
+            D.DEPT_NM AS DEPARTMENT_DEPT_NM,
+            D.USE_YN AS DEPARTMENT_USE_YN,
+            D.FRST_REG_DT AS DEPARTMENT_FRST_REG_DT,
+            D.FRST_RGTR_ID AS DEPARTMENT_FRST_RGTR_ID,
+            D.LAST_MDFCN_DT AS DEPARTMENT_LAST_MDFCN_DT,
+            D.LAST_MDFR_ID AS DEPARTMENT_LAST_MDFR_ID,
+            JP.JOB_PSTN_CD AS JOB_POSITION_JOB_PSTN_CD,
+            JP.JOB_PSTN_NM AS JOB_POSITION_JOB_PSTN_NM,
+            JP.USE_YN AS JOB_POSITION_USE_YN,
+            JP.FRST_RGTR_ID AS JOB_POSITION_FRST_RGTR_ID,
+            JP.FRST_REG_DT AS JOB_POSITION_FRST_REG_DT,
+            JP.LAST_MDFR_ID AS JOB_POSITION_LAST_MDFR_ID,
+            JP.LAST_MDFCN_DT AS JOB_POSITION_LAST_MDFCN_DT,
+            JG.JOB_GRD_CD AS JOB_GRADE_JOB_GRD_CD,
+            JG.JOB_GRD_NM AS JOB_GRADE_JOB_GRD_NM,
+            JG.USE_YN AS JOB_GRADE_USE_YN,
+            JG.FRST_RGTR_ID AS JOB_GRADE_FRST_RGTR_ID,
+            JG.FRST_REG_DT AS JOB_GRADE_FRST_REG_DT,
+            JG.LAST_MDFR_ID AS JOB_GRADE_LAST_MDFR_ID,
+            JG.LAST_MDFCN_DT AS JOB_GRADE_LAST_MDFCN_DT,
+            ES.EMP_STAT_CD AS EMP_STAT_EMP_STAT_CD,
+            ES.EMP_STAT_NM AS EMP_STAT_EMP_STAT_NM,
+            ES.EMP_STAT_EXPLN AS EMP_STAT_EMP_STAT_EXPLN,
+            RA.ROLE_ASSIGN_ID AS ROLE_ASSIGNMENT_ROLE_ASSIGN_ID,
+            RA.ROLE_ID AS ROLE_ASSIGNMENT_ROLE_ID,
+            RA.EMP_ID AS ROLE_ASSIGNMENT_EMP_ID,
+            RA.SCOPE_TYPE_CD AS ROLE_ASSIGNMENT_SCOPE_TYPE_CD,
+            RA.SCOPE_ID AS ROLE_ASSIGNMENT_SCOPE_ID,
+            RA.ENABLED AS ROLE_ASSIGNMENT_ENABLED,
+            R.ROLE_ID AS ROLE_ROLE_ID,
+            R.ROLE_CD AS ROLE_ROLE_CD,
+            R.ROLE_NM AS ROLE_ROLE_NM,
+            R.ROLE_EXPLN AS ROLE_ROLE_EXPLN,
+            R.FRST_RGTR_ID AS ROLE_FRST_RGTR_ID,
+            R.FRST_REG_DT AS ROLE_FRST_REG_DT,
+            R.LAST_MDFR_ID AS ROLE_LAST_MDFR_ID,
+            R.LAST_MDFCN_DT AS ROLE_LAST_MDFCN_DT,
+            MA.EMP_ID AS MAIL_ACCOUNT_EMP_ID,
+            MA.PROVIDER_CD AS MAIL_ACCOUNT_PROVIDER_CD,
+            MA.EMAIL_ADDR AS MAIL_ACCOUNT_EMAIL_ADDR,
+            MA.GOOGLE_SUB_ID AS MAIL_ACCOUNT_GOOGLE_SUB_ID,
+            MA.ACCESS_TOKEN AS MAIL_ACCOUNT_ACCESS_TOKEN,
+            MA.REFRESH_TOKEN AS MAIL_ACCOUNT_REFRESH_TOKEN,
+            MA.TOKEN_EXPR_DT AS MAIL_ACCOUNT_TOKEN_EXPR_DT,
+            MA.SYNC_LAST_DT AS MAIL_ACCOUNT_SYNC_LAST_DT,
+            MA.USE_YN AS MAIL_ACCOUNT_USE_YN,
+            MA.FRST_REG_DT AS MAIL_ACCOUNT_FRST_REG_DT,
+            MA.LAST_MDFCN_DT AS MAIL_ACCOUNT_LAST_MDFCN_DT
+        FROM TB_EMPLOYEE E
+        LEFT JOIN TB_DEPARTMENT D
+            ON D.DEPT_CD = E.DEPT_CD
+        LEFT JOIN TB_JOB_POSITION JP
+            ON JP.JOB_PSTN_CD = E.JOB_PSTN_CD
+        LEFT JOIN TB_JOB_GRADE JG
+            ON JG.JOB_GRD_CD = E.JOB_GRD_CD
+        LEFT JOIN TB_EMP_STAT ES
+            ON ES.EMP_STAT_CD = E.EMP_STAT_CD
+        LEFT JOIN TB_ROLE_ASSIGNMENT RA
+            ON RA.EMP_ID = E.EMP_ID
+        LEFT JOIN TB_ROLE R
+            ON R.ROLE_ID = RA.ROLE_ID
+        LEFT JOIN TB_MAIL_ACCOUNT MA
+            ON MA.EMP_ID = E.EMP_ID
         WHERE E.EMP_ID = #{empId}
     </select>
 
@@ -194,7 +370,7 @@
         <include refid="EmployeeSearchWhere"/>
     </select>
 
-    <select id="selectEmployees" resultMap="EmployeeListResultMap">
+    <select id="selectEmployees" resultMap="EmployeeSimpleResultMap">
         SELECT
             <include refid="EmployeeListColumns"/>
         FROM TB_EMPLOYEE E
@@ -202,5 +378,5 @@
         ORDER BY E.FRST_REG_DT DESC, E.EMP_ID DESC
         OFFSET #{offset} ROWS FETCH NEXT #{size} ROWS ONLY
     </select>
-
+	
 </mapper>

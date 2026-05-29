@@ -45,22 +45,22 @@ class FileServiceImplTest {
 	@BeforeEach
 	void setUp() {
 	    // 가짜 로그인 사용자 세팅
-	    AuthorizationUserDetails userDetails = new AuthorizationUserDetails(
-	            1L,           // empId
-	            "testUser",   // username
-	            null,
-	            true,
-	            1,
-	            List.of(new SimpleGrantedAuthority("ROLE_USER"))
-	    );
-
-	    SecurityContextHolder.getContext().setAuthentication(
-	            new UsernamePasswordAuthenticationToken(
-	                    userDetails,
-	                    null,
-	                    userDetails.getAuthorities()
-	            )
-	    );
+//	    AuthorizationUserDetails userDetails = new AuthorizationUserDetails(
+//	            1L,           // empId
+//	            "testUser",   // username
+//	            null,
+//	            true,
+//	            1,
+//	            List.of(new SimpleGrantedAuthority("ROLE_USER"))
+//	    );
+//
+//	    SecurityContextHolder.getContext().setAuthentication(
+//	            new UsernamePasswordAuthenticationToken(
+//	                    userDetails,
+//	                    null,
+//	                    userDetails.getAuthorities()
+//	            )
+//	    );
 	}
 
 	@AfterEach

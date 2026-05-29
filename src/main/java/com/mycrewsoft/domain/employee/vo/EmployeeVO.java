@@ -11,6 +11,7 @@ import com.mycrewsoft.domain.department.vo.DepartmentVO;
 import com.mycrewsoft.domain.empstat.vo.EmpStatVO;
 import com.mycrewsoft.domain.jobgrade.vo.JobGradeVO;
 import com.mycrewsoft.domain.jobposition.vo.JobPositionVO;
+import com.mycrewsoft.domain.mail.vo.MailAccountVO;
 import com.mycrewsoft.domain.messenger.vo.MsngrChtrmPtcptVO;
 import com.mycrewsoft.domain.roleassignment.vo.RoleAssignmentVO;
 
@@ -116,7 +117,7 @@ public class EmployeeVO {
     /** 사원의 역할매핑 */
     private List<RoleAssignmentVO> roleAssignmentList;
 //    private List<DriveVO> driveList;
-//    private List<MailAccountVO> mailAccountList;
+    private List<MailAccountVO> mailAccountList;
 //    private List<AprvlDocVO> draftedAprvlDocList;
 //    private List<ProjMemberVO> projMemberList;
 //    private List<TaskMemberVO> taskMemberList;

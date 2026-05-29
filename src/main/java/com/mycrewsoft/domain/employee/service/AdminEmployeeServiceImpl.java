@@ -133,8 +133,21 @@ public class AdminEmployeeServiceImpl implements AdminEmployeeService {
 	@Override
 	@Transactional(readOnly = true)
 	public EmployeeDetailDTO getEmployeeDetailById(Long empId) {
-		
-		return null;
+		ResourceContext resource = ResourceContext.builder()
+									        .resourceType(ResourceType.EMPLOYEE)
+									        .build();
+
+		authorizationService.assertCurrentUserPermission(
+	            PermissionCode.EMPLOYEE_READ,
+	            resource
+	    );
+
+		EmployeeDetailDTO employee = adminEmployeeMapper.selectEmployeeDetailById(empId);
+		if (employee == null) {
+			throw new CustomException(ErrorCode.USER_NOT_FOUND);
+		}
+
+		return employee;
 	}
 
 }
