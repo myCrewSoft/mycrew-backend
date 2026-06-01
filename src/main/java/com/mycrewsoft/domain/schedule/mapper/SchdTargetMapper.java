@@ -5,6 +5,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import com.mycrewsoft.domain.schedule.vo.SchdTargetDetailVO;
 import com.mycrewsoft.domain.schedule.vo.SchdTargetVO;
 
 @Mapper
@@ -14,4 +15,6 @@ public interface SchdTargetMapper {
 	
 	int deleteSchdTarget(Long schdId);
 	
+	List<SchdTargetDetailVO> selectSchdTargetDetail(Long schdId);
+
 }

@@ -137,7 +137,7 @@
 		UPDATE TB_INTG_SCHD
            SET DEL_YN       = 'Y',
                DEL_DT       = SYSDATE,
-               SCHD_CHGR_ID = #{schdChgrId},
+               SCHD_CHGR_ID = #{schdId},
                SCHD_CHG_DT  = SYSDATE
          WHERE SCHD_ID = #{schdId}
            AND DEL_YN  = 'N'
