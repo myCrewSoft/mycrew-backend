@@ -56,7 +56,7 @@ public class AuthController {
 	
 	@Operation(summary = "첫 로그인", description = "사용자가 처음 로그인할 때 처리하는 API입니다.")
 	@PatchMapping("/first-login")
-	public ResponseEntity<ApiResponse> handleFirstLogin(
+	public ResponseEntity<ApiResponse<String>> handleFirstLogin(
 	        @RequestBody FirstLoginRequestDTO request) {
 		
 		authService.handleFirstLogin(request);
@@ -66,7 +66,7 @@ public class AuthController {
 	
 	@Operation(summary = "로그아웃", description = "로그아웃을 진행하는 API입니다.")
 	@PostMapping("/logout")
-	public ResponseEntity<ApiResponse> logout() {
+	public ResponseEntity<ApiResponse<String>> logout() {
 		authService.logout();
 		
 		return ResponseEntity.ok(ApiResponse.success("로그아웃 성공"));
