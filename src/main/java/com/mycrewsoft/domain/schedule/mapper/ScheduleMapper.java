@@ -9,7 +9,9 @@ import org.mapstruct.Named;
 import com.mycrewsoft.domain.schedule.dto.request.ScheduleRequestDto;
 import com.mycrewsoft.domain.schedule.dto.request.ScheduleTargetRequestDto;
 import com.mycrewsoft.domain.schedule.dto.response.ScheduleResponseDto;
+import com.mycrewsoft.domain.schedule.dto.response.ScheduleTargetResponseDto;
 import com.mycrewsoft.domain.schedule.vo.IntgSchdVO;
+import com.mycrewsoft.domain.schedule.vo.SchdTargetDetailVO;
 import com.mycrewsoft.domain.schedule.vo.SchdTargetVO;
 
 @Mapper(componentModel = "spring")
@@ -46,6 +48,28 @@ public interface ScheduleMapper {
 	@Mapping(target = "repeatEndDate", source = "reptEndDt")
 	ScheduleResponseDto toResponseDto(IntgSchdVO vo);
 
+	@Mapping(target = "id",               source = "vo.schdId")
+	@Mapping(target = "scheduleTypeCode",  source = "vo.schdClsfCd")
+	@Mapping(target = "title",             source = "vo.schdNm")
+	@Mapping(target = "detail",            source = "vo.schdDetailCn")
+	@Mapping(target = "start",             source = "vo.beginDt")
+	@Mapping(target = "end",               source = "vo.endDt")
+	@Mapping(target = "allDay",            source = "vo.allDayYn",  qualifiedByName = "ynToBoolean")
+	@Mapping(target = "repeat",            source = "vo.reptYn",    qualifiedByName = "ynToBoolean")
+	@Mapping(target = "repeatTypeCode",    source = "vo.reptTypeCd")
+	@Mapping(target = "repeatEndDate",     source = "vo.reptEndDt")
+	@Mapping(target = "targets",           source = "targets")
+	@Mapping(target = "deptCd",            ignore = true)
+	@Mapping(target = "projId",            ignore = true)
+	@Mapping(target = "taskId",            ignore = true)
+	@Mapping(target = "writerId",          ignore = true)
+	@Mapping(target = "writerName",        ignore = true)
+	ScheduleResponseDto toResponseDto(IntgSchdVO vo, List<SchdTargetDetailVO> targets);
+
+	ScheduleTargetResponseDto toTargetResponseDto(SchdTargetDetailVO vo);
+
+	List<ScheduleTargetResponseDto> toTargetResponseDtoList(List<SchdTargetDetailVO> voList);
+	
 	/**
 	 * IntgSchdVo 리스트 -> SchdResponseDto 리스트 변환.
 	 * @param voList
