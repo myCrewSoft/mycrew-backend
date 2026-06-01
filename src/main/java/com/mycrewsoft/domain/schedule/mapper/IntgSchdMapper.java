@@ -28,5 +28,5 @@ public interface IntgSchdMapper {
 	int updateIntgSchd(IntgSchdVO intgSchd);
 	
 	// 일정 삭제(논리)
-	int deleteIntgSchd(@Param("schdId") Long schdId, @Param("deltrId") Long deltrId);
+	int deleteIntgSchd(@Param("schdId") Long schdId);
 }
