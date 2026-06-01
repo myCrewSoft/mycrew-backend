@@ -32,6 +32,7 @@ package com.mycrewsoft.common.constant;
             "/v3/api-docs/**",
             "/api/v3/api-docs",
             "/api/v3/api-docs/**",
+            "/api/mail/oauth/google/callback",
             "/api/chat/stream",
             "/api/chat/stop",
             "/api/chatbot"
