@@ -10,11 +10,9 @@
 	
 	INSERT INTO TB_CMMN_ATCH_FILE_CLSF(
 		ATCH_FILE_ID,
-		CREAT_DT,
 		ATCH_FILE_BIZ_CD
 	) VALUES (
 		#{atchFileId},
-		SYSDATE,
 		#{atchFileBizCd}
 	)
 </insert>
