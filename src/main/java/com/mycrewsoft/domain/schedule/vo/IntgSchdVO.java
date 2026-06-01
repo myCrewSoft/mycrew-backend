@@ -34,7 +34,7 @@ public class IntgSchdVO {
 	
 	private String reptYn;			// 반복 여부
 	private String reptTypeCd;		// 반복 타입
-	private String reptEndDt;		// 반복 종료일
+	private LocalDateTime reptEndDt;		// 반복 종료일
 	
 	private List<SchdTargetVO> targets;	// 일정 해당자
 	

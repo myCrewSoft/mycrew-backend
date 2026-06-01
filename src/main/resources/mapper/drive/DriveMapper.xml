@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.drive.mapper.DriveMapper">
+<insert id="insertDriveItem" parameterType="com.mycrewsoft.domain.drive.vo.DriveVo">
+	<selectKey keyProperty="driveItemId" resultType="long" order="BEFORE">
+		SELECT SEQ_DRIVE_ITEM_ID.NEXTVAL FROM DUAL
+    </selectKey>
+    
+    INSERT INTO TB_DRIVE(
+    	DRIVE_ITEM_ID,
+		PRNT_DRIVE_ITEM_ID,
+		EMP_ID,
+		ITEM_TYPE_CD,
+		BOOKMARK_YN,
+		ITEM_NM,
+		FRST_REG_DT,
+		DEL_YN
+    )VALUES(
+    	#{driveItemId}, 
+		#{prntDriveItemId}, 
+		#{empId}, 
+		#{itemTypeCd}, 
+		'N', 
+		#{itemNm}, 
+		SYSDATE, 
+		'N'
+    )
+</insert>
+
+<select id="selectListByEmpId" resultType="com.mycrewsoft.domain.drive.vo.DriveVo">
+    SELECT
+        D.DRIVE_ITEM_ID,
+        D.PRNT_DRIVE_ITEM_ID,
+        D.EMP_ID,
+        D.ITEM_TYPE_CD,
+        D.BOOKMARK_YN,
+        D.ITEM_NM,
+        D.FRST_REG_DT,
+        D.LAST_MDFCN_DT,
+        DTL.FILE_SZ,
+        DTL.ORGNL_FILE_NM
+    FROM TB_DRIVE D
+        LEFT JOIN TB_CMMN_ATCH_FILE_CLSF CLSF ON D.DRIVE_ATCH_FILE_ID = CLSF.ATCH_FILE_ID
+        LEFT JOIN TB_CMMN_ATCH_FILE_DTL DTL ON CLSF.ATCH_FILE_ID = DTL.ATCH_FILE_ID
+    WHERE D.EMP_ID = #{empId}
+      AND D.DEL_YN = 'N'
+    ORDER BY D.ITEM_TYPE_CD ASC, D.FRST_REG_DT ASC
+</select>
+</mapper>

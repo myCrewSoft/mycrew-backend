@@ -17,4 +17,6 @@ import org.apache.ibatis.annotations.Param;
 public interface PermissionSyncMapper {
 
     int mergePermissions(@Param("permissions") List<PermissionSeed> permissions);
+
+    int mergeSuperAdminPermissions();
 }

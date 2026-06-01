@@ -5,8 +5,11 @@ import java.util.List;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -54,4 +57,33 @@ public class ScheduleController {
         
         return ResponseEntity.ok(ApiResponse.success(schdList));
     }
+    
+    @Operation(summary = "일정 조회 (캘린더)")
+    @GetMapping("/{schdId}")
+    public ResponseEntity<ApiResponse<ScheduleResponseDto>> getSchd(@PathVariable Long schdId) {
+    	
+    	ScheduleResponseDto schddto = schdService.readSchd(schdId);
+    	
+    	return ResponseEntity.ok(ApiResponse.success(schddto));
+    }
+    
+    @Operation(summary = "일정 수정 (캘린더)")
+    @PutMapping("/{schdId}")
+    public ResponseEntity<ApiResponse<Void>> updateSchd(
+    		@PathVariable Long schdId,
+    		@Valid @RequestBody ScheduleRequestDto dto
+    ) {
+    	schdService.modifySchd(schdId, dto);
+    	
+    	return ResponseEntity.ok(ApiResponse.success(null));
+    }
+    
+    @Operation(summary = "일정 삭제 (캘린더)")
+    @DeleteMapping("/{schdId}")
+    public ResponseEntity<ApiResponse<Void>> deleteSchd(@PathVariable Long schdId) {
+    	
+    	schdService.deleteSchd(schdId);
+    	
+    	return ResponseEntity.ok(ApiResponse.success(null));
+    } 
 }

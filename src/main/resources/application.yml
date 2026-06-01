@@ -2,8 +2,14 @@ spring:
   application:
     name: mycrewsoft
 
+  mvc:
+    log-request-details: true
+
+  webflux:
+    log-request-details: true
+ 
   datasource:
-    url: jdbc:oracle:thin:@localhost:1521:XE
+    url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: oracle.jdbc.OracleDriver
@@ -25,6 +31,36 @@ spring:
       host: localhost
       port: 6379
       timeout: 3000
+
+########################################
+# Spring AI + LM Studio 연동
+########################################
+  ai:
+    openai:
+# ▶ 사내 LM Studio 주소
+      base-url: http://192.168.35.112:1234
+      api-key: dummy
+
+      chat:
+        options:
+      # ▶ 사용 모델
+          model: gemma-3n-e4b-it-text
+
+        # ▶ ChatClient 수동 설정
+    chat:
+      client:
+        base-url: http://192.168.35.112:1234
+        api-key: dummy
+
+
+########################################
+# OpenAI 자동 설정 비활성화
+########################################
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.openai.autoconfigure.OpenAiAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiChatModelAutoConfiguration
 
 mybatis:
   mapper-locations: classpath:mapper/**/*.xml
@@ -49,6 +85,8 @@ logging:
   level:
     com.projectname.app.mapper: DEBUG
     org.springframework.security: DEBUG
+    # ▶ Spring AI ChatClient 내부 동작 로그
+    org.springframework.ai.chat.client.advisor: DEBUG
 
 server:
   port: 80
@@ -62,6 +100,20 @@ cors:
 
 file:
   upload-path: ${LOCAL_STORAGE}
+
+google:
+  oauth:
+    client-id: ${GOOGLE_OAUTH_CLIENT_ID:727057848148-08dmtdfppmnoqblbukb3aegv1avmq6c9.apps.googleusercontent.com}
+    client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET:}
+    redirect-uri: http://localhost/api/mail/oauth/google/callback
+    frontend-success-uri: http://localhost:5173/first-login?mailConnected=Y
+    frontend-failure-uri: http://localhost:5173/first-login?mailConnected=N
+    scopes:
+      - openid
+      - email
+      - profile
+      - https://www.googleapis.com/auth/gmail.readonly
+      - https://www.googleapis.com/auth/gmail.send
 
 springdoc:
   swagger-ui:

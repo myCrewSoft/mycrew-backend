@@ -18,7 +18,10 @@ import com.mycrewsoft.domain.employee.dto.request.LoginRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.TokenRefreshRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.LoginResponseDTO;
 import com.mycrewsoft.domain.employee.dto.response.TokenRefreshResponseDTO;
+import com.mycrewsoft.domain.employee.mapper.AdminEmployeeMapper;
+import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 import com.mycrewsoft.domain.empstat.code.EmpStatCode;
+import com.mycrewsoft.domain.mail.mapper.MailAccountMapper;
 import com.mycrewsoft.security.jwt.JwtTokenProvider;
 import com.mycrewsoft.security.rbac.AuthSessionFactory;
 import com.mycrewsoft.security.rbac.RbacSessionRefreshService;
@@ -40,6 +43,8 @@ public class AuthServiceImpl implements AuthService {
 	private final AuthSessionFactory authSessionFactory;
 	private final PasswordEncoder passwordEncoder;
 	private final RbacSessionRefreshService rbacSessionRefreshService;
+	private final AdminEmployeeMapper adminEmployeeMapper;
+	private final MailAccountMapper mailAccountMapper;
 	
 	@Override
 	@Transactional
@@ -59,8 +64,15 @@ public class AuthServiceImpl implements AuthService {
 		}
 		String empStat = userDetails.getEmpStat();
 					
-		if(empStat.equals(EmpStatCode.EMP_INACTIVE.getCode()) || empStat.equals(EmpStatCode.EMP_RETIRED.getCode())) {
+		if(EmpStatCode.EMP_INACTIVE.getCode().equals(empStat) || EmpStatCode.EMP_RETIRED.getCode().equals(empStat)) {
 			throw new CustomException(ErrorCode.USER_DISABLED);
+		}
+
+		boolean firstLoginRequired = EmpStatCode.EMP_INITIAL.getCode().equals(empStat);
+		if (!firstLoginRequired) {
+			adminEmployeeMapper.updateEmployeeStatus(
+					userDetails.getEmpId(),
+					EmpStatCode.EMP_LOGIN.getCode());
 		}
 		
 		
@@ -101,7 +113,7 @@ public class AuthServiceImpl implements AuthService {
 				.refreshToken(refreshToken)
 				.empId(userDetails.getEmpId())
 				.authVersion(authVersion)
-				.firstLoginRequired(EmpStatCode.EMP_INITIAL.getCode().equals(userDetails.getEmpStat()))
+				.firstLoginRequired(firstLoginRequired)
 				.build();
 	}
 
@@ -160,9 +172,27 @@ public class AuthServiceImpl implements AuthService {
 	}
 
 	@Override
+	@Transactional
 	public void handleFirstLogin(FirstLoginRequestDTO request) {
-		// TODO Auto-generated method stub
-		
+		Long empId = SecurityUtil.getCurrentEmpId();
+		EmployeeVO employee = adminEmployeeMapper.selectEmployeeById(empId);
+
+		if (employee == null) {
+			throw new CustomException(ErrorCode.USER_NOT_FOUND);
+		}
+		if (!EmpStatCode.EMP_INITIAL.getCode().equals(employee.getEmpStatCd())) {
+			throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+		}
+		if (!StringUtils.hasText(request.getEmailAddr())
+				|| mailAccountMapper.existsActiveGoogleMailAccountByEmail(empId, request.getEmailAddr()) < 1) {
+			throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+		}
+
+		String encodedPassword = passwordEncoder.encode(request.getNewPassword());
+		adminEmployeeMapper.updateFirstLoginInfo(
+				empId,
+				encodedPassword,
+				EmpStatCode.EMP_LOGIN.getCode());
 	}
 
 	@Override
@@ -174,6 +204,10 @@ public class AuthServiceImpl implements AuthService {
 		if (!StringUtils.hasText(sessionId)) {
 			throw new CustomException(ErrorCode.INVALID_TOKEN);
 		}
+
+		adminEmployeeMapper.updateEmployeeStatusIfNotInitial(
+				currentUser.getEmpId(),
+				EmpStatCode.EMP_LOGOUT.getCode());
 
 		refreshTokenService.deleteSession(sessionId);
 	}

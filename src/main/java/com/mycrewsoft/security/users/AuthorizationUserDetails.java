@@ -83,6 +83,7 @@ public class AuthorizationUserDetails implements UserDetails {
         this.enabled = enabled;
         this.empStat = empStat;
         this.authVersion = authVersion;
+        this.exec = exec;
         this.authorities = authorities;
         this.scopedPermissions = scopedPermissions == null ? new ArrayList<>() : scopedPermissions;
         this.sessionId = sessionId;

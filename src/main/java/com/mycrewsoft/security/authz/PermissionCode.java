@@ -15,8 +15,10 @@ package com.mycrewsoft.security.authz;
 public enum PermissionCode {
 	
 	//ADMIN
+	ADMIN_CONSOLE_ACCESS,
 	EMPLOYEE_CREATE,
 	EMPLOYEE_READ,
+	EMPLOYEE_UPDATE,
 	
     // Department
     DEPT_CREATE,

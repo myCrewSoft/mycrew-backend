@@ -33,9 +33,9 @@ public class ScheduleRequestDto {
 	
 	@Schema(description = "업무 일정일 때 해당 업무 ID")
 	private Long taskId;
-	
+    
 	@Schema(description = "일정 상세 내용", example = "회사가 창립된 날")
-	@Size(max = 300, message = "일정명은 최대 4000자까지 입력 가능합니다.")
+	@Size(max = 4000, message = "일정명은 최대 4000자까지 입력 가능합니다.")
 	private String schdDetailCn;
 	
 	@Schema(description = "시작 일시", example = "2026-06-21 10:00:00")
@@ -58,7 +58,7 @@ public class ScheduleRequestDto {
 	private String reptTypeCd;
 	
 	@Schema(description = "반복 종료일", example = "2026-06-21 10:00:00")
-	private String reptEndDt;
+	private LocalDateTime reptEndDt;
 	
 	@Schema(description = "공유 대상 목록")
     @Valid

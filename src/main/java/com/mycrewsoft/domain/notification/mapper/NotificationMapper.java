@@ -1,10 +1,6 @@
 package com.mycrewsoft.domain.notification.mapper;
 
-import com.mycrewsoft.domain.notification.dto.response.NotificationResponse;
-import com.mycrewsoft.domain.notification.vo.AlrmVo;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import java.util.List;
 
 /**
  * componentModel = "spring" → Spring 빈으로 자동 등록되어 @Autowired 사용 가능.
