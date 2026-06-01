@@ -31,6 +31,9 @@ package com.mycrewsoft.common.constant;
             "/v3/api-docs",
             "/v3/api-docs/**",
             "/api/v3/api-docs",
-            "/api/v3/api-docs/**"
+            "/api/v3/api-docs/**",
+            "/api/chat/stream",
+            "/api/chat/stop",
+            "/api/chatbot"
     };
 }

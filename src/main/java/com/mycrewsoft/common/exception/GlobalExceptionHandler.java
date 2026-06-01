@@ -70,7 +70,7 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException e) {
         BindingResult br = e.getBindingResult();
         List<FieldErrorDetail> fieldErrors = br.getFieldErrors().stream()
-                .map(FieldErrorDetail::of).collect(Collectors.toList());
+                .map(FieldErrorDetail::of).toList();
         String firstMsg = br.getFieldErrors().stream().findFirst()
                 .map(FieldError::getDefaultMessage)
                 .orElse(ErrorCode.INVALID_INPUT_VALUE.getMessage());

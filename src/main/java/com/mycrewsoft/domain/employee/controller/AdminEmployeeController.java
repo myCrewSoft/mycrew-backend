@@ -4,7 +4,10 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.Errors;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -16,11 +19,6 @@ import com.mycrewsoft.domain.employee.service.AdminEmployeeService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AdminEmployeeController {
 	private final AdminEmployeeService employeeService;
-	
+
 	/**
 	 * 관리자의 사원 등록 API 엔드포인트
 	 * @param EmployeeRegisterRequestDTO 객체
@@ -44,18 +42,18 @@ public class AdminEmployeeController {
 	@Operation(summary = "사원 등록", description = "관리자가 새로운 사원을 등록하는 API입니다.")
 	@PostMapping
 	public ResponseEntity<ApiResponse<String>> registerEmployee(
-			@Valid @RequestBody EmployeeRegisterRequestDTO request) {		
-		
+			@Valid @RequestBody EmployeeRegisterRequestDTO request) {
+
 		employeeService.registerEmployee(request);
-		
+
 		return ResponseEntity.ok(ApiResponse.success("사원 등록이 완료되었습니다."));
 	}
-	
+
 	@Operation(summary = "사원 목록 조회", description = "관리자가 사원 목록을 조회하는 API입니다.")
 	@GetMapping
 	public ResponseEntity<ApiResponse<List<EmployeeListDTO>>> getEmployees(
 			@ModelAttribute EmployeeSearchDTO condition) {
-		
+
 		Page<EmployeeListDTO> page = employeeService.getEmployees(condition);
 
 		return ResponseEntity.ok(ApiResponse.success(page.getContent(), page));
