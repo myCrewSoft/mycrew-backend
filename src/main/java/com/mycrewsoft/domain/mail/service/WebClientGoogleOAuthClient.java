@@ -8,8 +8,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.mail.config.GoogleOAuthProperties;
-import com.mycrewsoft.domain.mail.dto.GoogleTokenResponse;
-import com.mycrewsoft.domain.mail.dto.GoogleUserInfoResponse;
+import com.mycrewsoft.domain.mail.dto.response.GoogleTokenResponse;
+import com.mycrewsoft.domain.mail.dto.response.GoogleUserInfoResponse;
 
 import lombok.RequiredArgsConstructor;
 

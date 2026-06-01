@@ -1,7 +1,7 @@
 package com.mycrewsoft.domain.mail.service;
 
-import com.mycrewsoft.domain.mail.dto.GoogleTokenResponse;
-import com.mycrewsoft.domain.mail.dto.GoogleUserInfoResponse;
+import com.mycrewsoft.domain.mail.dto.response.GoogleTokenResponse;
+import com.mycrewsoft.domain.mail.dto.response.GoogleUserInfoResponse;
 
 public interface GoogleOAuthClient {
 

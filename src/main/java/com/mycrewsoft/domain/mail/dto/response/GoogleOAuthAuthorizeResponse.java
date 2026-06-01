@@ -1,4 +1,4 @@
-package com.mycrewsoft.domain.mail.dto;
+package com.mycrewsoft.domain.mail.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

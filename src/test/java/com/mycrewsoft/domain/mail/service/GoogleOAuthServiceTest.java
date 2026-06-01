@@ -9,9 +9,9 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.mycrewsoft.domain.mail.config.GoogleOAuthProperties;
-import com.mycrewsoft.domain.mail.dto.GoogleOAuthAuthorizeResponse;
-import com.mycrewsoft.domain.mail.dto.GoogleTokenResponse;
-import com.mycrewsoft.domain.mail.dto.GoogleUserInfoResponse;
+import com.mycrewsoft.domain.mail.dto.response.GoogleOAuthAuthorizeResponse;
+import com.mycrewsoft.domain.mail.dto.response.GoogleTokenResponse;
+import com.mycrewsoft.domain.mail.dto.response.GoogleUserInfoResponse;
 import com.mycrewsoft.domain.mail.mapper.MailAccountMapper;
 import com.mycrewsoft.domain.mail.vo.MailAccountVO;
 

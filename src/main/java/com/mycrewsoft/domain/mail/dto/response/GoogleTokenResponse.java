@@ -1,4 +1,4 @@
-package com.mycrewsoft.domain.mail.dto;
+package com.mycrewsoft.domain.mail.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

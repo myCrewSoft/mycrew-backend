@@ -13,9 +13,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.mail.config.GoogleOAuthProperties;
-import com.mycrewsoft.domain.mail.dto.GoogleOAuthAuthorizeResponse;
-import com.mycrewsoft.domain.mail.dto.GoogleTokenResponse;
-import com.mycrewsoft.domain.mail.dto.GoogleUserInfoResponse;
+import com.mycrewsoft.domain.mail.dto.response.GoogleOAuthAuthorizeResponse;
+import com.mycrewsoft.domain.mail.dto.response.GoogleTokenResponse;
+import com.mycrewsoft.domain.mail.dto.response.GoogleUserInfoResponse;
 import com.mycrewsoft.domain.mail.mapper.MailAccountMapper;
 import com.mycrewsoft.domain.mail.vo.MailAccountVO;
 
@@ -61,7 +61,7 @@ public class GoogleOAuthService {
         if (!StringUtils.hasText(code) || !StringUtils.hasText(state)) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
-
+        
         Long empId = stateStore.consume(state);
         GoogleTokenResponse token = googleOAuthClient.exchangeCode(code);
         GoogleUserInfoResponse userInfo = googleOAuthClient.fetchUserInfo(token.getAccessToken());
