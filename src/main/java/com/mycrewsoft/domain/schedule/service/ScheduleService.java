@@ -11,9 +11,9 @@ public interface ScheduleService {
 
 	Long createSchd(ScheduleRequestDto dto);
 	
-	void modifySchd(Long schdId, ScheduleRequestDto dto, Long empId);
+	void modifySchd(Long schdId, ScheduleRequestDto dto);
 	
-	void deleteSchd(Long schdId, Long empId);
+	void deleteSchd(Long schdId);
 	
 	ScheduleResponseDto readSchd(Long schdId);
 	

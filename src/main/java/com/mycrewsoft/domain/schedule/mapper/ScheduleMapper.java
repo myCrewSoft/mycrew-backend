@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 
 import com.mycrewsoft.domain.schedule.dto.request.ScheduleRequestDto;
 import com.mycrewsoft.domain.schedule.dto.request.ScheduleTargetRequestDto;
@@ -33,8 +34,18 @@ public interface ScheduleMapper {
 	 * @param IntgSchdVO
 	 * @return ScheduleResponseDto
 	 */
+	@Mapping(target = "id", source = "schdId")
+	@Mapping(target = "scheduleTypeCode", source = "schdClsfCd")
+	@Mapping(target = "title", source = "schdNm")
+	@Mapping(target = "detail", source = "schdDetailCn")
+	@Mapping(target = "start", source = "beginDt")
+	@Mapping(target = "end", source = "endDt")
+	@Mapping(target = "allDay", source = "allDayYn", qualifiedByName = "ynToBoolean")
+	@Mapping(target = "repeat", source = "reptYn", qualifiedByName = "ynToBoolean")
+	@Mapping(target = "repeatTypeCode", source = "reptTypeCd")
+	@Mapping(target = "repeatEndDate", source = "reptEndDt")
 	ScheduleResponseDto toResponseDto(IntgSchdVO vo);
-	
+
 	/**
 	 * IntgSchdVo 리스트 -> SchdResponseDto 리스트 변환.
 	 * @param voList
@@ -50,5 +61,12 @@ public interface ScheduleMapper {
         return dtoList.stream()
                 .map(dto -> toTargetVo(dto, schdId))
                 .toList();
+    }
+    
+    // String -> Boolean
+    @Named("ynToBoolean")
+    default Boolean ynToBoolean(String value) {
+        if (value == null) return false;
+        return "Y".equalsIgnoreCase(value);
     }
 }

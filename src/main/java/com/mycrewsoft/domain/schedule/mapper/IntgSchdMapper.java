@@ -1,6 +1,5 @@
 package com.mycrewsoft.domain.schedule.mapper;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -21,12 +20,12 @@ public interface IntgSchdMapper {
 	/**
 	 * 일정 생성
 	 * <selectKey>로 schdId를 vo에 세팅하는 게 목적이라 건수 확인 불필요
-	 * @param IntgSchd
+	 * @param intgSchd
 	 */
-	void insertIntgSchd(IntgSchdVO IntgSchd);
+	void insertIntgSchd(IntgSchdVO intgSchd);
 	
 	// 일정 수정
-	int updateIntgSchd(IntgSchdVO IntgSchd);
+	int updateIntgSchd(IntgSchdVO intgSchd);
 	
 	// 일정 삭제(논리)
 	int deleteIntgSchd(@Param("schdId") Long schdId, @Param("deltrId") Long deltrId);
