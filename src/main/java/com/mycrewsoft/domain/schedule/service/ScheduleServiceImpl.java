@@ -70,6 +70,7 @@ public class ScheduleServiceImpl implements ScheduleService{
 	}
 
 	@Override
+	@Transactional
 	public ScheduleResponseDto readSchd(Long schdId) {
 		// 권한 체크
 		ResourceContext resource = ResourceContext.builder()
