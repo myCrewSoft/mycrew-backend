@@ -32,6 +32,7 @@ public class ResourceContext {
     private String resourceId;
     private String deptCd;
     private String projId;
+    private String taskId;
     private Long ownerEmpId;
     private Long managerEmpId;
 
