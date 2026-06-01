@@ -57,12 +57,18 @@ public class SecurityConfig {
                         // 예) .requestMatchers("/api/v1/admin/**").hasRole("GOD")
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
-                        .authenticationEntryPoint(authenticationEntryPoint) // 401
-                        .accessDeniedHandler(accessDeniedHandler) // 403
-                )
-                // JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 등록
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
-                        UsernamePasswordAuthenticationFilter.class);
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
+                .addFilterBefore(new JwtAuthenticationFilter(
+                                jwtTokenProvider,
+                                refreshTokenService,
+                                objectMapper,
+                                rbacSessionRefreshService),
+                        UsernamePasswordAuthenticationFilter.class)
+                // SSE 설정
+                .headers(headers -> headers
+                    .frameOptions(frame -> frame.disable())
+                );
         return http.build();
     }
 
