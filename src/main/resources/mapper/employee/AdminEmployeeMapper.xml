@@ -330,6 +330,22 @@
         UPDATE TB_EMPLOYEE
         SET EMP_STAT_CD = #{empStatCd},
             LAST_MDFCN_DT = SYSDATE
+            <if test="empStatCd == 'EMP_INITIAL'">
+                , ENABLED = 'Y'
+            </if>
+            <if test="empStatCd == 'EMP_ACTIVE'">
+                , ENABLED = 'Y'
+            </if>
+            <if test="empStatCd == 'EMP_VACATION'">
+                , ENABLED = 'Y'
+            </if>
+            <if test="empStatCd == 'EMP_INACTIVE'">
+                , ENABLED = 'N'
+            </if>
+            <if test="empStatCd == 'EMP_RETIRED'">
+                , ENABLED = 'N'
+            </if>
+            
         WHERE EMP_ID = #{empId}
     </update>
 

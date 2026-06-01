@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 
 import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.EmployeeSearchDTO;
+import com.mycrewsoft.domain.employee.dto.request.EmployeeStatusUpdateRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeDetailDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeListDTO;
 import com.mycrewsoft.domain.employee.vo.EmployeeVO;
@@ -19,10 +20,10 @@ public interface AdminEmployeeService {
 	 void registerEmployee(EmployeeRegisterRequestDTO employeeRequest);
 
 	 /**
-	  * 사원 정보를 수정하는 메서드
-	  * @param employeeVO 수정할 사원 정보가 담긴 VO 객체
+	  * 사원 상태 정보를 수정하는 메서드
+	  * @param 수정할 사원의 ID
 	  */
-	 void updateEmployee();
+	 void updateEmployeeStatus(Long empId, EmployeeStatusUpdateRequestDTO request);
 
 	 /**
 	  * 사원 정보를 삭제하는 메서드

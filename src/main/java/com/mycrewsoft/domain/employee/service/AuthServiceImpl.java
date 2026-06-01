@@ -64,8 +64,15 @@ public class AuthServiceImpl implements AuthService {
 		}
 		String empStat = userDetails.getEmpStat();
 					
-		if(empStat.equals(EmpStatCode.EMP_INACTIVE.getCode()) || empStat.equals(EmpStatCode.EMP_RETIRED.getCode())) {
+		if(EmpStatCode.EMP_INACTIVE.getCode().equals(empStat) || EmpStatCode.EMP_RETIRED.getCode().equals(empStat)) {
 			throw new CustomException(ErrorCode.USER_DISABLED);
+		}
+
+		boolean firstLoginRequired = EmpStatCode.EMP_INITIAL.getCode().equals(empStat);
+		if (!firstLoginRequired) {
+			adminEmployeeMapper.updateEmployeeStatus(
+					userDetails.getEmpId(),
+					EmpStatCode.EMP_LOGIN.getCode());
 		}
 		
 		
@@ -106,7 +113,7 @@ public class AuthServiceImpl implements AuthService {
 				.refreshToken(refreshToken)
 				.empId(userDetails.getEmpId())
 				.authVersion(authVersion)
-				.firstLoginRequired(EmpStatCode.EMP_INITIAL.getCode().equals(userDetails.getEmpStat()))
+				.firstLoginRequired(firstLoginRequired)
 				.build();
 	}
 
@@ -197,6 +204,10 @@ public class AuthServiceImpl implements AuthService {
 		if (!StringUtils.hasText(sessionId)) {
 			throw new CustomException(ErrorCode.INVALID_TOKEN);
 		}
+
+		adminEmployeeMapper.updateEmployeeStatusIfNotInitial(
+				currentUser.getEmpId(),
+				EmpStatCode.EMP_LOGOUT.getCode());
 
 		refreshTokenService.deleteSession(sessionId);
 	}

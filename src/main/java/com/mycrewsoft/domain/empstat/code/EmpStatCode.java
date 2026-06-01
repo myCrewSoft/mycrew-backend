@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 직원 상태 코드를 정의하는 열거형 클래스
+ * 직원 상태 코드를 정의하는 enum.
  */
 @Getter
 @RequiredArgsConstructor
@@ -13,11 +13,11 @@ public enum EmpStatCode {
     EMP_ACTIVE("EMP_ACTIVE", "정상 재직"),
     EMP_INACTIVE("EMP_INACTIVE", "비활성"),
     EMP_RETIRED("EMP_RETIRED", "퇴사"),
-	EMP_VACATION("EMP_VACATION", "휴가"),
+    EMP_VACATION("EMP_VACATION", "휴가"),
 
-	EMP_LOGIN("EMP_LOGIN", "출근"),
-	EMP_LOGOUT("EMP_LOGOUT", "퇴근");
-	
-	private final String code;
+    EMP_LOGIN("EMP_LOGIN", "출근"),
+    EMP_LOGOUT("EMP_LOGOUT", "퇴근");
+
+    private final String code;
     private final String label;
 }
