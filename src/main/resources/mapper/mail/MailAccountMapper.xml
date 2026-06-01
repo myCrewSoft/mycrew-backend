@@ -76,4 +76,14 @@
           AND USE_YN = 'Y'
           AND TOKEN_STATUS_CD = 'ACTIVE'
     </select>
+
+    <select id="existsActiveGoogleMailAccountByEmail" resultType="int">
+        SELECT COUNT(1)
+        FROM TB_MAIL_ACCOUNT
+        WHERE EMP_ID = #{empId}
+          AND PROVIDER_CD = 'GOOGLE'
+          AND LOWER(EMAIL_ADDR) = LOWER(#{emailAddr})
+          AND USE_YN = 'Y'
+          AND TOKEN_STATUS_CD = 'ACTIVE'
+    </select>
 </mapper>

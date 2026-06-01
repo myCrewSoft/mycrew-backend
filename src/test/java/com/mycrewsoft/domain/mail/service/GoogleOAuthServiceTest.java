@@ -127,5 +127,10 @@ class GoogleOAuthServiceTest {
         public int existsActiveMailAccount(Long empId) {
             return 0;
         }
+
+        @Override
+        public int existsActiveGoogleMailAccountByEmail(Long empId, String emailAddr) {
+            return 0;
+        }
     }
 }

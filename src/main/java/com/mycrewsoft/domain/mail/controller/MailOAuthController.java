@@ -33,7 +33,7 @@ public class MailOAuthController {
         return ResponseEntity.ok(ApiResponse.success("Google 메일 연결 URL 생성 완료", response));
     }
 
-    @GetMapping("/api/mail/oauth/google/callback")
+    @GetMapping("/mail/oauth/google/callback")
     public ResponseEntity<Void> callback(
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String state) {

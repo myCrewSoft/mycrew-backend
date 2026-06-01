@@ -18,7 +18,10 @@ import com.mycrewsoft.domain.employee.dto.request.LoginRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.TokenRefreshRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.LoginResponseDTO;
 import com.mycrewsoft.domain.employee.dto.response.TokenRefreshResponseDTO;
+import com.mycrewsoft.domain.employee.mapper.AdminEmployeeMapper;
+import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 import com.mycrewsoft.domain.empstat.code.EmpStatCode;
+import com.mycrewsoft.domain.mail.mapper.MailAccountMapper;
 import com.mycrewsoft.security.jwt.JwtTokenProvider;
 import com.mycrewsoft.security.rbac.AuthSessionFactory;
 import com.mycrewsoft.security.rbac.RbacSessionRefreshService;
@@ -40,6 +43,8 @@ public class AuthServiceImpl implements AuthService {
 	private final AuthSessionFactory authSessionFactory;
 	private final PasswordEncoder passwordEncoder;
 	private final RbacSessionRefreshService rbacSessionRefreshService;
+	private final AdminEmployeeMapper adminEmployeeMapper;
+	private final MailAccountMapper mailAccountMapper;
 	
 	@Override
 	@Transactional
@@ -160,9 +165,27 @@ public class AuthServiceImpl implements AuthService {
 	}
 
 	@Override
+	@Transactional
 	public void handleFirstLogin(FirstLoginRequestDTO request) {
-		// TODO Auto-generated method stub
-		
+		Long empId = SecurityUtil.getCurrentEmpId();
+		EmployeeVO employee = adminEmployeeMapper.selectEmployeeById(empId);
+
+		if (employee == null) {
+			throw new CustomException(ErrorCode.USER_NOT_FOUND);
+		}
+		if (!EmpStatCode.EMP_INITIAL.getCode().equals(employee.getEmpStatCd())) {
+			throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+		}
+		if (!StringUtils.hasText(request.getEmailAddr())
+				|| mailAccountMapper.existsActiveGoogleMailAccountByEmail(empId, request.getEmailAddr()) < 1) {
+			throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+		}
+
+		String encodedPassword = passwordEncoder.encode(request.getNewPassword());
+		adminEmployeeMapper.updateFirstLoginInfo(
+				empId,
+				encodedPassword,
+				EmpStatCode.EMP_LOGIN.getCode());
 	}
 
 	@Override
