@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.domain.roleassignment.mapper.RoleAssignmentMapper">
+
+    <resultMap id="RoleAssignmentWithRoleResultMap" type="com.mycrewsoft.domain.roleassignment.vo.RoleAssignmentVO">
+        <id property="roleAssignId" column="ROLE_ASSIGN_ID"/>
+        <result property="roleId" column="ROLE_ID"/>
+        <result property="empId" column="EMP_ID"/>
+        <result property="scopeTypeCd" column="SCOPE_TYPE_CD"/>
+        <result property="scopeId" column="SCOPE_ID"/>
+        <result property="enabled" column="ROLE_ASSIGNMENT_ENABLED"/>
+        <association property="role" javaType="com.mycrewsoft.domain.role.vo.RoleVO">
+            <id property="roleId" column="ROLE_ROLE_ID"/>
+            <result property="roleCd" column="ROLE_ROLE_CD"/>
+            <result property="roleNm" column="ROLE_ROLE_NM"/>
+            <result property="roleExpln" column="ROLE_ROLE_EXPLN"/>
+            <result property="frstRgtrId" column="ROLE_FRST_RGTR_ID"/>
+            <result property="frstRegDt" column="ROLE_FRST_REG_DT"/>
+            <result property="lastMdfrId" column="ROLE_LAST_MDFR_ID"/>
+            <result property="lastMdfcnDt" column="ROLE_LAST_MDFCN_DT"/>
+        </association>
+    </resultMap>
+
+    <select id="selectRoleIdByRoleCode" resultType="java.lang.Long">
+        SELECT ROLE_ID
+        FROM TB_ROLE
+        WHERE ROLE_CD = #{roleCd}
+    </select>
+
+    <select id="selectRoleAssignmentsByEmpId" resultMap="RoleAssignmentWithRoleResultMap">
+        SELECT
+            RA.ROLE_ASSIGN_ID,
+            RA.ROLE_ID,
+            RA.EMP_ID,
+            RA.SCOPE_TYPE_CD,
+            RA.SCOPE_ID,
+            RA.ENABLED AS ROLE_ASSIGNMENT_ENABLED,
+            R.ROLE_ID AS ROLE_ROLE_ID,
+            R.ROLE_CD AS ROLE_ROLE_CD,
+            R.ROLE_NM AS ROLE_ROLE_NM,
+            R.ROLE_EXPLN AS ROLE_ROLE_EXPLN,
+            R.FRST_RGTR_ID AS ROLE_FRST_RGTR_ID,
+            R.FRST_REG_DT AS ROLE_FRST_REG_DT,
+            R.LAST_MDFR_ID AS ROLE_LAST_MDFR_ID,
+            R.LAST_MDFCN_DT AS ROLE_LAST_MDFCN_DT
+        FROM TB_ROLE_ASSIGNMENT RA
+        JOIN TB_ROLE R
+            ON R.ROLE_ID = RA.ROLE_ID
+        WHERE RA.EMP_ID = #{empId}
+    </select>
+
+    <insert id="insertRoleAssignmentIfAbsent" parameterType="com.mycrewsoft.domain.roleassignment.vo.RoleAssignmentVO">
+        INSERT INTO TB_ROLE_ASSIGNMENT (
+            ROLE_ASSIGN_ID,
+            ROLE_ID,
+            EMP_ID,
+            SCOPE_TYPE_CD,
+            SCOPE_ID,
+            ENABLED
+        )
+        SELECT
+            (SELECT NVL(MAX(ROLE_ASSIGN_ID), 0) + 1 FROM TB_ROLE_ASSIGNMENT),
+            #{roleId},
+            #{empId},
+            #{scopeTypeCd},
+            #{scopeId},
+            #{enabled}
+        FROM DUAL
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM TB_ROLE_ASSIGNMENT RA
+            WHERE RA.ROLE_ID = #{roleId}
+              AND RA.EMP_ID = #{empId}
+              AND RA.SCOPE_TYPE_CD = #{scopeTypeCd}
+              AND RA.SCOPE_ID = #{scopeId}
+        )
+    </insert>
+</mapper>

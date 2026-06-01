@@ -2,8 +2,14 @@ spring:
   application:
     name: mycrewsoft
 
+  mvc:
+    log-request-details: true
+
+  webflux:
+    log-request-details: true
+ 
   datasource:
-    url: jdbc:oracle:thin:@localhost:1521:XE
+    url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: oracle.jdbc.OracleDriver
@@ -20,30 +26,67 @@ spring:
       max-file-size: 50MB
       max-request-size: 100MB
 
-# Redis
-#  data:
-#    redis:
-#      host: localhost
-#      port: 6379
-#      timeout: 3000
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 3000
+
+########################################
+# Spring AI + LM Studio 연동
+########################################
+  ai:
+    openai:
+# ▶ 사내 LM Studio 주소
+      base-url: http://192.168.35.112:1234
+      api-key: dummy
+
+      chat:
+        options:
+      # ▶ 사용 모델
+          model: gemma-3n-e4b-it-text
+
+        # ▶ ChatClient 수동 설정
+    chat:
+      client:
+        base-url: http://192.168.35.112:1234
+        api-key: dummy
+
+
+########################################
+# OpenAI 자동 설정 비활성화
+########################################
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.openai.autoconfigure.OpenAiAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiChatModelAutoConfiguration
 
 mybatis:
   mapper-locations: classpath:mapper/**/*.xml
-  type-aliases-package: com.mycrewsoft.app.domain.vo
+  type-aliases-package: com.mycrewsoft.domain
 
   configuration:
     map-underscore-to-camel-case: true
     jdbc-type-for-null: 'NULL'
 
 jwt:
+#HS256 알고리즘을 사용하여 토큰을 서명하기 위한 비밀 키.
   secret: ${JWT_SECRET}
   access-token-expiration: 1800000
   refresh-token-expiration: 604800000
+
+security:
+  rbac:
+    permission-sync:
+      enabled: true
 
 logging:
   level:
     com.projectname.app.mapper: DEBUG
     org.springframework.security: DEBUG
+    # ▶ Spring AI ChatClient 내부 동작 로그
+    org.springframework.ai.chat.client.advisor: DEBUG
 
 server:
   port: 80

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.domain.mail.mapper.MailAccountMapper">
+
+    <insert id="upsertGoogleMailAccount" parameterType="com.mycrewsoft.domain.mail.vo.MailAccountVO">
+        MERGE INTO TB_MAIL_ACCOUNT target
+        USING (
+            SELECT
+                #{empId} AS EMP_ID,
+                #{providerCd} AS PROVIDER_CD,
+                #{emailAddr} AS EMAIL_ADDR,
+                #{googleSubId} AS GOOGLE_SUB_ID,
+                #{accessToken} AS ACCESS_TOKEN,
+                #{refreshToken} AS REFRESH_TOKEN,
+                #{tokenExprDt} AS TOKEN_EXPR_DT,
+                #{scopeCn} AS SCOPE_CN,
+                #{tokenStatusCd} AS TOKEN_STATUS_CD,
+                #{useYn} AS USE_YN,
+                #{connectedDt} AS CONNECTED_DT
+            FROM DUAL
+        ) source
+        ON (target.EMP_ID = source.EMP_ID)
+        WHEN MATCHED THEN
+            UPDATE SET
+                target.PROVIDER_CD = source.PROVIDER_CD,
+                target.EMAIL_ADDR = source.EMAIL_ADDR,
+                target.GOOGLE_SUB_ID = source.GOOGLE_SUB_ID,
+                target.ACCESS_TOKEN = source.ACCESS_TOKEN,
+                target.REFRESH_TOKEN = COALESCE(source.REFRESH_TOKEN, target.REFRESH_TOKEN),
+                target.TOKEN_EXPR_DT = source.TOKEN_EXPR_DT,
+                target.SCOPE_CN = source.SCOPE_CN,
+                target.TOKEN_STATUS_CD = source.TOKEN_STATUS_CD,
+                target.USE_YN = source.USE_YN,
+                target.CONNECTED_DT = source.CONNECTED_DT,
+                target.REVOKED_DT = NULL,
+                target.LAST_MDFCN_DT = SYSDATE
+        WHEN NOT MATCHED THEN
+            INSERT (
+                EMP_ID,
+                PROVIDER_CD,
+                EMAIL_ADDR,
+                GOOGLE_SUB_ID,
+                ACCESS_TOKEN,
+                REFRESH_TOKEN,
+                TOKEN_EXPR_DT,
+                SCOPE_CN,
+                TOKEN_STATUS_CD,
+                USE_YN,
+                CONNECTED_DT,
+                FRST_REG_DT
+            )
+            VALUES (
+                source.EMP_ID,
+                source.PROVIDER_CD,
+                source.EMAIL_ADDR,
+                source.GOOGLE_SUB_ID,
+                source.ACCESS_TOKEN,
+                source.REFRESH_TOKEN,
+                source.TOKEN_EXPR_DT,
+                source.SCOPE_CN,
+                source.TOKEN_STATUS_CD,
+                source.USE_YN,
+                source.CONNECTED_DT,
+                SYSDATE
+            )
+    </insert>
+
+    <select id="existsActiveMailAccount" parameterType="long" resultType="int">
+        SELECT COUNT(1)
+        FROM TB_MAIL_ACCOUNT
+        WHERE EMP_ID = #{empId}
+          AND PROVIDER_CD = 'GOOGLE'
+          AND USE_YN = 'Y'
+          AND TOKEN_STATUS_CD = 'ACTIVE'
+    </select>
+
+    <select id="existsActiveGoogleMailAccountByEmail" resultType="int">
+        SELECT COUNT(1)
+        FROM TB_MAIL_ACCOUNT
+        WHERE EMP_ID = #{empId}
+          AND PROVIDER_CD = 'GOOGLE'
+          AND LOWER(EMAIL_ADDR) = LOWER(#{emailAddr})
+          AND USE_YN = 'Y'
+          AND TOKEN_STATUS_CD = 'ACTIVE'
+    </select>
+</mapper>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.security.rbac.RbacMapper">
+
+    <resultMap id="ScopedPermissionResultMap" type="com.mycrewsoft.security.authz.ScopedPermission">
+        <result property="permCd" column="PERM_CD"/>
+        <result property="roleId" column="ROLE_ID"/>
+        <result property="roleName" column="ROLE_NM"/>
+        <result property="scopeType" column="SCOPE_TYPE_CD"/>
+        <result property="scopeId" column="SCOPE_ID"/>
+    </resultMap>
+
+    <select id="selectScopedPermissionsByEmpId" resultMap="ScopedPermissionResultMap">
+        SELECT
+            P.PERM_CD,
+            R.ROLE_ID,
+            R.ROLE_NM,
+            RA.SCOPE_TYPE_CD,
+            RA.SCOPE_ID
+        FROM TB_ROLE_ASSIGNMENT RA
+        JOIN TB_ROLE R
+          ON R.ROLE_ID = RA.ROLE_ID
+        JOIN TB_PERMISSION_ROLE_MAPPING PRM
+          ON PRM.ROLE_ID = R.ROLE_ID
+        JOIN TB_PERMISSION P
+          ON P.PERM_ID = PRM.PERM_ID
+        WHERE RA.EMP_ID = #{empId}
+          AND RA.ENABLED = 'Y'
+          AND P.PERM_ENABLED = 'Y'
+    </select>
+
+    <select id="selectAuthVersionByEmpId" resultType="java.lang.Integer">
+        SELECT NVL(MAX(AUTH_VER), 0)
+        FROM TB_AUTH_VERSION
+        WHERE EMP_ID = #{empId}
+    </select>
+
+    <select id="selectAuthoritiesByEmpId" resultType="java.lang.String">
+        SELECT 'ROLE_USER' AS AUTHORITY
+        FROM DUAL
+        UNION
+        SELECT 'ROLE_ADMIN' AS AUTHORITY
+        FROM TB_ROLE_ASSIGNMENT RA
+        JOIN TB_ROLE R
+          ON R.ROLE_ID = RA.ROLE_ID
+        WHERE RA.EMP_ID = #{empId}
+          AND RA.ENABLED = 'Y'
+          AND RA.SCOPE_TYPE_CD = 'GLOBAL'
+          AND R.ROLE_CD = 'ROLE_SUPER_ADMIN'
+    </select>
+
+    <update id="incrementAuthVersionForEmpId">
+        MERGE INTO TB_AUTH_VERSION AV
+        USING (SELECT #{empId} AS EMP_ID FROM DUAL) SRC
+           ON (AV.EMP_ID = SRC.EMP_ID)
+         WHEN MATCHED THEN
+           UPDATE SET AV.AUTH_VER = NVL(AV.AUTH_VER, 0) + 1
+         WHEN NOT MATCHED THEN
+           INSERT (EMP_ID, AUTH_VER)
+           VALUES (SRC.EMP_ID, 1)
+    </update>
+
+    <select id="selectEnabledEmpIdsByRoleId" resultType="java.lang.Long">
+        SELECT DISTINCT RA.EMP_ID
+        FROM TB_ROLE_ASSIGNMENT RA
+        WHERE RA.ROLE_ID = #{roleId}
+          AND RA.ENABLED = 'Y'
+    </select>
+</mapper>

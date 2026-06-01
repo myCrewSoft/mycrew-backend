@@ -13,15 +13,28 @@ package com.mycrewsoft.common.constant;
 		// Auth
     public static final String ROLE_ADMIN = "ROLE_ADMIN";
     public static final String ROLE_USER = "ROLE_USER";
-		// Member
+    
+    public static final String SUPER_ADMIN = "ROLE_SUPER_ADMIN";
+    public static final String ROLE_EMPLOYEE_SELF = "ROLE_EMPLOYEE_SELF";
+	
+    // Member
     public static final String Member = "member";
 
     // Security
     /** 인증 없이 접근 허용할 URL. 공개 API 추가 시 AA 에게 요청한다. */
     public static final String[] PUBLIC_URLS = {
             "/api/v1/auth/**", // 로그인, 회원가입, 토큰 재발급
-            "/swagger-ui/**", // Swagger UI
+            "/swagger-ui/**",
             "/swagger-ui.html",
-            "/v3/api-docs/**" // Swagger API 문서 JSON
+            "/api/swagger-ui/**",
+            "/api/swagger-ui.html",
+            "/v3/api-docs",
+            "/v3/api-docs/**",
+            "/api/v3/api-docs",
+            "/api/v3/api-docs/**",
+            "/api/mail/oauth/google/callback",
+            "/api/chat/stream",
+            "/api/chat/stop",
+            "/api/chatbot"
     };
 }

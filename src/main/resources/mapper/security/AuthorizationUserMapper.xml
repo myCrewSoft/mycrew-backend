@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.security.users.AuthorizationUserMapper">
+
+    <resultMap id="AuthorizationUserRecordResultMap" type="com.mycrewsoft.security.users.AuthorizationUserRecord">
+        <constructor>
+            <arg column="EMP_ID" javaType="java.lang.Long"/>
+            <arg column="USERNAME" javaType="java.lang.String"/>
+            <arg column="PASSWORD" javaType="java.lang.String"/>
+            <arg column="ENABLED" javaType="boolean"/>
+            <arg column="EMP_STAT" javaType="java.lang.String"/>
+            <arg column="EXEC" javaType="boolean"/>
+        </constructor>
+    </resultMap>
+
+    <select id="selectLoginUserByUsername" resultMap="AuthorizationUserRecordResultMap">
+        SELECT
+            EMP_ID,
+            TO_CHAR(EMP_ID) AS USERNAME,
+            PSWD AS PASSWORD,
+            CASE WHEN UPPER(NVL(ENABLED, 'N')) = 'Y' THEN 1 ELSE 0 END AS ENABLED,
+            EMP_STAT_CD AS EMP_STAT,
+            EXEC_YN AS EXEC
+        FROM TB_EMPLOYEE
+        WHERE TO_CHAR(EMP_ID) = #{username}
+    </select>
+</mapper>
