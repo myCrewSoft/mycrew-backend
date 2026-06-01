@@ -8,10 +8,11 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
-@Builder
 @Schema(description = "일정 응답 DTO")
+@Builder
 public class ScheduleResponseDto {
 
     @Schema(description = "일정 ID", example = "1")

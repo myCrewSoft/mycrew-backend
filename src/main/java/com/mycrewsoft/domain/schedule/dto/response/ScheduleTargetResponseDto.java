@@ -16,4 +16,16 @@ public class ScheduleTargetResponseDto {
 
     @Schema(description = "공유 대상 ID", example = "1001")
     private String targetId;
+    
+    @Schema(description = "공유 대상 이름", example = "김민수")
+    private String targetNm;
+
+    @Schema(description = "부서명", example = "디자인팀")
+    private String deptNm;
+
+    @Schema(description = "직급명", example = "대리")
+    private String jobGrdNm;
+
+    @Schema(description = "프로필 사진 URL", example = "http://...")
+    private String profileImgUrl;
 }
