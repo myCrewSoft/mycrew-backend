@@ -73,7 +73,7 @@ public class AdminEmployeeController {
     public ApiResponse<String> updateEmployeeStatus(
             @PathVariable("memberId") Long empId,
             @Valid @RequestBody EmployeeStatusUpdateRequestDTO request) {
-
+    	
         adminEmployeeService.updateEmployeeStatus(empId, request);
         return ApiResponse.success("사원 상태가 변경되었습니다.");
     }
