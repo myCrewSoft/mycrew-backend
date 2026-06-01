@@ -69,12 +69,36 @@ public class ScheduleServiceImpl implements ScheduleService{
 	}
 
 	@Override
-	public void modifySchd(Long schdId, ScheduleRequestDto dto, Long empId) {
+	public void modifySchd(Long schdId, ScheduleRequestDto dto) {
+		// 권한 체크
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
+		if(currentEmpId != null && currentEmpId.equals(dto.getWriterId())) {
+			throw new CustomException(ErrorCode.NOT_SCHEDULE_OWNER);
+		}
 		
+		// 일정 조회
+		IntgSchdVO schdVO = intgSchdMapper.selectIntgSchd(schdId);
+		if (schdVO == null) throw new CustomException(ErrorCode.SCHEDULE_NOT_FOUND);
+		
+		// 일정 VO -> DTO 변환
+		IntgSchdVO updateVO = scheduleMapper.toVo(dto, currentEmpId);
+		updateVO.setSchdId(schdId);
+		updateVO.setSchdChgrId(currentEmpId);
+		
+		int updated = intgSchdMapper.updateIntgSchd(updateVO);
+		if(updated == 0) throw new CustomException(ErrorCode.SCHEDULE_NOT_FOUND);
+		
+	    // 5. 공유 대상 수정 (기존 전체 삭제 → 재등록)
+	    schdTargetMapper.deleteSchdTarget(schdId);
+	    
+	    List<SchdTargetVO> targets = buildTargetList(dto, schdId);
+	    if (!targets.isEmpty()) {
+	        schdTargetMapper.insertSchdTargetList(targets);
+	    }
 	}
 
 	@Override
-	public void deleteSchd(Long schdId, Long empId) {
+	public void deleteSchd(Long schdId) {
 		
 	}
 
