@@ -18,6 +18,7 @@ import com.mycrewsoft.domain.schedule.mapper.SchdTargetMapper;
 import com.mycrewsoft.domain.schedule.mapper.ScheduleMapper;
 import com.mycrewsoft.domain.schedule.vo.IntgSchdVO;
 import com.mycrewsoft.domain.schedule.vo.SchdSearchVO;
+import com.mycrewsoft.domain.schedule.vo.SchdTargetDetailVO;
 import com.mycrewsoft.domain.schedule.vo.SchdTargetVO;
 import com.mycrewsoft.security.authz.AuthorizationService;
 import com.mycrewsoft.security.authz.PermissionCode;
@@ -47,7 +48,7 @@ public class ScheduleServiceImpl implements ScheduleService{
 		
 		// 권한 체크
 		if(dto.getSchdClsfCd().equals("C001") || dto.getSchdClsfCd().equals("C003")) {
-			if(SecurityUtil.isCurrentExec()) {
+			if(!SecurityUtil.isCurrentExec()) {
 				throw new CustomException(ErrorCode.ACCESS_DENIED);
 			}
 		} else {
@@ -69,42 +70,30 @@ public class ScheduleServiceImpl implements ScheduleService{
 	}
 
 	@Override
-	public void modifySchd(Long schdId, ScheduleRequestDto dto) {
+	public ScheduleResponseDto readSchd(Long schdId) {
 		// 권한 체크
-		Long currentEmpId = SecurityUtil.getCurrentEmpId();
-		if(currentEmpId != null && currentEmpId.equals(dto.getWriterId())) {
-			throw new CustomException(ErrorCode.NOT_SCHEDULE_OWNER);
-		}
+		ResourceContext resource = ResourceContext.builder()
+				.resourceType(ResourceType.SCHEDULE)
+				.build();
+		authorizationService.assertCurrentUserPermission(
+				PermissionCode.SCHEDULE_READ,
+				resource);
 		
 		// 일정 조회
 		IntgSchdVO schdVO = intgSchdMapper.selectIntgSchd(schdId);
 		if (schdVO == null) throw new CustomException(ErrorCode.SCHEDULE_NOT_FOUND);
 		
-		// 일정 VO -> DTO 변환
-		IntgSchdVO updateVO = scheduleMapper.toVo(dto, currentEmpId);
-		updateVO.setSchdId(schdId);
-		updateVO.setSchdChgrId(currentEmpId);
+		// 본인 체크
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
+		if(currentEmpId == null || !currentEmpId.equals(schdVO.getSchdWrtrId())) {
+			throw new CustomException(ErrorCode.NOT_SCHEDULE_OWNER);
+		}
 		
-		int updated = intgSchdMapper.updateIntgSchd(updateVO);
-		if(updated == 0) throw new CustomException(ErrorCode.SCHEDULE_NOT_FOUND);
-		
-	    // 5. 공유 대상 수정 (기존 전체 삭제 → 재등록)
-	    schdTargetMapper.deleteSchdTarget(schdId);
-	    
-	    List<SchdTargetVO> targets = buildTargetList(dto, schdId);
-	    if (!targets.isEmpty()) {
-	        schdTargetMapper.insertSchdTargetList(targets);
-	    }
-	}
+		// 공유 대상 상세 조회
+	    List<SchdTargetDetailVO> targets = schdTargetMapper.selectSchdTargetDetail(schdId);
 
-	@Override
-	public void deleteSchd(Long schdId) {
-		
-	}
-
-	@Override
-	public ScheduleResponseDto readSchd(Long schdId) {
-		return null;
+		// vo -> dto		
+		return scheduleMapper.toResponseDto(schdVO, targets);
 	}
 
 	@Override
@@ -141,6 +130,57 @@ public class ScheduleServiceImpl implements ScheduleService{
 		return scheduleMapper.toDtoList(schdList);
 	}
 	
+	@Override
+	@Transactional
+	public void modifySchd(Long schdId, ScheduleRequestDto dto) {
+		// 일정 조회
+		IntgSchdVO schdVO = intgSchdMapper.selectIntgSchd(schdId);
+		if (schdVO == null) throw new CustomException(ErrorCode.SCHEDULE_NOT_FOUND);
+		
+		// 권한 체크
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
+		if(currentEmpId == null || !currentEmpId.equals(schdVO.getSchdWrtrId())) {
+			throw new CustomException(ErrorCode.NOT_SCHEDULE_OWNER);
+		}
+		
+		// 일정 VO -> DTO 변환
+		IntgSchdVO updateVO = scheduleMapper.toVo(dto, currentEmpId);
+		updateVO.setSchdId(schdId);
+		updateVO.setSchdChgrId(currentEmpId);
+		
+		int updated = intgSchdMapper.updateIntgSchd(updateVO);
+		if(updated == 0) throw new CustomException(ErrorCode.SCHEDULE_NOT_FOUND);
+		
+	    // 5. 공유 대상 수정 (기존 전체 삭제 → 재등록)
+	    schdTargetMapper.deleteSchdTarget(schdId);
+	    
+	    List<SchdTargetVO> targets = buildTargetList(dto, schdId);
+	    if (!targets.isEmpty()) {
+	        schdTargetMapper.insertSchdTargetList(targets);
+	    }
+	}
+
+	@Override
+	@Transactional
+	public void deleteSchd(Long schdId) {
+		// 일정 조회
+		IntgSchdVO schdVO = intgSchdMapper.selectIntgSchd(schdId);
+		if (schdVO == null) throw new CustomException(ErrorCode.SCHEDULE_NOT_FOUND);
+		
+		// 권한 체크
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
+		if(currentEmpId == null || !currentEmpId.equals(schdVO.getSchdWrtrId())) {
+			throw new CustomException(ErrorCode.NOT_SCHEDULE_OWNER);
+		}
+		
+		// 공유 대상 삭제
+	    schdTargetMapper.deleteSchdTarget(schdId);
+	    
+	    // 일정 삭제
+		int deleted = intgSchdMapper.deleteIntgSchd(schdId);
+		if(deleted == 0) throw new CustomException(ErrorCode.SCHEDULE_NOT_FOUND);
+	}
+	
 	//일정 참여자 목록 생성
 	private List<SchdTargetVO> buildTargetList(ScheduleRequestDto dto, Long schdId) {
 
@@ -151,13 +191,24 @@ public class ScheduleServiceImpl implements ScheduleService{
 	    if ("C001".equals(dto.getSchdClsfCd())) {
 	        targets.add(SchdTargetVO.builder()
 	                .schdId(schdId).targetTypeCd("01").targetId("0").build());
-
-	    // 개인 일정 - 본인 사번 자동 추가
 	    } else if ("C002".equals(dto.getSchdClsfCd())) {
+	    	// 개인 일정 - 본인 사번 자동 추가
 	        targets.add(SchdTargetVO.builder()
 	                .schdId(schdId).targetTypeCd("02").targetId(String.valueOf(empId)).build());
+	    } else if ("C004".equals(dto.getSchdClsfCd())) {
+	    	// 부서 일정
+	    	targets.add(SchdTargetVO.builder()
+	    			.schdId(schdId).targetTypeCd("04").targetId(dto.getDeptCd()).build());
+	    } else if ("C005".equals(dto.getSchdClsfCd())) {
+	    	// 프로젝트 일정
+	    	targets.add(SchdTargetVO.builder()
+	    			.schdId(schdId).targetTypeCd("05").targetId(String.valueOf(dto.getProjId())).build());
+	    } else if ("C006".equals(dto.getSchdClsfCd())) {
+	    	// 업무 일정
+	    	targets.add(SchdTargetVO.builder()
+	    			.schdId(schdId).targetTypeCd("06").targetId(String.valueOf(dto.getTaskId())).build());
 	    }
-
+	    
 	    // 프론트에서 선택한 targets 그대로 사용
 	    if (dto.getTargets() != null && !dto.getTargets().isEmpty()) {
 	        targets.addAll(scheduleMapper.toTargetVoList(dto.getTargets(), schdId));
