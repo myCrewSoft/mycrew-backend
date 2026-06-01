@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.board.mapper.BoardMapper">
+	
+<resultMap id="BoardResponseMap" type="com.mycrewsoft.domain.board.dto.response.BoardResponse">
+		<result property="boardId" column="BOARD_ID" />
+		<result property="boardTypeCd" column="BOARD_TYPE_CD" />
+		<result property="boardSj" column="BOARD_SJ" />
+		<result property="boardCn" column="BOARD_CN" /> 
+		<result property="frstRgtrId" column="FRST_RGTR_ID" />
+		<result property="frstRegDt" column="FRST_REG_DT" />
+		<result property="lastMdfrDt" column="LAST_MDFR_DT" />
+		<result property="boardAtchFileId" column="BOARD_ATCH_FILE_ID" />
+		<result property="deptCd" column="DEPT_CD" />
+		<result property="projId" column="PROJ_ID" />
+		<result property="imprtntYn" column="IMPRTNT_YN" />
+		<result property="cmntUseYn" column="CMNT_USE_YN" />
+		<result property="viewCnt" column="VIEW_CNT" />
+	</resultMap>
+
+	<select id="countBoard" resultType="long">
+		SELECT COUNT(*)
+		FROM tb_board B
+		WHERE 1 = 1
+		<if test="condition.keyword != null and condition.keyword != ''">
+			AND (
+				B.BOARD_SJ LIKE '%' || #{condition.keyword} || '%'
+				OR B.BOARD_CN LIKE '%' || #{condition.keyword} || '%'
+			)
+		</if>
+	</select>
+	
+	<select id="selectBoard" resultMap="BoardResponseMap">
+		SELECT * FROM (
+			SELECT ROW_NUMBER() OVER (ORDER BY B.FRST_REG_DT DESC) AS rnum,
+				   B.BOARD_ID, 
+				   B.BOARD_TYPE_CD, 
+				   B.BOARD_SJ, 
+				   B.BOARD_CN, 
+				   B.FRST_RGTR_ID, 
+				   B.FRST_REG_DT, 
+				   B.LAST_MDFR_DT, 
+				   B.BOARD_ATCH_FILE_ID, 
+				   B.DEPT_CD, 
+				   B.PROJ_ID, 
+				   B.IMPRTNT_YN, 
+				   B.CMNT_USE_YN, 
+				   B.VIEW_CNT
+			FROM tb_board B
+			WHERE 1 = 1
+			  AND (
+					#{global} = 1
+					OR B.BOARD_TYPE_CD IN ('FREE', 'ANON', 'NOTICE')
+					OR B.FRST_RGTR_ID = #{currentEmpId}
+					OR B.DEPT_CD = #{myDeptCd}
+		
+					<if test="deptScopeIds != null and deptScopeIds.size() > 0">
+						OR B.DEPT_CD IN
+						<foreach collection="deptScopeIds" item="deptCd" open="(" separator="," close=")">
+							#{deptCd}
+						</foreach>
+					</if>
+		
+					<if test="projectScopeIds != null and projectScopeIds.size() > 0">
+						OR TO_CHAR(B.PROJ_ID) IN
+						<foreach collection="projectScopeIds" item="projId" open="(" separator="," close=")">
+							#{projId}
+						</foreach>
+					</if>
+			  )
+			<if test="condition.keyword != null and condition.keyword != ''">
+				AND (
+					B.BOARD_SJ LIKE '%' || #{condition.keyword} || '%'
+					OR B.BOARD_CN LIKE '%' || #{condition.keyword} || '%'
+				)
+			</if>
+		) 
+		<![CDATA[
+		WHERE rnum > #{offset} AND rnum <= #{offset} + #{size}
+		]]>
+	</select>
+
+</mapper>
