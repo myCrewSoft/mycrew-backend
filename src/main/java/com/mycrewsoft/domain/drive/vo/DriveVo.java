@@ -20,7 +20,8 @@ public class DriveVo {
     private LocalDateTime delDt;     // 삭제일시
     private Long deltrMbrId;         // 삭제자ID
     private Long driveAtchFileId;    // 드라이브첨부파일ID (논리FK)
-
-    // Has Many 관계 — 폴더는 하위 아이템을 가짐 (폴더 안에 폴더/파일)
-    private List<DriveVo> children;
+    
+    private Long fileSz; //파일 사이즈
+    private String orgnlFileNm; //실제파일명
+    
 }
