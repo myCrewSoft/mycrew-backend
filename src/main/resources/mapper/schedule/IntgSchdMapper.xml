@@ -29,7 +29,7 @@
     </sql>
     
     <sql id="whereNotDeleted">
-        S.DEL_YN = 'n'
+        S.DEL_YN = 'N'
     </sql>
     
     <!-- 일정 단건 조회 -->
@@ -83,7 +83,7 @@
 	
 	<insert id="insertIntgSchd">
 		<selectKey keyProperty="schdId" resultType="long" order="BEFORE">
-            SELECT SEQ_TB_INTG_SCHD.NEXTVAL FROM DUAL
+            SELECT SEQ_SCHD_ID.NEXTVAL FROM DUAL
         </selectKey>
         INSERT INTO TB_INTG_SCHD (
             SCHD_ID,

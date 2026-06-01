@@ -56,7 +56,7 @@ public final class DateUtil {
 
         return dateTime.format(DATETIME_FORMAT);
     }
-
+    
     /** LocalDate → "2024년 05월 07일" */
     public static String formatDisplay(LocalDate date) {
         if (date == null) return StringUtils.EMPTY;

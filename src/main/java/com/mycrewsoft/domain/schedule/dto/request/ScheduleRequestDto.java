@@ -58,7 +58,7 @@ public class ScheduleRequestDto {
 	private String reptTypeCd;
 	
 	@Schema(description = "반복 종료일", example = "2026-06-21 10:00:00")
-	private String reptEndDt;
+	private LocalDateTime reptEndDt;
 	
 	@Schema(description = "공유 대상 목록")
     @Valid
