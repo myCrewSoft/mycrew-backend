@@ -52,12 +52,14 @@ public enum ErrorCode {
 	SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "SCH-002", "요청하신 일정을 찾을 수 없습니다."),
 	
 	// DRIVE
-	DRIVE_INSERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "DRIVE_001", "폴더 생성에 실패했습니다.");
+	DRIVE_INSERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "DRIVE_001", "폴더 생성에 실패했습니다."),
 	
+	// BOARD
+	BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001","존재하지않는 게시판입니다.");
     // 팀원이 새 도메인 추가 시 아래 패턴으로 섹션 추가
     // BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지 않는 게시글입니다."),
 	
-	
+	//으악
     private final HttpStatus httpStatus;
     private final String code;
     private final String message;
