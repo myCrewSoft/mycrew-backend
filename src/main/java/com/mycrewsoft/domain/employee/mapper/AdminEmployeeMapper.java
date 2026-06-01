@@ -26,15 +26,15 @@ public interface AdminEmployeeMapper {
 	 */
 	EmployeeVO selectEmployeeById(Long empId);
 
-	void updateEmployeeStatus(
+	int updateEmployeeStatus(
 	        @Param("empId") Long empId,
 	        @Param("empStatCd") String empStatCd);
 
-	void updateEmployeeStatusIfNotInitial(
+	int updateEmployeeStatusIfNotInitial(
 	        @Param("empId") Long empId,
 	        @Param("empStatCd") String empStatCd);
 
-	void updateFirstLoginInfo(
+	int updateFirstLoginInfo(
 	        @Param("empId") Long empId,
 	        @Param("password") String password,
 	        @Param("empStatCd") String empStatCd);

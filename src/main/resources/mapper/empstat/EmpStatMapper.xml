@@ -2,4 +2,28 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper
 	namespace="com.mycrewsoft.domain.empstat.mapper.EmpStatMapper">
+    <insert id="mergeEmpStats">
+        MERGE INTO TB_EMP_STAT S
+        USING (
+            <foreach collection="empStats" item="empStat" separator=" UNION ALL ">
+                SELECT
+                    #{empStat.code} AS EMP_STAT_CD,
+                    #{empStat.name} AS EMP_STAT_NM,
+                    #{empStat.description} AS EMP_STAT_EXPLN
+                FROM DUAL
+            </foreach>
+        ) SRC
+           ON (S.EMP_STAT_CD = SRC.EMP_STAT_CD)
+         WHEN NOT MATCHED THEN
+           INSERT (
+               EMP_STAT_CD,
+               EMP_STAT_NM,
+               EMP_STAT_EXPLN
+           )
+           VALUES (
+               SRC.EMP_STAT_CD,
+               SRC.EMP_STAT_NM,
+               SRC.EMP_STAT_EXPLN
+           )
+    </insert>
 </mapper>

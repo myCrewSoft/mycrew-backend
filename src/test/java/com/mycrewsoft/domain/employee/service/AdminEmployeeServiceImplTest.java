@@ -27,6 +27,7 @@ import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DtoMapper;
 import com.mycrewsoft.domain.employee.dto.request.EmployeeRegisterRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.EmployeeSearchDTO;
+import com.mycrewsoft.domain.employee.dto.request.EmployeeStatusUpdateRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeListDTO;
 import com.mycrewsoft.domain.employee.mapper.AdminEmployeeMapper;
 import com.mycrewsoft.domain.employee.vo.EmployeeVO;
@@ -162,6 +163,58 @@ class AdminEmployeeServiceImplTest {
         assertThat(page.getSize()).isEqualTo(100);
         assertThat(page.getTotalElements()).isZero();
         verify(employeeMapper).selectEmployees(condition, 0, 100);
+    }
+
+    @Test
+    void updateEmployeeStatusChecksPermissionAndUpdatesStatus() {
+        Long empId = 20260001L;
+        EmployeeStatusUpdateRequestDTO request = new EmployeeStatusUpdateRequestDTO();
+        request.setEmpStatCd(EmpStatCode.EMP_INACTIVE.getCode());
+
+        EmployeeVO employee = new EmployeeVO();
+        employee.setEmpId(empId);
+        when(employeeMapper.selectEmployeeById(empId)).thenReturn(employee);
+
+        adminEmployeeService.updateEmployeeStatus(empId, request);
+
+        verify(authorizationService).assertCurrentUserPermission(
+                org.mockito.ArgumentMatchers.eq(PermissionCode.EMPLOYEE_UPDATE),
+                any(ResourceContext.class));
+        verify(employeeMapper).updateEmployeeStatus(empId, EmpStatCode.EMP_INACTIVE.getCode());
+    }
+
+    @Test
+    void updateEmployeeStatusRejectsMissingEmployee() {
+        Long empId = 20260001L;
+        EmployeeStatusUpdateRequestDTO request = new EmployeeStatusUpdateRequestDTO();
+        request.setEmpStatCd(EmpStatCode.EMP_INACTIVE.getCode());
+
+        when(employeeMapper.selectEmployeeById(empId)).thenReturn(null);
+
+        assertThatThrownBy(() -> adminEmployeeService.updateEmployeeStatus(empId, request))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.USER_NOT_FOUND);
+
+        verify(employeeMapper, never()).updateEmployeeStatus(any(), any());
+    }
+
+    @Test
+    void updateEmployeeStatusRejectsUnknownStatusCode() {
+        Long empId = 20260001L;
+        EmployeeStatusUpdateRequestDTO request = new EmployeeStatusUpdateRequestDTO();
+        request.setEmpStatCd("UNKNOWN_STATUS");
+
+        EmployeeVO employee = new EmployeeVO();
+        employee.setEmpId(empId);
+        when(employeeMapper.selectEmployeeById(empId)).thenReturn(employee);
+
+        assertThatThrownBy(() -> adminEmployeeService.updateEmployeeStatus(empId, request))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+
+        verify(employeeMapper, never()).updateEmployeeStatus(any(), any());
     }
 
     private EmployeeRegisterRequestDTO registerRequest() {
