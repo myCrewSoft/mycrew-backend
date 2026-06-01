@@ -101,6 +101,20 @@ cors:
 file:
   upload-path: ${LOCAL_STORAGE}
 
+google:
+  oauth:
+    client-id: ${GOOGLE_OAUTH_CLIENT_ID:727057848148-08dmtdfppmnoqblbukb3aegv1avmq6c9.apps.googleusercontent.com}
+    client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET:}
+    redirect-uri: http://localhost/api/mail/oauth/google/callback
+    frontend-success-uri: http://localhost:5173/first-login?mailConnected=Y
+    frontend-failure-uri: http://localhost:5173/first-login?mailConnected=N
+    scopes:
+      - openid
+      - email
+      - profile
+      - https://www.googleapis.com/auth/gmail.readonly
+      - https://www.googleapis.com/auth/gmail.send
+
 springdoc:
   swagger-ui:
     path: /swagger-ui/index.html

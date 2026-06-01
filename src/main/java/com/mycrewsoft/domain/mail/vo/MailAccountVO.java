@@ -16,8 +16,14 @@ public class MailAccountVO {
     private String accessToken;
     private String refreshToken;
     private LocalDateTime tokenExprDt;
+    private String scopeCn;
+    private String googleHistoryId;
     private LocalDateTime syncLastDt;
+    private LocalDateTime watchExprDt;
+    private String tokenStatusCd;
     private String useYn;
+    private LocalDateTime connectedDt;
+    private LocalDateTime revokedDt;
     private LocalDateTime frstRegDt;
     private LocalDateTime lastMdfcnDt;
 }
