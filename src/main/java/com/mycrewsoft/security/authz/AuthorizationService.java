@@ -81,6 +81,7 @@ public class AuthorizationService {
             case GLOBAL -> true;
             case DEPT -> same(permission.getScopeId(), resource.getDeptCd());
             case PROJECT -> same(permission.getScopeId(), resource.getProjId());
+            case TASK -> same(permission.getScopeId(), resource.getTaskId());
             case SELF -> Objects.equals(empId, resource.getOwnerEmpId());
         };
     }

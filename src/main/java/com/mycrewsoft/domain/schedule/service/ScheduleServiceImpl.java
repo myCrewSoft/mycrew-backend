@@ -20,6 +20,8 @@ import com.mycrewsoft.domain.schedule.vo.IntgSchdVO;
 import com.mycrewsoft.domain.schedule.vo.SchdSearchVO;
 import com.mycrewsoft.domain.schedule.vo.SchdTargetDetailVO;
 import com.mycrewsoft.domain.schedule.vo.SchdTargetVO;
+import com.mycrewsoft.domain.task.mapper.TaskMapper;
+import com.mycrewsoft.domain.task.vo.TaskVO;
 import com.mycrewsoft.security.authz.AuthorizationService;
 import com.mycrewsoft.security.authz.PermissionCode;
 import com.mycrewsoft.security.authz.PermissionScopeSet;
@@ -38,6 +40,7 @@ public class ScheduleServiceImpl implements ScheduleService{
 	private final ScheduleMapper scheduleMapper;
 	private final EmployeeMapper employeeMapper;
 	private final AuthorizationService authorizationService;
+	private final TaskMapper taskMapper;
 	
 	@Override
 	@Transactional
@@ -231,7 +234,16 @@ public class ScheduleServiceImpl implements ScheduleService{
 	    } else if ("C005".equals(dto.getSchdClsfCd())) {
 	        builder.projId(String.valueOf(dto.getProjId()));
 	    } else if ("C006".equals(dto.getSchdClsfCd())) {
-	        builder.projId(String.valueOf(dto.getTaskId()));
+	    	TaskVO task = taskMapper.selectTaskAuthContextByTaskId(dto.getTaskId());
+	    	if (task == null) {
+	    		throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+	    	}
+
+	        builder
+	        	.resourceId(String.valueOf(dto.getTaskId()))
+	        	.taskId(String.valueOf(dto.getTaskId()))
+	        	.projId(String.valueOf(task.getProjId()))
+	        	.ownerEmpId(task.getTaskMngrId());
 	    } 
 	    
 	    return builder.build();

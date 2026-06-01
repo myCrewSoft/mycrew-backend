@@ -17,5 +17,6 @@ public enum ScopeType {
     GLOBAL,
     DEPT,
     PROJECT,
+    TASK,
     SELF
 }

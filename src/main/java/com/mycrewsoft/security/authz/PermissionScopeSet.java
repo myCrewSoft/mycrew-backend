@@ -92,6 +92,10 @@ public class PermissionScopeSet {
         return getScopeIds(ScopeType.PROJECT);
     }
 
+    public Set<String> getTaskScopeIds() {
+        return getScopeIds(ScopeType.TASK);
+    }
+
     public Set<String> getSelfScopeIds() {
         return getScopeIds(ScopeType.SELF);
     }
