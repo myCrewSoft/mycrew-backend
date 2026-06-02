@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.drive.dto.DriveFolderCreateRequestDto;
+import com.mycrewsoft.domain.drive.dto.DriveRenameRequestDto;
 import com.mycrewsoft.domain.drive.dto.DriveResponseDto;
 import com.mycrewsoft.domain.drive.service.DriveService;
 import com.mycrewsoft.domain.file.dto.FileUploadRequestDto;
@@ -22,6 +25,7 @@ import com.mycrewsoft.domain.file.service.FileService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,7 +37,6 @@ import lombok.extern.slf4j.Slf4j;
 public class DriveController {
 
     private final DriveService driveService;
-    private final FileService fileService;
     
     @Operation(summary = "폴더 생성")
     @PostMapping("/folders")
@@ -57,10 +60,44 @@ public class DriveController {
     
     @Operation(summary = "개인 드라이브 목록 조회")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<DriveResponseDto>>> getMyDriveList(){
+    public ResponseEntity<ApiResponse<List<DriveResponseDto>>> getMyDriveList(
+    		@RequestParam(required = false) Long prntDriveItemId){
 		return ResponseEntity.ok(
-			ApiResponse.success("드라이브 목록 조회 성공", driveService.getMyDriveList())
+			ApiResponse.success("드라이브 목록 조회 성공", driveService.getMyDriveList(prntDriveItemId))
 		);
+    }
+    
+    @Operation(summary = "폴더명 수정")
+    @PatchMapping("/folders/{driveItemId}/name")
+    public ResponseEntity<ApiResponse<DriveResponseDto>> renameItem(
+    	@PathVariable Long driveItemId,
+    	@Valid @RequestBody DriveRenameRequestDto reqDto 
+    ){
+		return ResponseEntity.ok(
+				ApiResponse.success("폴더명 수정 성공", driveService.renameItem(driveItemId, reqDto.getItemNm())));
     	
+    }
+    
+    @Operation(summary = "즐겨찾기 등록")
+    @PatchMapping("/items/{driveItemId}/bookmark/register")
+    public ResponseEntity<ApiResponse<DriveResponseDto>> registerBookmark(
+    	@PathVariable Long driveItemId
+    ){
+    	return ResponseEntity.ok(ApiResponse.success("즐겨찾기 등록 성공", driveService.registerBookmark(driveItemId)));
+    }
+    
+    @Operation(summary = "즐겨찾기 해제")
+    @PatchMapping("/items/{driveItemId}/bookmark/delete")
+    public ResponseEntity<ApiResponse<DriveResponseDto>> deleteBookmark(
+    	@PathVariable Long driveItemId
+    ){
+    	return ResponseEntity.ok(ApiResponse.success("즐겨찾기 해제 성공", driveService.deleteBookmark(driveItemId)));
+    }
+    
+    
+    @PatchMapping("/items/{driveItemId}/delete")
+    public ResponseEntity<ApiResponse<String>> deleteItem(@PathVariable Long driveItemId){
+    	driveService.deleteItem(driveItemId);
+		return ResponseEntity.ok(ApiResponse.success("삭제되었습니다."));
     }
 }
