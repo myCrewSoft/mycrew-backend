@@ -1,15 +1,28 @@
 package com.mycrewsoft.domain.notification.mapper;
 
-import org.mapstruct.Mapper;
+import com.mycrewsoft.domain.notification.dto.response.NotificationResponse;
 
-/**
- * componentModel = "spring" → Spring 빈으로 자동 등록되어 @Autowired 사용 가능.
- * 구현체는 컴파일 시 자동 생성된다. 직접 구현 금지.
- *
- * 팀원 가이드: 도메인별로 이 패턴대로 Mapper 인터페이스를 추가하면 된다.
- * 예) BoardDtoMapper, CommentDtoMapper ...
- */
-@Mapper(componentModel = "spring")
+import java.util.List;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import com.mycrewsoft.domain.notification.vo.AlrmRcvrVO;
+import com.mycrewsoft.domain.notification.vo.AlrmVO;
+
+@Mapper
 public interface NotificationMapper {
 
-}
+    List<AlrmVO> selectAlrmList(@Param("rcvrEmpId") Long rcvrEmpId);
+
+    long selectUnreadCount(@Param("rcvrEmpId") Long rcvrEmpId);
+
+    int insertAlrm(AlrmVO alrmVO);
+
+    int insertAlrmRcvr(AlrmRcvrVO alrmRcvrVO);
+    
+    int updateReadAll(@Param("rcvrEmpId") Long rcvrEmpId);
+
+    int updateDelYn(@Param("alrmRcvrId") Long alrmRcvrId, @Param("rcvrEmpId") Long rcvrEmpId);
+} 
+

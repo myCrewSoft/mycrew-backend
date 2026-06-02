@@ -40,7 +40,7 @@ public class BoardResponse {
 	@Schema(description = "게시판 첨부파일 ID (첨부파일이 없을 경우 null)", example = "458")
     private Long boardAtchFileId;        
     
-	@Schema(description = "부서 코드", example = "DEV")
+	@Schema(description = "부서 코드", example = "DEPT")
     private String deptCd;                
     
 	@Schema(description = "프로젝트 ID", example = "15")

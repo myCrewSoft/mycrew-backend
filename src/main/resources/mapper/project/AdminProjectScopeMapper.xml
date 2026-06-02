@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.project.mapper.AdminProjectScopeMapper">
+
+    <resultMap id="AdminScopeOptionResultMap" type="com.mycrewsoft.domain.employee.dto.response.AdminScopeOptionResponseDTO">
+        <result property="scopeId" column="SCOPE_ID"/>
+        <result property="scopeCode" column="SCOPE_CODE"/>
+        <result property="scopeName" column="SCOPE_NAME"/>
+        <result property="label" column="LABEL"/>
+    </resultMap>
+
+    <select id="selectProjectScopeOptions" resultMap="AdminScopeOptionResultMap">
+        SELECT
+            TO_CHAR(P.PROJ_ID) AS SCOPE_ID,
+            TO_CHAR(P.PROJ_ID) AS SCOPE_CODE,
+            P.PROJ_NM AS SCOPE_NAME,
+            TO_CHAR(P.PROJ_ID) || ' - ' || P.PROJ_NM AS LABEL
+        FROM TB_PROJECT P
+        ORDER BY P.PROJ_NM, P.PROJ_ID
+    </select>
+</mapper>

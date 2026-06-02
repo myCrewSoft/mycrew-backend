@@ -97,7 +97,8 @@ cors:
   allowed-headers: Authorization,Content-Type,Accept
   allow-credentials: true
   max-age: 3600
-
+  exposed-headers: Content-Type,Cache-Control,X-Accel-Buffering
+ 
 file:
   upload-path: ${LOCAL_STORAGE}
 
