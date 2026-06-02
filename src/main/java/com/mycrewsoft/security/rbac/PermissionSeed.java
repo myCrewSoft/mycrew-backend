@@ -16,9 +16,12 @@ public record PermissionSeed(
 
     public static PermissionSeed from(PermissionCode permissionCode) {
         String code = permissionCode.getCode();
+        String name = permissionCode.getPermissionName();
+        String description = permissionCode.getDescription();
+        
         return new PermissionSeed(
                 code,
-                code,
-                "PermissionCode enum managed permission: " + code);
+                name,
+                description);
     }
 }
