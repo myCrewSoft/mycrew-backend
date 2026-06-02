@@ -3,11 +3,18 @@ package com.mycrewsoft.domain.board.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.mycrewsoft.common.constant.PermissionCode;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
+import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
+import com.mycrewsoft.domain.board.dto.response.BoardResponse;
 import com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse;
 import com.mycrewsoft.domain.board.mapper.BoardMapper;
 import com.mycrewsoft.domain.employee.mapper.EmployeeMapper;
@@ -26,47 +33,49 @@ public class BoardServiceImpl implements BoardService {
 	private final BoardMapper boardMapper;  
 	private final AuthorizationService authorizationService;
 
-//	@Override
-//	@Transactional(readOnly = true)
-//	public Page<BoardResponse> getBoard(BoardSearchRequest condition) {
-//		// 1. 권한 검증 및 자원 설정
-//		ResourceContext resource = ResourceContext.builder()
-//				.resourceType(ResourceType.BOARD)
-//				.build();
-//
-//		authorizationService.assertCurrentUserPermission(
-//				PermissionCode.BOARD_POST_READ,
-//				resource
-//				);
-//
-//		// 2. 권한 정보(부서코드, 글로벌 여부, 스코프 ID 세트 등) 조회
-//		Long currentEmpId = SecurityUtil.getCurrentEmpId();
-//		String myDeptCd = employeeMapper.selectEmpDeptCodeByEmpId(currentEmpId);
-//		PermissionScopeSet scopes = authorizationService.getCurrentPermissionScopes(PermissionCode.BOARD_POST_READ);
-//
-//		// 3. 페이징 계산
-//		int page = Math.max(condition.getPage(), 0);
-//		int size = Math.min(Math.max(condition.getSize(), 1), 100);
-//		int offset = page * size;
-//
-//		// 4. 데이터베이스 조회 (전체 카운트 및 페이징된 리스트)
-//		long total = boardMapper.countBoard(condition);
-//
-//		List<BoardResponse> content = boardMapper.selectBoard(
-//				condition, 
-//				currentEmpId, 
-//				myDeptCd,
-//				scopes.hasGlobal(), 
-//				scopes.getDepartmentScopeIds(),
-//				scopes.getProjectScopeIds(),
-//				offset, 
-//				size
-//				);
-//
-//		// 5. Spring Page 객체로 바인딩하여 반환
-//		Pageable pageable = PageRequest.of(page, size);
-//		return new PageImpl<>(content, pageable, total);
-//	}
+	
+	// 데이터를 몇 페이지에 몇개씩 보여줄지
+	@Override
+	@Transactional(readOnly = true) 
+	public Page<BoardResponse> getBoard(String boardTypeCd,String deptCd,BoardSearchRequest searchRequest,Pageable pageable) {
+		if(!StringUtils.isNotBlank(boardTypeCd)) {
+			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+		}
+		
+		// 1. 권한 검증 및 자원 설정
+		if(StringUtils.isNotBlank(deptCd) ) {
+			
+			ResourceContext resource = ResourceContext.builder()
+					.resourceType(ResourceType.BOARD)
+					.deptCd(deptCd)
+					.build();
+			
+			authorizationService.assertCurrentUserPermission(
+					PermissionCode.BOARD_POST_READ,
+					resource
+					);
+		}
+			
+		// 2. 권한 정보(부서코드, 글로벌 여부, 스코프 ID 세트 등) 조회
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
+		String myDeptCd = employeeMapper.selectEmpDeptCodeByEmpId(currentEmpId);
+		PermissionScopeSet scopes = authorizationService.getCurrentPermissionScopes(PermissionCode.BOARD_POST_READ);
+
+		// 3. 데이터베이스 조회 (전체 카운트 및 페이징된 리스트)
+		long total = boardMapper.countBoard(searchRequest,boardTypeCd,deptCd);
+
+		//4. 한 페이지에 보여지는 게시물   
+		List<BoardResponse> content = boardMapper.getBoardList(
+				pageable.getOffset(), // pageNumber* pageSize 
+				pageable.getPageSize(), //한 페이지당 몇개 ?
+				searchRequest, //검색기능
+				boardTypeCd,
+				deptCd
+		);
+
+		// 5. Spring Page 객체로 바인딩하여 반환
+		return new PageImpl<>(content, pageable, total);
+	}
 
 	@Override
 	public List<BoardSideBarResponse> getSideBar() {

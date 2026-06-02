@@ -70,7 +70,6 @@ public enum ErrorCode {
     // 팀원이 새 도메인 추가 시 아래 패턴으로 섹션 추가
     // BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지 않는 게시글입니다."),
 	
-	//으악
     private final HttpStatus httpStatus;
     private final String code;
     private final String message;
