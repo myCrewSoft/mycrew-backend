@@ -32,6 +32,6 @@ public class DriveResponseDto {
     @Schema(description = "등록 후 경과 시간", example = "3분 전")
     private String timeAgo;
     
-    private Long fileSz;
+    private String fileSz;
     private String orgnFileNm;
 }
