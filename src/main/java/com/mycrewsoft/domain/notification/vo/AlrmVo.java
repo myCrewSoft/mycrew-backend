@@ -8,7 +8,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class AlrmVo {
+public class AlrmVO {
     private Long alrmId;		// 알림 ID - PK
 
     private String alrmTtln;	// 알림 제목

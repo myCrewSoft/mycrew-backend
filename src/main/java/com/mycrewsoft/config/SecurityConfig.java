@@ -54,7 +54,11 @@ public class SecurityConfig {
                                 refreshTokenService,
                                 objectMapper,
                                 rbacSessionRefreshService),
-                        UsernamePasswordAuthenticationFilter.class);
+                        UsernamePasswordAuthenticationFilter.class)
+                // SSE 설정
+                .headers(headers -> headers
+                    .frameOptions(frame -> frame.disable())
+                );
         return http.build();
     }
 

@@ -41,6 +41,9 @@ public enum ErrorCode {
     USER_DISABLED(HttpStatus.FORBIDDEN, "USER_004", "사용자 계정이 비활성화되었습니다."),
     DUPLICATE_EMPLOYEEID(HttpStatus.CONFLICT, "USER_005", "이미 사용 중인 사원번호입니다."),
 
+    // NOTIFICATION
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIF_001", "존재하지 않는 알림입니다."),
+
     // FILE
     FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FILE_001", "파일 업로드에 실패했습니다."),
     INVALID_FILE_TYPE(HttpStatus.BAD_REQUEST, "FILE_002", "허용되지 않는 파일 형식입니다."),

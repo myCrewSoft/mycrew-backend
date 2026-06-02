@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.domain.notification.mapper.NotificationMapper">
+
+    <resultMap id="alrmResultMap" type="com.mycrewsoft.domain.notification.vo.AlrmVO"  autoMapping="true">
+        <id property="alrmId" column="ALRM_ID"/>
+        <collection property="alrmRcvr"
+                    ofType="com.mycrewsoft.domain.notification.vo.AlrmRcvrVO" autoMapping="true" columnPrefix="R_">
+            <id property="alrmRcvrId" column="R_ALRM_RCVR_ID"/>
+            <id property="alrmId" column="R_ALRM_ID"/>
+        </collection>
+    </resultMap>
+
+    <select id="selectAlrmList" resultMap="alrmResultMap">
+        SELECT
+            A.ALRM_ID,
+            A.ALRM_TTLN,
+            A.ALRM_TYPE_CD,
+            A.ALRM_CN,
+            A.ALRM_SNDNG_DT,
+            R.ALRM_RCVR_ID  AS R_ALRM_RCVR_ID,
+            R.ALRM_ID       AS R_ALRM_ID,
+            R.RCVR_EMP_ID   AS R_RCVR_EMP_ID,
+            R.ALRM_CFMTN_DT AS R_ALRM_CFMTN_DT
+        FROM TB_ALRM A
+        JOIN TB_ALRM_RCVR R ON A.ALRM_ID = R.ALRM_ID
+        WHERE R.RCVR_EMP_ID = #{rcvrEmpId}
+          AND R.ALRM_DEL_YN = 'N'
+        ORDER BY A.ALRM_SNDNG_DT DESC
+    </select>
+
+    <select id="selectUnreadCount" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_ALRM A
+        JOIN TB_ALRM_RCVR R ON A.ALRM_ID = R.ALRM_ID
+        WHERE R.RCVR_EMP_ID = #{rcvrEmpId}
+          AND R.ALRM_DEL_YN = 'N'
+          AND R.ALRM_CFMTN_DT IS NULL
+    </select>
+
+    <insert id="insertAlrm">
+        <selectKey keyProperty="alrmId" resultType="long" order="BEFORE">
+            SELECT SEQ_ALRM_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_ALRM (
+            ALRM_ID,
+            ALRM_TTLN,
+            ALRM_TYPE_CD,
+            ALRM_CN,
+            ALRM_SNDNG_DT
+        ) VALUES (
+            #{alrmId},
+            #{alrmTtln},
+            #{alrmTypeCd},
+            #{alrmCn},
+            SYSDATE
+        )
+    </insert>
+
+    <insert id="insertAlrmRcvr">
+        <selectKey keyProperty="alrmRcvrId" resultType="long" order="BEFORE">
+            SELECT SEQ_ALRM_RCVR_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_ALRM_RCVR (
+            ALRM_RCVR_ID,
+            ALRM_ID,
+            RCVR_EMP_ID,
+            ALRM_DEL_YN
+        ) VALUES (
+            #{alrmRcvrId},
+            #{alrmId},
+            #{rcvrEmpId},
+            'N'
+        )
+    </insert>
+
+    <update id="updateReadAll">
+        UPDATE TB_ALRM_RCVR
+        SET ALRM_CFMTN_DT = SYSDATE
+        WHERE RCVR_EMP_ID = #{rcvrEmpId}
+          AND ALRM_DEL_YN = 'N'
+          AND ALRM_CFMTN_DT IS NULL     
+    </update>
+
+    <update id="updateDelYn">
+        UPDATE TB_ALRM_RCVR
+        SET ALRM_DEL_YN = 'Y',
+            ALRM_DEL_DT = SYSDATE
+        WHERE ALRM_RCVR_ID = #{alrmRcvrId}
+          AND RCVR_EMP_ID  = #{rcvrEmpId}
+    </update>
+
+</mapper>

@@ -21,6 +21,8 @@ public class CorsConfig {
     private boolean allowCredentials;
     @Value("${cors.max-age}")
     private long maxAge;
+    @Value("${cors.exposed-headers}")
+    private List<String> exposedHeaders;
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -30,6 +32,7 @@ public class CorsConfig {
         config.setAllowedHeaders(allowedHeaders);
         config.setAllowCredentials(allowCredentials);
         config.setMaxAge(maxAge);
+        config.setExposedHeaders(exposedHeaders);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", config);
