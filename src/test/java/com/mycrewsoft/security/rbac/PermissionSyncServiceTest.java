@@ -13,7 +13,7 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.mycrewsoft.security.authz.PermissionCode;
+import com.mycrewsoft.common.constant.PermissionCode;
 
 @ExtendWith(MockitoExtension.class)
 class PermissionSyncServiceTest {

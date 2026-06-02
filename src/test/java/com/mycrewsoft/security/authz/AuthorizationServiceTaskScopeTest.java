@@ -6,6 +6,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.mycrewsoft.common.constant.PermissionCode;
+
 class AuthorizationServiceTaskScopeTest {
 
     private final AuthorizationService authorizationService = new AuthorizationService();

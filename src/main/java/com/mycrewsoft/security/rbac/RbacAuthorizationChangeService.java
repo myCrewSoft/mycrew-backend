@@ -1,6 +1,7 @@
 package com.mycrewsoft.security.rbac;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,18 @@ public class RbacAuthorizationChangeService {
         }
 
         rbacMapper.incrementAuthVersionForEmpId(empId);
+    }
+
+    @Transactional
+    public void refreshEmployeesPermissions(List<Long> empIds) {
+        if (empIds == null) {
+            return;
+        }
+
+        empIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .forEach(this::refreshEmployeePermissions);
     }
 
     @Transactional

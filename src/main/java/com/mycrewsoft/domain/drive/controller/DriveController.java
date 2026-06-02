@@ -2,7 +2,6 @@ package com.mycrewsoft.domain.drive.controller;
 
 import java.util.List;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Tag(name = "Drive", description = "드라이브 API")
+@Tag(name = "Drive", description = "Drive API")
 @RestController
 @RequestMapping("/drive")
 @RequiredArgsConstructor
@@ -34,33 +33,26 @@ public class DriveController {
 
     private final DriveService driveService;
     private final FileService fileService;
-    
-    @Operation(summary = "폴더 생성")
+
+    @Operation(summary = "Create folder")
     @PostMapping("/folders")
     public ResponseEntity<ApiResponse<DriveResponseDto>> createFolder(
             @Validated @RequestBody DriveFolderCreateRequestDto reqDto) {
-
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("폴더가 생성되었습니다.", driveService.createFolder(reqDto)));
+        return ResponseEntity.ok(ApiResponse.success("Folder created.", driveService.createFolder(reqDto)));
     }
-    
-    @Operation(summary = "파일 업로드")
+
+    @Operation(summary = "Upload file")
     @PostMapping("/files")
     public ResponseEntity<ApiResponse<DriveResponseDto>> uploadFile(
             @Validated @ModelAttribute FileUploadRequestDto reqDto,
             @RequestParam(value = "prntDriveItemId", required = false) Long prntDriveItemId) {
-        
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("파일이 업로드되었습니다.",
-                		driveService.uploadFile(reqDto, prntDriveItemId)));
+        return ResponseEntity.ok(ApiResponse.success("File uploaded.",
+                driveService.uploadFile(reqDto, prntDriveItemId)));
     }
-    
-    @Operation(summary = "개인 드라이브 목록 조회")
+
+    @Operation(summary = "Get my drive list")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<DriveResponseDto>>> getMyDriveList(){
-		return ResponseEntity.ok(
-			ApiResponse.success("드라이브 목록 조회 성공", driveService.getMyDriveList())
-		);
-    	
+    public ResponseEntity<ApiResponse<List<DriveResponseDto>>> getMyDriveList() {
+        return ResponseEntity.ok(ApiResponse.success("Drive list loaded.", driveService.getMyDriveList()));
     }
 }

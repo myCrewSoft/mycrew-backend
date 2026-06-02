@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.mycrewsoft.common.constant.PermissionCode;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DtoMapper;
@@ -24,7 +25,6 @@ import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 import com.mycrewsoft.domain.empstat.code.EmpStatCode;
 import com.mycrewsoft.domain.roleassignment.service.RoleAssignmentService;
 import com.mycrewsoft.security.authz.AuthorizationService;
-import com.mycrewsoft.security.authz.PermissionCode;
 import com.mycrewsoft.security.authz.ResourceContext;
 import com.mycrewsoft.security.authz.ResourceType;
 import com.mycrewsoft.security.rbac.RbacAuthorizationChangeService;
@@ -73,7 +73,7 @@ public class AdminEmployeeServiceImpl implements AdminEmployeeService {
 	            .build();
 
 	    authorizationService.assertCurrentUserPermission(
-	            PermissionCode.EMPLOYEE_CREATE,
+	            PermissionCode.ADMIN_EMPLOYEE_CREATE,
 	            resource
 	    );
 	    
@@ -96,7 +96,7 @@ public class AdminEmployeeServiceImpl implements AdminEmployeeService {
 		        .build();
 
 		authorizationService.assertCurrentUserPermission(
-				PermissionCode.EMPLOYEE_UPDATE,
+				PermissionCode.ADMIN_EMPLOYEE_UPDATE,
 				resource
 		);
 		
@@ -129,7 +129,7 @@ public class AdminEmployeeServiceImpl implements AdminEmployeeService {
 										        .build();
 		
 		authorizationService.assertCurrentUserPermission(
-	            PermissionCode.EMPLOYEE_READ,
+	            PermissionCode.ADMIN_EMPLOYEE_READ,
 	            resource
 	    );
 
@@ -155,7 +155,7 @@ public class AdminEmployeeServiceImpl implements AdminEmployeeService {
 									        .build();
 
 		authorizationService.assertCurrentUserPermission(
-	            PermissionCode.EMPLOYEE_READ,
+	            PermissionCode.ADMIN_EMPLOYEE_READ,
 	            resource
 	    );
 
