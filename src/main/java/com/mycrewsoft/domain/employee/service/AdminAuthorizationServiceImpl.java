@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.mycrewsoft.common.constant.Constants;
+import com.mycrewsoft.common.constant.PermissionCode;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.employee.dto.request.PermissionStatusUpdateRequestDTO;
@@ -23,7 +24,6 @@ import com.mycrewsoft.domain.employee.dto.response.RoleListResponseDTO;
 import com.mycrewsoft.domain.employee.mapper.AdminAuthorizationMapper;
 import com.mycrewsoft.domain.role.vo.RoleVO;
 import com.mycrewsoft.security.authz.AuthorizationService;
-import com.mycrewsoft.security.authz.PermissionCode;
 import com.mycrewsoft.security.authz.ResourceContext;
 import com.mycrewsoft.security.authz.ResourceType;
 import com.mycrewsoft.security.authz.ScopeType;
@@ -193,7 +193,7 @@ public class AdminAuthorizationServiceImpl implements AdminAuthorizationService 
                 .resourceType(ResourceType.ADMIN)
                 .build();
 
-        authorizationService.assertCurrentUserPermission(PermissionCode.ROLE_MANAGE, resource);
+        authorizationService.assertCurrentUserPermission(PermissionCode.ADMIN_ROLE_MANAGE, resource);
     }
 
     private RoleDetailResponseDTO loadRoleDetail(Long roleId) {

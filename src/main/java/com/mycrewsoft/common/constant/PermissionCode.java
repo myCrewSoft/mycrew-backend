@@ -1,4 +1,4 @@
-package com.mycrewsoft.security.authz;
+package com.mycrewsoft.common.constant;
 
 /**
  * 시스템에서 사용하는 권한 코드를 한 곳에서 관리하는 enum.
@@ -15,10 +15,10 @@ package com.mycrewsoft.security.authz;
 public enum PermissionCode {	
 	// ADMIN
 	ADMIN_CONSOLE_ACCESS("관리자 페이지 접속 권한", "관리자 페이지에 접속할 수 있는 권한입니다."),
-	ROLE_MANAGE("역할 관리", "역할을 생성, 조회, 수정 및 관리할 수 있는 권한입니다."),
-	EMPLOYEE_CREATE("사원 등록", "사원 정보를 등록할 수 있는 권한입니다."),
-	EMPLOYEE_READ("사원 조회", "사원 정보를 조회할 수 있는 권한입니다."),
-	EMPLOYEE_UPDATE("사원 수정", "사원 정보를 수정할 수 있는 권한입니다."),
+	ADMIN_ROLE_MANAGE("역할 관리", "역할을 생성, 조회, 수정 및 관리할 수 있는 권한입니다."),
+	ADMIN_EMPLOYEE_CREATE("사원 등록", "사원 정보를 등록할 수 있는 권한입니다."),
+	ADMIN_EMPLOYEE_READ("사원 조회", "사원 정보를 조회할 수 있는 권한입니다."),
+	ADMIN_EMPLOYEE_UPDATE("사원 수정", "사원 정보를 수정할 수 있는 권한입니다."),
 
 	// Department
 	DEPT_CREATE("부서 생성", "부서를 생성할 수 있는 권한입니다."),

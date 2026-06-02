@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.mycrewsoft.common.constant.Constants;
+import com.mycrewsoft.common.constant.PermissionCode;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.employee.dto.request.PermissionStatusUpdateRequestDTO;
@@ -31,7 +32,6 @@ import com.mycrewsoft.domain.employee.dto.response.RoleDetailResponseDTO;
 import com.mycrewsoft.domain.employee.mapper.AdminAuthorizationMapper;
 import com.mycrewsoft.domain.role.vo.RoleVO;
 import com.mycrewsoft.security.authz.AuthorizationService;
-import com.mycrewsoft.security.authz.PermissionCode;
 import com.mycrewsoft.security.authz.ResourceContext;
 import com.mycrewsoft.security.rbac.RbacAuthorizationChangeService;
 
@@ -63,7 +63,7 @@ class AdminAuthorizationServiceImplTest {
 
         assertThat(permissions).containsExactly(permission);
         verify(authorizationService).assertCurrentUserPermission(
-                eq(PermissionCode.ROLE_MANAGE),
+                eq(PermissionCode.ADMIN_ROLE_MANAGE),
                 any(ResourceContext.class));
     }
 
@@ -205,7 +205,7 @@ class AdminAuthorizationServiceImplTest {
         verify(adminAuthorizationMapper).insertRoleAssignments(roleId, request.getEmpIds(), "GLOBAL", "*");
         verify(rbacAuthorizationChangeService).refreshEmployeesPermissions(request.getEmpIds());
         verify(authorizationService).assertCurrentUserPermission(
-                eq(PermissionCode.ROLE_MANAGE),
+                eq(PermissionCode.ADMIN_ROLE_MANAGE),
                 any(ResourceContext.class));
     }
 
@@ -268,7 +268,7 @@ class AdminAuthorizationServiceImplTest {
         verify(rbacAuthorizationChangeService).refreshRolePermissions(10L);
         verify(rbacAuthorizationChangeService).refreshRolePermissions(20L);
         verify(authorizationService).assertCurrentUserPermission(
-                eq(PermissionCode.ROLE_MANAGE),
+                eq(PermissionCode.ADMIN_ROLE_MANAGE),
                 any(ResourceContext.class));
     }
 
