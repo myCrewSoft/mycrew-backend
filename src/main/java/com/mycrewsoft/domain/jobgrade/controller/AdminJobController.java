@@ -21,29 +21,31 @@ import com.mycrewsoft.domain.jobgrade.dto.response.RankResponseDTO;
 import com.mycrewsoft.domain.jobgrade.service.AdminJobService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/admin")
 @RequiredArgsConstructor
+@Tag(name = "Admin Job API", description = "관리자 직급 관리 API")
 public class AdminJobController {
 
     private final AdminJobService adminJobService;
 
-    @Operation(summary = "Get ranks", description = "Returns rank list ordered by sort order.")
+    @Operation(summary = "직급 목록 불러오기", description = "직급 목록을 불러옵니다.")
     @GetMapping("/ranks")
     public ApiResponse<List<RankResponseDTO>> getRanks() {
         return ApiResponse.success(adminJobService.getRanks());
     }
 
-    @Operation(summary = "Create rank", description = "Creates a rank with sort order.")
+    @Operation(summary = "직급 생성", description = "직급을 생성합니다.")
     @PostMapping("/ranks")
     public ApiResponse<RankResponseDTO> createRank(@Valid @RequestBody RankCreateRequestDTO request) {
         return ApiResponse.success(adminJobService.createRank(request));
     }
 
-    @Operation(summary = "Update rank", description = "Updates rank name and sort order.")
+    @Operation(summary = "직급 수정", description = "직급을 수정합니다.")
     @PutMapping("/ranks/{rankId}")
     public ApiResponse<RankResponseDTO> updateRank(
             @PathVariable String rankId,
@@ -51,7 +53,7 @@ public class AdminJobController {
         return ApiResponse.success(adminJobService.updateRank(rankId, request));
     }
 
-    @Operation(summary = "Delete rank", description = "Disables a rank after moving assigned employees to replacement rank when needed.")
+    @Operation(summary = "직급 삭제", description = "직급을 삭제합니다. 삭제 시 해당 직급에 속한 직원들은 대체 직급으로 이동됩니다.")
     @DeleteMapping("/ranks/{rankId}")
     public ApiResponse<String> deleteRank(
             @PathVariable String rankId,
@@ -60,7 +62,7 @@ public class AdminJobController {
         return ApiResponse.success("Rank deleted successfully.");
     }
 
-    @Operation(summary = "Assign rank", description = "Assigns a rank to multiple employees.")
+    @Operation(summary = "직급 부여", description = "직급을 다수의 직원에게 부여합니다.")
     @PostMapping("/ranks/{rankId}/assignments")
     public ApiResponse<RankResponseDTO> assignRank(
             @PathVariable String rankId,
@@ -68,7 +70,7 @@ public class AdminJobController {
         return ApiResponse.success(adminJobService.assignRank(rankId, request));
     }
 
-    @Operation(summary = "Revoke rank", description = "Moves selected employees from a rank to a replacement rank.")
+    @Operation(summary = "직급 회수", description = "선택된 사원들의 직급을 회수합니다.")
     @DeleteMapping("/ranks/{rankId}/assignments")
     public ApiResponse<RankResponseDTO> revokeRank(
             @PathVariable String rankId,
