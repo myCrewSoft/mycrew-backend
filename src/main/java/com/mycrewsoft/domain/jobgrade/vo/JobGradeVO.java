@@ -18,6 +18,7 @@ public class JobGradeVO {
 
     private String jobGrdCd;
     private String jobGrdNm;
+    private Integer sortOrder;
     private String useYn;
     private Long frstRgtrId;
     private LocalDateTime frstRegDt;

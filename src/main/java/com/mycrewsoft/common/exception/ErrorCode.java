@@ -63,7 +63,11 @@ public enum ErrorCode {
     // ROLE / PERMISSION
     ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, "ROLE_001", "Role not found."),
     PERMISSION_NOT_FOUND(HttpStatus.NOT_FOUND, "PERM_001", "Permission not found."),
-    DUPLICATE_ROLE_CODE(HttpStatus.CONFLICT, "ROLE_002", "Role code already exists.");
+    DUPLICATE_ROLE_CODE(HttpStatus.CONFLICT, "ROLE_002", "Role code already exists."),
+
+    // JOB
+    RANK_NOT_FOUND(HttpStatus.NOT_FOUND, "JOB_001", "Rank not found."),
+    DUPLICATE_RANK_ID(HttpStatus.CONFLICT, "JOB_002", "Rank id already exists.");
     // 팀원이 새 도메인 추가 시 아래 패턴으로 섹션 추가
     // BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지 않는 게시글입니다."),
 	
