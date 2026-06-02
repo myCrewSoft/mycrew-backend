@@ -2,6 +2,7 @@ package com.mycrewsoft.domain.employee.controller;
 
 import java.util.List;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,67 +39,67 @@ public class AdminAuthorizationController {
 
     @Operation(summary = "권한 목록 불러오기", description = "시스템에서 제공하는 모든 권한 목록을 반환.")
     @GetMapping("/permissions")
-    public ApiResponse<List<PermissionResponseDTO>> getPermissions() {
-        return ApiResponse.success(adminAuthorizationService.getPermissions());
+    public ResponseEntity<ApiResponse<List<PermissionResponseDTO>>> getPermissions() {
+        return ResponseEntity.ok(ApiResponse.success(adminAuthorizationService.getPermissions()));
     }
 
     @Operation(summary = "권한 사용여부 결정", description = "시스템에서 해당 권한의 사용여부를 결정.")
     @PutMapping("/permissions/{permissionId}/status")
-    public ApiResponse<PermissionResponseDTO> updatePermissionStatus(
+    public ResponseEntity<ApiResponse<PermissionResponseDTO>> updatePermissionStatus(
             @PathVariable Long permissionId,
             @Valid @RequestBody PermissionStatusUpdateRequestDTO request) {
-        return ApiResponse.success(adminAuthorizationService.updatePermissionStatus(permissionId, request));
+        return ResponseEntity.ok(ApiResponse.success(adminAuthorizationService.updatePermissionStatus(permissionId, request)));
     }
 
     @Operation(summary = "역할 목록 불러오기", description = "시스템에 존재하는 모든 역할을 반환.")
     @GetMapping("/roles")
-    public ApiResponse<List<RoleListResponseDTO>> getRoles() {
-        return ApiResponse.success(adminAuthorizationService.getRoles());
+    public ResponseEntity<ApiResponse<List<RoleListResponseDTO>>> getRoles() {
+        return ResponseEntity.ok(ApiResponse.success(adminAuthorizationService.getRoles()));
     }
 
     @Operation(summary = "역할 상세 보기", description = "해당 역할의 상세 정보를 반환.")
     @GetMapping("/roles/{roleId}")
-    public ApiResponse<RoleDetailResponseDTO> getRole(@PathVariable Long roleId) {
-        return ApiResponse.success(adminAuthorizationService.getRole(roleId));
+    public ResponseEntity<ApiResponse<RoleDetailResponseDTO>> getRole(@PathVariable Long roleId) {
+        return ResponseEntity.ok(ApiResponse.success(adminAuthorizationService.getRole(roleId)));
     }
 
     @Operation(summary = "역할 생성", description = "한 역할을 생성하는 API. 역할 이름, 설명, 권한을 입력받아 새로운 역할을 생성.")
     @PostMapping("/roles")
-    public ApiResponse<RoleDetailResponseDTO> createRole(
+    public ResponseEntity<ApiResponse<RoleDetailResponseDTO>> createRole(
             @Valid @RequestBody RoleCreateRequestDTO request) {
-        return ApiResponse.success(adminAuthorizationService.createRole(request));
+        return ResponseEntity.ok(ApiResponse.success(adminAuthorizationService.createRole(request)));
     }
 
     @Operation(summary = "역할 수정", description = "한 역할을 수정하는 API. 역할 이름, 설명, 권한을 입력받아 기존 역할을 수정.")
     @PutMapping("/roles/{roleId}")
-    public ApiResponse<RoleDetailResponseDTO> updateRole(
+    public ResponseEntity<ApiResponse<RoleDetailResponseDTO>> updateRole(
             @PathVariable Long roleId,
             @Valid @RequestBody RoleUpdateRequestDTO request) {
-        return ApiResponse.success(adminAuthorizationService.updateRole(roleId, request));
+        return ResponseEntity.ok(ApiResponse.success(adminAuthorizationService.updateRole(roleId, request)));
     }
 
     @Operation(summary = "역할 삭제", description = "한 역할을 삭제하는 API. 역할 ID를 입력받아 해당 역할을 삭제.")
     @DeleteMapping("/roles/{roleId}")
-    public ApiResponse<String> deleteRole(
+    public ResponseEntity<ApiResponse<String>> deleteRole(
             @PathVariable Long roleId,
             @RequestBody(required = false) RoleDeleteRequestDTO request) {
         adminAuthorizationService.deleteRole(roleId, request);
-        return ApiResponse.success("Role deleted.");
+        return ResponseEntity.ok(ApiResponse.success("Role deleted."));
     }
 
     @Operation(summary = "역할 배정", description = "역할을 다수의 직원에게 배정하는 API.")
     @PostMapping("/roles/{roleId}/assignments")
-    public ApiResponse<RoleDetailResponseDTO> assignRole(
+    public ResponseEntity<ApiResponse<RoleDetailResponseDTO>> assignRole(
             @PathVariable Long roleId,
             @Valid @RequestBody RoleAssignRequestDTO request) {
-        return ApiResponse.success(adminAuthorizationService.assignRole(roleId, request));
+        return ResponseEntity.ok(ApiResponse.success(adminAuthorizationService.assignRole(roleId, request)));
     }
 
     @Operation(summary = "역할 회수", description = "역할을 직원으로부터 회수하는 API.")
     @DeleteMapping("/roles/{roleId}/assignments")
-    public ApiResponse<RoleDetailResponseDTO> revokeRole(
+    public ResponseEntity<ApiResponse<RoleDetailResponseDTO>> revokeRole(
             @PathVariable Long roleId,
             @Valid @RequestBody RoleRevokeRequestDTO request) {
-        return ApiResponse.success(adminAuthorizationService.revokeRole(roleId, request));
+        return ResponseEntity.ok(ApiResponse.success(adminAuthorizationService.revokeRole(roleId, request)));
     }
 }

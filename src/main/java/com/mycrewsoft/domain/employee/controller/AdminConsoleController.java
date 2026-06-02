@@ -1,5 +1,6 @@
 package com.mycrewsoft.domain.employee.controller;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,7 +29,7 @@ public class AdminConsoleController {
 
     @Operation(summary = "관리자 페이지 접속 여부", description = "관리자 페이지에 접속할 수 있는 지 판단하는 API입니다.")
     @GetMapping("/access")
-    public ApiResponse<AdminMeResponseDTO> getAdminMe() {
+    public ResponseEntity<ApiResponse<AdminMeResponseDTO>> getAdminMe() {
         ResourceContext resource = ResourceContext.builder()
                 .resourceType(ResourceType.ADMIN)
                 .build();
@@ -47,6 +48,6 @@ public class AdminConsoleController {
         log.info("Admin console accessed by empId={}", empId);
         log.info("AdminMeResponseDTO: {}", response.isAdminAccessible());
         
-        return ApiResponse.success(response);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

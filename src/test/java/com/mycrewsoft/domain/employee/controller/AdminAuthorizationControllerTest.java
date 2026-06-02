@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.http.ResponseEntity;
 
 import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.employee.dto.request.PermissionStatusUpdateRequestDTO;
@@ -27,10 +28,11 @@ class AdminAuthorizationControllerTest {
         permission.setPermissionId(1L);
         when(service.getPermissions()).thenReturn(List.of(permission));
 
-        ApiResponse<List<PermissionResponseDTO>> response = controller.getPermissions();
+        ResponseEntity<ApiResponse<List<PermissionResponseDTO>>> response = controller.getPermissions();
 
-        assertThat(response.isSuccess()).isTrue();
-        assertThat(response.getData()).containsExactly(permission);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().isSuccess()).isTrue();
+        assertThat(response.getBody().getData()).containsExactly(permission);
     }
 
     @Test
@@ -40,9 +42,10 @@ class AdminAuthorizationControllerTest {
         RoleDeleteRequestDTO request = new RoleDeleteRequestDTO();
         request.setReplacementRoleId(20L);
 
-        ApiResponse<String> response = controller.deleteRole(10L, request);
+        ResponseEntity<ApiResponse<String>> response = controller.deleteRole(10L, request);
 
-        assertThat(response.isSuccess()).isTrue();
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().isSuccess()).isTrue();
         verify(service).deleteRole(10L, request);
     }
 
@@ -55,10 +58,11 @@ class AdminAuthorizationControllerTest {
         role.setRoleId(10L);
         when(service.assignRole(10L, request)).thenReturn(role);
 
-        ApiResponse<RoleDetailResponseDTO> response = controller.assignRole(10L, request);
+        ResponseEntity<ApiResponse<RoleDetailResponseDTO>> response = controller.assignRole(10L, request);
 
-        assertThat(response.isSuccess()).isTrue();
-        assertThat(response.getData()).isEqualTo(role);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().isSuccess()).isTrue();
+        assertThat(response.getBody().getData()).isEqualTo(role);
         verify(service).assignRole(10L, request);
     }
 
@@ -72,10 +76,11 @@ class AdminAuthorizationControllerTest {
         permission.setPermissionId(1L);
         when(service.updatePermissionStatus(1L, request)).thenReturn(permission);
 
-        ApiResponse<PermissionResponseDTO> response = controller.updatePermissionStatus(1L, request);
+        ResponseEntity<ApiResponse<PermissionResponseDTO>> response = controller.updatePermissionStatus(1L, request);
 
-        assertThat(response.isSuccess()).isTrue();
-        assertThat(response.getData()).isEqualTo(permission);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().isSuccess()).isTrue();
+        assertThat(response.getBody().getData()).isEqualTo(permission);
         verify(service).updatePermissionStatus(1L, request);
     }
 }

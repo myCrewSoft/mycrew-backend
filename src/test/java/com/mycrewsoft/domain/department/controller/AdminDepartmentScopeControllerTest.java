@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.http.ResponseEntity;
 
 import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.department.service.AdminDepartmentScopeService;
@@ -22,10 +23,11 @@ class AdminDepartmentScopeControllerTest {
         AdminScopeOptionResponseDTO option = new AdminScopeOptionResponseDTO("D001", "D001", "Development");
         when(service.getDepartmentScopeOptions()).thenReturn(List.of(option));
 
-        ApiResponse<List<AdminScopeOptionResponseDTO>> response = controller.getDepartmentScopeOptions();
+        ResponseEntity<ApiResponse<List<AdminScopeOptionResponseDTO>>> response = controller.getDepartmentScopeOptions();
 
-        assertThat(response.isSuccess()).isTrue();
-        assertThat(response.getData()).containsExactly(option);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().isSuccess()).isTrue();
+        assertThat(response.getBody().getData()).containsExactly(option);
         verify(service).getDepartmentScopeOptions();
     }
 }

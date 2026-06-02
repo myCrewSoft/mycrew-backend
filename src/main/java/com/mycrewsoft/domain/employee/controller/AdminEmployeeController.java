@@ -61,20 +61,20 @@ public class AdminEmployeeController {
 
     @Operation(summary = "사원 상세 조회", description = "관리자가 사원의 상세 정보를 조회하는 API입니다.")
     @GetMapping("/{memberId}")
-    public ApiResponse<EmployeeDetailDTO> getEmployee(
+    public ResponseEntity<ApiResponse<EmployeeDetailDTO>> getEmployee(
             @PathVariable("memberId") Long empId) {
 
         EmployeeDetailDTO response = adminEmployeeService.getEmployeeDetailById(empId);
-        return ApiResponse.success(response);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @Operation(summary = "사원 상태 변경", description = "관리자가 사원의 상태를 변경하는 API입니다.")
     @PutMapping("/{memberId}/status")
-    public ApiResponse<String> updateEmployeeStatus(
+    public ResponseEntity<ApiResponse<String>> updateEmployeeStatus(
             @PathVariable("memberId") Long empId,
             @Valid @RequestBody EmployeeStatusUpdateRequestDTO request) {
     	
         adminEmployeeService.updateEmployeeStatus(empId, request);
-        return ApiResponse.success("사원 상태가 변경되었습니다.");
+        return ResponseEntity.ok(ApiResponse.success("사원 상태가 변경되었습니다."));
     }
 }
