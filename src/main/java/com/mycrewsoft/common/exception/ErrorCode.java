@@ -58,16 +58,20 @@ public enum ErrorCode {
 	DRIVE_INSERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "DRIVE_001", "폴더 생성에 실패했습니다."),
 	
 	// BOARD
-	BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001","존재하지않는 게시판입니다."),
-
-    // ROLE / PERMISSION
-    ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, "ROLE_001", "Role not found."),
-    PERMISSION_NOT_FOUND(HttpStatus.NOT_FOUND, "PERM_001", "Permission not found."),
-    DUPLICATE_ROLE_CODE(HttpStatus.CONFLICT, "ROLE_002", "Role code already exists."),
+	BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지않는 게시판입니다."),
 
     // JOB
-    RANK_NOT_FOUND(HttpStatus.NOT_FOUND, "JOB_001", "Rank not found."),
-    DUPLICATE_RANK_ID(HttpStatus.CONFLICT, "JOB_002", "Rank id already exists.");
+    RANK_NOT_FOUND(HttpStatus.NOT_FOUND, "JOB_001", "존재하지 않는 직급입니다."),
+    DUPLICATE_RANK_ID(HttpStatus.CONFLICT, "JOB_002", "이미 존재하는 직급 ID입니다."),
+
+    // ROLE 
+    ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, "ROLE_001", "존재하지 않는 역할입니다."),
+    DUPLICATE_ROLE_CODE(HttpStatus.CONFLICT, "ROLE_002", "해당 역할 코드가 이미 존재합니다."),
+	
+	// PERMISSION
+	PERMISSION_NOT_FOUND(HttpStatus.NOT_FOUND, "PERM_001", "존재하지 않는 권합입니다.");
+	
+
     // 팀원이 새 도메인 추가 시 아래 패턴으로 섹션 추가
     // BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지 않는 게시글입니다."),
 	

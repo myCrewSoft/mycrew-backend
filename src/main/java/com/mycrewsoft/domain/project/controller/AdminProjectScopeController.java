@@ -2,6 +2,7 @@ package com.mycrewsoft.domain.project.controller;
 
 import java.util.List;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,7 +25,7 @@ public class AdminProjectScopeController {
 
     @Operation(summary = "프로젝트의 범위를 받는 API", description = "역할 권한 설정 시 프로젝트 범위 옵션을 반환하는 API")
     @GetMapping("/scope-options")
-    public ApiResponse<List<AdminScopeOptionResponseDTO>> getProjectScopeOptions() {
-        return ApiResponse.success(adminProjectScopeService.getProjectScopeOptions());
+    public ResponseEntity<ApiResponse<List<AdminScopeOptionResponseDTO>>> getProjectScopeOptions() {
+        return ResponseEntity.ok(ApiResponse.success(adminProjectScopeService.getProjectScopeOptions()));
     }
 }
