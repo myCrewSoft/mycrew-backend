@@ -16,6 +16,8 @@ public interface AdminAuthorizationMapper {
 
     List<PermissionResponseDTO> selectPermissions();
 
+    PermissionResponseDTO selectPermissionById(@Param("permissionId") Long permissionId);
+
     List<RoleListResponseDTO> selectRoles();
 
     RoleDetailResponseDTO selectRoleDetail(@Param("roleId") Long roleId);
@@ -65,4 +67,10 @@ public interface AdminAuthorizationMapper {
             @Param("empIds") List<Long> empIds,
             @Param("scopeTypeCd") String scopeTypeCd,
             @Param("scopeId") String scopeId);
+
+    int updatePermissionEnabled(
+            @Param("permissionId") Long permissionId,
+            @Param("enabled") String enabled);
+
+    List<Long> selectRoleIdsByPermissionId(@Param("permissionId") Long permissionId);
 }

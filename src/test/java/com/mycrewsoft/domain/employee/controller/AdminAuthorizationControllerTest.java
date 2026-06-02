@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.mycrewsoft.common.response.ApiResponse;
+import com.mycrewsoft.domain.employee.dto.request.PermissionStatusUpdateRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.RoleAssignRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.RoleDeleteRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.PermissionResponseDTO;
@@ -59,5 +60,22 @@ class AdminAuthorizationControllerTest {
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData()).isEqualTo(role);
         verify(service).assignRole(10L, request);
+    }
+
+    @Test
+    void updatePermissionStatusDelegatesRequestToService() {
+        AdminAuthorizationService service = Mockito.mock(AdminAuthorizationService.class);
+        AdminAuthorizationController controller = new AdminAuthorizationController(service);
+        PermissionStatusUpdateRequestDTO request = new PermissionStatusUpdateRequestDTO();
+        request.setEnabled("N");
+        PermissionResponseDTO permission = new PermissionResponseDTO();
+        permission.setPermissionId(1L);
+        when(service.updatePermissionStatus(1L, request)).thenReturn(permission);
+
+        ApiResponse<PermissionResponseDTO> response = controller.updatePermissionStatus(1L, request);
+
+        assertThat(response.isSuccess()).isTrue();
+        assertThat(response.getData()).isEqualTo(permission);
+        verify(service).updatePermissionStatus(1L, request);
     }
 }

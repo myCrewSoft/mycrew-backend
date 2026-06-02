@@ -11,6 +11,7 @@ import org.springframework.util.StringUtils;
 import com.mycrewsoft.common.constant.Constants;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
+import com.mycrewsoft.domain.employee.dto.request.PermissionStatusUpdateRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.RoleAssignRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.RoleCreateRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.RoleDeleteRequestDTO;
@@ -172,6 +173,21 @@ public class AdminAuthorizationServiceImpl implements AdminAuthorizationService 
         return loadRoleDetail(role.getRoleId());
     }
 
+    @Override
+    @Transactional
+    public PermissionResponseDTO updatePermissionStatus(Long permissionId, PermissionStatusUpdateRequestDTO request) {
+        assertRoleManagePermission();
+        String enabled = normalizeEnabled(request == null ? null : request.getEnabled());
+        PermissionResponseDTO permission = loadPermission(permissionId);
+
+        adminAuthorizationMapper.updatePermissionEnabled(permission.getPermissionId(), enabled);
+        nullToEmpty(adminAuthorizationMapper.selectRoleIdsByPermissionId(permission.getPermissionId()))
+                .forEach(rbacAuthorizationChangeService::refreshRolePermissions);
+
+        permission.setEnabled(enabled);
+        return permission;
+    }
+
     private void assertRoleManagePermission() {
         ResourceContext resource = ResourceContext.builder()
                 .resourceType(ResourceType.ADMIN)
@@ -197,6 +213,19 @@ public class AdminAuthorizationServiceImpl implements AdminAuthorizationService 
             throw new CustomException(ErrorCode.ROLE_NOT_FOUND);
         }
         return role;
+    }
+
+    private PermissionResponseDTO loadPermission(Long permissionId) {
+        if (permissionId == null) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        PermissionResponseDTO permission = adminAuthorizationMapper.selectPermissionById(permissionId);
+        if (permission == null) {
+            throw new CustomException(ErrorCode.PERMISSION_NOT_FOUND);
+        }
+
+        return permission;
     }
 
     private void validateCreateRequest(RoleCreateRequestDTO request) {
@@ -297,6 +326,19 @@ public class AdminAuthorizationServiceImpl implements AdminAuthorizationService 
         }
 
         return scopeId.trim();
+    }
+
+    private String normalizeEnabled(String enabled) {
+        if (!StringUtils.hasText(enabled)) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        String normalized = enabled.trim().toUpperCase();
+        if (!"Y".equals(normalized) && !"N".equals(normalized)) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        return normalized;
     }
 
     private void validateReplacementRole(Long roleId, Long replacementRoleId) {

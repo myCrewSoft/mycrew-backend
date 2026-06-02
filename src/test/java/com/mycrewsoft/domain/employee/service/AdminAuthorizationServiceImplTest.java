@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.mycrewsoft.common.constant.Constants;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
+import com.mycrewsoft.domain.employee.dto.request.PermissionStatusUpdateRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.RoleAssignRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.RoleCreateRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.RoleDeleteRequestDTO;
@@ -246,6 +247,44 @@ class AdminAuthorizationServiceImplTest {
 
         verify(adminAuthorizationMapper).deleteRoleAssignments(roleId, request.getEmpIds(), null, null);
         verify(rbacAuthorizationChangeService).refreshEmployeesPermissions(request.getEmpIds());
+    }
+
+    @Test
+    void updatePermissionStatusUpdatesEnabledFlagAndRefreshesMappedRoles() {
+        PermissionStatusUpdateRequestDTO request = new PermissionStatusUpdateRequestDTO();
+        request.setEnabled("N");
+        PermissionResponseDTO permission = new PermissionResponseDTO();
+        permission.setPermissionId(1L);
+        permission.setPermissionCode("ADMIN_CONSOLE_ACCESS");
+        when(adminAuthorizationMapper.selectPermissionById(1L)).thenReturn(permission);
+        when(adminAuthorizationMapper.selectRoleIdsByPermissionId(1L)).thenReturn(List.of(10L, 20L));
+
+        AdminAuthorizationServiceImpl service = service();
+
+        PermissionResponseDTO response = service.updatePermissionStatus(1L, request);
+
+        assertThat(response).isEqualTo(permission);
+        verify(adminAuthorizationMapper).updatePermissionEnabled(1L, "N");
+        verify(rbacAuthorizationChangeService).refreshRolePermissions(10L);
+        verify(rbacAuthorizationChangeService).refreshRolePermissions(20L);
+        verify(authorizationService).assertCurrentUserPermission(
+                eq(PermissionCode.ROLE_MANAGE),
+                any(ResourceContext.class));
+    }
+
+    @Test
+    void updatePermissionStatusRejectsUnknownEnabledValue() {
+        PermissionStatusUpdateRequestDTO request = new PermissionStatusUpdateRequestDTO();
+        request.setEnabled("YES");
+
+        AdminAuthorizationServiceImpl service = service();
+
+        assertThatThrownBy(() -> service.updatePermissionStatus(1L, request))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+
+        verify(adminAuthorizationMapper, never()).updatePermissionEnabled(any(), any());
     }
 
     private AdminAuthorizationServiceImpl service() {

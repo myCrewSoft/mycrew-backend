@@ -51,6 +51,17 @@
         ORDER BY P.PERM_CD
     </select>
 
+    <select id="selectPermissionById" resultMap="PermissionResultMap">
+        SELECT
+            P.PERM_ID AS PERMISSION_ID,
+            P.PERM_CD AS PERMISSION_CODE,
+            P.PERM_NM AS PERMISSION_NAME,
+            P.PERM_EXPLN AS DESCRIPTION,
+            P.PERM_ENABLED AS ENABLED
+        FROM TB_PERMISSION P
+        WHERE P.PERM_ID = #{permissionId}
+    </select>
+
     <select id="selectRoles" resultMap="RoleListResultMap">
         SELECT
             R.ROLE_ID,
@@ -313,4 +324,16 @@
               AND SCOPE_ID = TO_CHAR(EMP_ID)
           </if>
     </delete>
+
+    <update id="updatePermissionEnabled">
+        UPDATE TB_PERMISSION
+        SET PERM_ENABLED = #{enabled}
+        WHERE PERM_ID = #{permissionId}
+    </update>
+
+    <select id="selectRoleIdsByPermissionId" resultType="java.lang.Long">
+        SELECT DISTINCT PRM.ROLE_ID
+        FROM TB_PERMISSION_ROLE_MAPPING PRM
+        WHERE PRM.PERM_ID = #{permissionId}
+    </select>
 </mapper>

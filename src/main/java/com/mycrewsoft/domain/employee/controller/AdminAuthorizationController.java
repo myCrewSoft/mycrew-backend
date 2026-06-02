@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mycrewsoft.common.response.ApiResponse;
+import com.mycrewsoft.domain.employee.dto.request.PermissionStatusUpdateRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.RoleAssignRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.RoleCreateRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.RoleDeleteRequestDTO;
@@ -39,6 +40,14 @@ public class AdminAuthorizationController {
     @GetMapping("/permissions")
     public ApiResponse<List<PermissionResponseDTO>> getPermissions() {
         return ApiResponse.success(adminAuthorizationService.getPermissions());
+    }
+
+    @Operation(summary = "Update permission status", description = "Updates whether a permission is enabled.")
+    @PutMapping("/permissions/{permissionId}/status")
+    public ApiResponse<PermissionResponseDTO> updatePermissionStatus(
+            @PathVariable Long permissionId,
+            @Valid @RequestBody PermissionStatusUpdateRequestDTO request) {
+        return ApiResponse.success(adminAuthorizationService.updatePermissionStatus(permissionId, request));
     }
 
     @Operation(summary = "Get roles", description = "Returns role list with permission and employee counts.")

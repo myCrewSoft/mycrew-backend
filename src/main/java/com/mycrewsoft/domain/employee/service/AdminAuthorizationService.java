@@ -2,6 +2,7 @@ package com.mycrewsoft.domain.employee.service;
 
 import java.util.List;
 
+import com.mycrewsoft.domain.employee.dto.request.PermissionStatusUpdateRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.RoleAssignRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.RoleCreateRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.RoleDeleteRequestDTO;
@@ -28,4 +29,6 @@ public interface AdminAuthorizationService {
     RoleDetailResponseDTO assignRole(Long roleId, RoleAssignRequestDTO request);
 
     RoleDetailResponseDTO revokeRole(Long roleId, RoleRevokeRequestDTO request);
+
+    PermissionResponseDTO updatePermissionStatus(Long permissionId, PermissionStatusUpdateRequestDTO request);
 }
