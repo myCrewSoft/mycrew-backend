@@ -13,21 +13,23 @@ import com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse;
 @Mapper
 public interface BoardMapper {
     
-    long countBoard(@Param("condition") BoardSearchRequest condition);
+    /**
+     *  전체 카운트 및  리스트 
+     * @param searchRequest
+     * @return
+     */
+    long countBoard(BoardSearchRequest searchRequest,String boardTypeCd,String deptCd);
 	
     /**
      * 권한 스코프와 페이징 처리가 결합된 통합 게시글 목록 조회
      */
-//    List<BoardResponse> selectBoard(
-//        @Param("condition") BoardSearchRequest condition,
-//        @Param("currentEmpId") Long currentEmpId, 
-//        @Param("myDeptCd") String myDeptCd,
-//        @Param("global") boolean global,
-//        @Param("deptScopeIds") Set<String> deptScopeIds,
-//        @Param("projectScopeIds") Set<String> projectScopeIds,
-//        @Param("offset") int offset,
-//        @Param("size") int size
-//    );
+    List<BoardResponse> getBoardList(
+        @Param("getOffset") long getOffset,
+        @Param("getPageSize") int getPageSize,
+        @Param("searchRequest") BoardSearchRequest searchRequest,
+        @Param("boardTypeCd")String boardTypeCd,
+        @Param("deptCd")String deptCd
+    );
 
 	/**
 	 *   사이드바 목록 조회
