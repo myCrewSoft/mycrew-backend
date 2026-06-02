@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.domain.employee.mapper.AdminAuthorizationMapper">
+
+    <resultMap id="PermissionResultMap" type="com.mycrewsoft.domain.employee.dto.response.PermissionResponseDTO">
+        <id property="permissionId" column="PERMISSION_ID"/>
+        <result property="permissionCode" column="PERMISSION_CODE"/>
+        <result property="permissionName" column="PERMISSION_NAME"/>
+        <result property="description" column="DESCRIPTION"/>
+        <result property="enabled" column="ENABLED"/>
+    </resultMap>
+
+    <resultMap id="RoleListResultMap" type="com.mycrewsoft.domain.employee.dto.response.RoleListResponseDTO">
+        <id property="roleId" column="ROLE_ID"/>
+        <result property="roleCode" column="ROLE_CODE"/>
+        <result property="roleName" column="ROLE_NAME"/>
+        <result property="description" column="DESCRIPTION"/>
+        <result property="permissionCount" column="PERMISSION_COUNT"/>
+        <result property="assignedEmployeeCount" column="ASSIGNED_EMPLOYEE_COUNT"/>
+    </resultMap>
+
+    <resultMap id="RoleDetailResultMap" type="com.mycrewsoft.domain.employee.dto.response.RoleDetailResponseDTO">
+        <id property="roleId" column="ROLE_ID"/>
+        <result property="roleCode" column="ROLE_CODE"/>
+        <result property="roleName" column="ROLE_NAME"/>
+        <result property="description" column="DESCRIPTION"/>
+    </resultMap>
+
+    <resultMap id="RoleEmployeeResultMap" type="com.mycrewsoft.domain.employee.dto.response.RoleEmployeeResponseDTO">
+        <id property="roleAssignmentId" column="ROLE_ASSIGNMENT_ID"/>
+        <result property="empId" column="EMP_ID"/>
+        <result property="employeeName" column="EMPLOYEE_NAME"/>
+        <result property="deptCd" column="DEPT_CD"/>
+        <result property="deptName" column="DEPT_NAME"/>
+        <result property="scopeTypeCd" column="SCOPE_TYPE_CD"/>
+        <result property="scopeId" column="SCOPE_ID"/>
+        <result property="enabled" column="ENABLED"/>
+    </resultMap>
+
+    <select id="selectPermissions" resultMap="PermissionResultMap">
+        SELECT
+            P.PERM_ID AS PERMISSION_ID,
+            P.PERM_CD AS PERMISSION_CODE,
+            P.PERM_NM AS PERMISSION_NAME,
+            P.PERM_EXPLN AS DESCRIPTION,
+            P.PERM_ENABLED AS ENABLED
+        FROM TB_PERMISSION P
+        ORDER BY P.PERM_CD
+    </select>
+
+    <select id="selectRoles" resultMap="RoleListResultMap">
+        SELECT
+            R.ROLE_ID,
+            R.ROLE_CD AS ROLE_CODE,
+            R.ROLE_NM AS ROLE_NAME,
+            R.ROLE_EXPLN AS DESCRIPTION,
+            NVL(PC.PERMISSION_COUNT, 0) AS PERMISSION_COUNT,
+            NVL(EC.ASSIGNED_EMPLOYEE_COUNT, 0) AS ASSIGNED_EMPLOYEE_COUNT
+        FROM TB_ROLE R
+        LEFT JOIN (
+            SELECT
+                ROLE_ID,
+                COUNT(1) AS PERMISSION_COUNT
+            FROM TB_PERMISSION_ROLE_MAPPING
+            GROUP BY ROLE_ID
+        ) PC
+          ON PC.ROLE_ID = R.ROLE_ID
+        LEFT JOIN (
+            SELECT
+                ROLE_ID,
+                COUNT(DISTINCT EMP_ID) AS ASSIGNED_EMPLOYEE_COUNT
+            FROM TB_ROLE_ASSIGNMENT
+            WHERE ENABLED = 'Y'
+            GROUP BY ROLE_ID
+        ) EC
+          ON EC.ROLE_ID = R.ROLE_ID
+        ORDER BY R.ROLE_ID
+    </select>
+
+    <select id="selectRoleDetail" resultMap="RoleDetailResultMap">
+        SELECT
+            R.ROLE_ID,
+            R.ROLE_CD AS ROLE_CODE,
+            R.ROLE_NM AS ROLE_NAME,
+            R.ROLE_EXPLN AS DESCRIPTION
+        FROM TB_ROLE R
+        WHERE R.ROLE_ID = #{roleId}
+    </select>
+
+    <select id="selectPermissionsByRoleId" resultMap="PermissionResultMap">
+        SELECT
+            P.PERM_ID AS PERMISSION_ID,
+            P.PERM_CD AS PERMISSION_CODE,
+            P.PERM_NM AS PERMISSION_NAME,
+            P.PERM_EXPLN AS DESCRIPTION,
+            P.PERM_ENABLED AS ENABLED
+        FROM TB_PERMISSION_ROLE_MAPPING PRM
+        JOIN TB_PERMISSION P
+          ON P.PERM_ID = PRM.PERM_ID
+        WHERE PRM.ROLE_ID = #{roleId}
+        ORDER BY P.PERM_CD
+    </select>
+
+    <select id="selectEmployeesByRoleId" resultMap="RoleEmployeeResultMap">
+        SELECT
+            RA.ROLE_ASSIGN_ID AS ROLE_ASSIGNMENT_ID,
+            E.EMP_ID,
+            E.EMP_NM AS EMPLOYEE_NAME,
+            E.DEPT_CD,
+            D.DEPT_NM AS DEPT_NAME,
+            RA.SCOPE_TYPE_CD,
+            RA.SCOPE_ID,
+            RA.ENABLED
+        FROM TB_ROLE_ASSIGNMENT RA
+        JOIN TB_EMPLOYEE E
+          ON E.EMP_ID = RA.EMP_ID
+        LEFT JOIN TB_DEPARTMENT D
+          ON D.DEPT_CD = E.DEPT_CD
+        WHERE RA.ROLE_ID = #{roleId}
+        ORDER BY E.EMP_ID, RA.ROLE_ASSIGN_ID
+    </select>
+
+    <select id="selectRoleIdByRoleCode" resultType="java.lang.Long">
+        SELECT R.ROLE_ID
+        FROM TB_ROLE R
+        WHERE R.ROLE_CD = #{roleCode}
+    </select>
+
+    <select id="countEnabledPermissionsByIds" resultType="int">
+        SELECT COUNT(1)
+        FROM TB_PERMISSION P
+        WHERE P.PERM_ENABLED = 'Y'
+          AND P.PERM_ID IN
+          <foreach collection="permissionIds" item="permissionId" open="(" separator="," close=")">
+              #{permissionId}
+          </foreach>
+    </select>
+
+    <insert id="insertRole" parameterType="com.mycrewsoft.domain.role.vo.RoleVO">
+        INSERT INTO TB_ROLE (
+            ROLE_ID,
+            ROLE_CD,
+            ROLE_NM,
+            ROLE_EXPLN,
+            FRST_RGTR_ID,
+            FRST_REG_DT,
+            LAST_MDFR_ID,
+            LAST_MDFCN_DT
+        )
+        VALUES (
+            (SELECT NVL(MAX(ROLE_ID), 0) + 1 FROM TB_ROLE),
+            #{roleCd},
+            #{roleNm},
+            #{roleExpln},
+            NVL(#{frstRgtrId}, 0),
+            SYSDATE,
+            NVL(#{lastMdfrId}, 0),
+            SYSDATE
+        )
+    </insert>
+
+    <update id="updateRole">
+        UPDATE TB_ROLE
+        SET ROLE_NM = #{roleName},
+            ROLE_EXPLN = #{description},
+            LAST_MDFR_ID = NVL(#{lastModifierId}, 0),
+            LAST_MDFCN_DT = SYSDATE
+        WHERE ROLE_ID = #{roleId}
+    </update>
+
+    <delete id="deleteRole">
+        DELETE FROM TB_ROLE
+        WHERE ROLE_ID = #{roleId}
+    </delete>
+
+    <delete id="deletePermissionMappingsByRoleId">
+        DELETE FROM TB_PERMISSION_ROLE_MAPPING
+        WHERE ROLE_ID = #{roleId}
+    </delete>
+
+    <insert id="insertPermissionMappings">
+        INSERT INTO TB_PERMISSION_ROLE_MAPPING (
+            PERM_ID,
+            ROLE_ID
+        )
+        SELECT
+            P.PERM_ID,
+            #{roleId}
+        FROM TB_PERMISSION P
+        WHERE P.PERM_ENABLED = 'Y'
+          AND P.PERM_ID IN
+          <foreach collection="permissionIds" item="permissionId" open="(" separator="," close=")">
+              #{permissionId}
+          </foreach>
+          AND NOT EXISTS (
+              SELECT 1
+              FROM TB_PERMISSION_ROLE_MAPPING PRM
+              WHERE PRM.PERM_ID = P.PERM_ID
+                AND PRM.ROLE_ID = #{roleId}
+          )
+    </insert>
+
+    <select id="selectEnabledEmpIdsByRoleId" resultType="java.lang.Long">
+        SELECT DISTINCT RA.EMP_ID
+        FROM TB_ROLE_ASSIGNMENT RA
+        WHERE RA.ROLE_ID = #{roleId}
+          AND RA.ENABLED = 'Y'
+    </select>
+
+    <insert id="insertReplacementRoleAssignments">
+        INSERT INTO TB_ROLE_ASSIGNMENT (
+            ROLE_ASSIGN_ID,
+            ROLE_ID,
+            EMP_ID,
+            SCOPE_TYPE_CD,
+            SCOPE_ID,
+            ENABLED
+        )
+        SELECT
+            (SELECT NVL(MAX(ROLE_ASSIGN_ID), 0) FROM TB_ROLE_ASSIGNMENT)
+                + ROW_NUMBER() OVER (ORDER BY RA.ROLE_ASSIGN_ID) AS ROLE_ASSIGN_ID,
+            #{replacementRoleId} AS ROLE_ID,
+            RA.EMP_ID,
+            RA.SCOPE_TYPE_CD,
+            RA.SCOPE_ID,
+            RA.ENABLED
+        FROM TB_ROLE_ASSIGNMENT RA
+        WHERE RA.ROLE_ID = #{roleId}
+          AND NOT EXISTS (
+              SELECT 1
+              FROM TB_ROLE_ASSIGNMENT EXISTING_RA
+              WHERE EXISTING_RA.ROLE_ID = #{replacementRoleId}
+                AND EXISTING_RA.EMP_ID = RA.EMP_ID
+                AND EXISTING_RA.SCOPE_TYPE_CD = RA.SCOPE_TYPE_CD
+                AND NVL(EXISTING_RA.SCOPE_ID, '__NULL__') = NVL(RA.SCOPE_ID, '__NULL__')
+          )
+    </insert>
+
+    <delete id="deleteRoleAssignmentsByRoleId">
+        DELETE FROM TB_ROLE_ASSIGNMENT
+        WHERE ROLE_ID = #{roleId}
+    </delete>
+
+    <select id="countEnabledEmployeesByIds" resultType="int">
+        SELECT COUNT(1)
+        FROM TB_EMPLOYEE E
+        WHERE E.ENABLED = 'Y'
+          AND E.EMP_ID IN
+          <foreach collection="empIds" item="empId" open="(" separator="," close=")">
+              #{empId}
+          </foreach>
+    </select>
+
+    <insert id="insertRoleAssignments">
+        INSERT INTO TB_ROLE_ASSIGNMENT (
+            ROLE_ASSIGN_ID,
+            ROLE_ID,
+            EMP_ID,
+            SCOPE_TYPE_CD,
+            SCOPE_ID,
+            ENABLED
+        )
+        SELECT
+            (SELECT NVL(MAX(ROLE_ASSIGN_ID), 0) FROM TB_ROLE_ASSIGNMENT)
+                + ROW_NUMBER() OVER (ORDER BY E.EMP_ID) AS ROLE_ASSIGN_ID,
+            #{roleId} AS ROLE_ID,
+            E.EMP_ID,
+            #{scopeTypeCd} AS SCOPE_TYPE_CD,
+            CASE
+                WHEN #{scopeTypeCd} = 'SELF' THEN TO_CHAR(E.EMP_ID)
+                ELSE #{scopeId}
+            END AS SCOPE_ID,
+            'Y' AS ENABLED
+        FROM TB_EMPLOYEE E
+        WHERE E.ENABLED = 'Y'
+          AND E.EMP_ID IN
+          <foreach collection="empIds" item="empId" open="(" separator="," close=")">
+              #{empId}
+          </foreach>
+          AND NOT EXISTS (
+              SELECT 1
+              FROM TB_ROLE_ASSIGNMENT RA
+              WHERE RA.ROLE_ID = #{roleId}
+                AND RA.EMP_ID = E.EMP_ID
+                AND RA.SCOPE_TYPE_CD = #{scopeTypeCd}
+                AND NVL(RA.SCOPE_ID, '__NULL__') = NVL(
+                    CASE
+                        WHEN #{scopeTypeCd} = 'SELF' THEN TO_CHAR(E.EMP_ID)
+                        ELSE #{scopeId}
+                    END,
+                    '__NULL__'
+                )
+          )
+    </insert>
+
+    <delete id="deleteRoleAssignments">
+        DELETE FROM TB_ROLE_ASSIGNMENT
+        WHERE ROLE_ID = #{roleId}
+          AND EMP_ID IN
+          <foreach collection="empIds" item="empId" open="(" separator="," close=")">
+              #{empId}
+          </foreach>
+          <if test="scopeTypeCd != null and scopeTypeCd != ''">
+              AND SCOPE_TYPE_CD = #{scopeTypeCd}
+          </if>
+          <if test="scopeId != null and scopeId != ''">
+              AND SCOPE_ID = #{scopeId}
+          </if>
+          <if test="scopeTypeCd == 'SELF'">
+              AND SCOPE_ID = TO_CHAR(EMP_ID)
+          </if>
+    </delete>
+</mapper>

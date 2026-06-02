@@ -3,6 +3,7 @@ package com.mycrewsoft.security.rbac;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,16 @@ class RbacAuthorizationChangeServiceTest {
         service.refreshRolePermissions(5L);
 
         assertThat(mapper.requestedRoleId).isEqualTo(5L);
+        assertThat(mapper.incrementedEmpIds).containsExactly(100L, 101L);
+    }
+
+    @Test
+    void refreshEmployeePermissionsIncrementsDistinctNonNullEmployeeIds() {
+        FakeRbacMapper mapper = new FakeRbacMapper();
+        RbacAuthorizationChangeService service = new RbacAuthorizationChangeService(mapper);
+
+        service.refreshEmployeesPermissions(Arrays.asList(100L, null, 100L, 101L));
+
         assertThat(mapper.incrementedEmpIds).containsExactly(100L, 101L);
     }
 
