@@ -35,8 +35,7 @@
         <if test="deptCd != null and deptCd != ''">
             AND E.DEPT_CD = #{deptCd}
         </if>
-        ORDER BY E.EMP_NM ASC
-        FETCH FIRST 50 ROWS ONLY
+        ORDER BY D.DEPT_NM, E.EMP_NM ASC
     </select>
 
 </mapper>
