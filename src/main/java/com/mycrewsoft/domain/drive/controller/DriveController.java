@@ -37,7 +37,6 @@ public class DriveController {
 
     private final DriveService driveService;
     
-    @Operation(summary = "폴더 생성")
     private final FileService fileService;
 
     @Operation(summary = "Create folder")

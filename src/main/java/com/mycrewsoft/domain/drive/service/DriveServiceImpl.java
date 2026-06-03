@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.mycrewsoft.common.constant.PermissionCode;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DateUtil;
@@ -19,7 +20,6 @@ import com.mycrewsoft.domain.drive.vo.DriveVo;
 import com.mycrewsoft.domain.file.dto.FileUploadRequestDto;
 import com.mycrewsoft.domain.file.service.FileService;
 import com.mycrewsoft.security.authz.AuthorizationService;
-import com.mycrewsoft.security.authz.PermissionCode;
 import com.mycrewsoft.security.authz.ResourceContext;
 import com.mycrewsoft.security.authz.ResourceType;
 import com.mycrewsoft.security.util.SecurityUtil;
