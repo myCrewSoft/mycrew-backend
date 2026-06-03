@@ -35,6 +35,7 @@ package com.mycrewsoft.common.constant;
             "/api/mail/oauth/google/callback",
             "/api/chat/stream",
             "/api/chat/stop",
-            "/api/chatbot"
+            "/api/chatbot",
+            "/ws/**"
     };
 }
