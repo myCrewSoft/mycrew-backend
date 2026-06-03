@@ -48,17 +48,19 @@ public enum ErrorCode {
     FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FILE_001", "파일 업로드에 실패했습니다."),
     INVALID_FILE_TYPE(HttpStatus.BAD_REQUEST, "FILE_002", "허용되지 않는 파일 형식입니다."),
     FILE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "FILE_003", "파일 크기가 초과되었습니다."),
-	FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "FILE_004", "존재하지 않는 파일입니다."),
+	  FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "FILE_004", "존재하지 않는 파일입니다."),
 	
-	// SCHEDULE
-	NOT_SCHEDULE_OWNER(HttpStatus.FORBIDDEN, "SCH-001", "해당 일정에 대한 관리 권한이 없습니다."),
-	SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "SCH-002", "요청하신 일정을 찾을 수 없습니다."),
+	  // SCHEDULE
+	  NOT_SCHEDULE_OWNER(HttpStatus.FORBIDDEN, "SCH-001", "해당 일정에 대한 관리 권한이 없습니다."),
+	  SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "SCH-002", "요청하신 일정을 찾을 수 없습니다."),
 	
-	// DRIVE
-	DRIVE_INSERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "DRIVE_001", "폴더 생성에 실패했습니다."),
-	
-	// BOARD
-	BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지않는 게시판입니다."),
+	  // DRIVE
+	  DRIVE_INSERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "DRIVE_001", "폴더 생성에 실패했습니다."),
+    DRIVE_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "DRIVE_002", "드라이브 아이템을 찾을 수 없습니다."),
+    DRIVE_RENAME_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "DRIVE_003", "폴더만 이름 수정이 가능합니다."),
+
+    // BOARD
+    BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지않는 게시판입니다."),
 
     // ROLE 
     ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, "ROLE_001", "존재하지 않는 역할입니다."),
@@ -75,9 +77,10 @@ public enum ErrorCode {
     // WEBSOCKET
     WS_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "WS_001", "WebSocket 연결 시 인증이 필요합니다."),
     WS_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "WS_002", "WebSocket 연결 시 유효하지 않은 토큰입니다.");
+
 	
     // 팀원이 새 도메인 추가 시 아래 패턴으로 섹션 추가
-    // BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지 않는 게시글입니다."),
+    // BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지 않는 게시글입니다.")
 	
     private final HttpStatus httpStatus;
     private final String code;
