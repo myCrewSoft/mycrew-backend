@@ -57,14 +57,13 @@ public enum ErrorCode {
 	// DRIVE
 	DRIVE_INSERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "DRIVE_001", "폴더 생성에 실패했습니다."),
 	DRIVE_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "DRIVE_002", "드라이브 아이템을 찾을 수 없습니다."),
-	DRIVE_RENAME_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "DRIVE_003", "폴더만 이름 수정이 가능합니다.");
-	
+	DRIVE_RENAME_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "DRIVE_003", "폴더만 이름 수정이 가능합니다."),
 	// BOARD
 	BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지않는 게시판입니다."),
 
-  // ROLE 
-  ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, "ROLE_001", "존재하지 않는 역할입니다."),
-  DUPLICATE_ROLE_CODE(HttpStatus.CONFLICT, "ROLE_002", "해당 역할 코드가 이미 존재합니다."),
+    // ROLE 
+    ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, "ROLE_001", "존재하지 않는 역할입니다."),
+    DUPLICATE_ROLE_CODE(HttpStatus.CONFLICT, "ROLE_002", "해당 역할 코드가 이미 존재합니다."),
 	
 	// PERMISSION
 	PERMISSION_NOT_FOUND(HttpStatus.NOT_FOUND, "PERM_001", "존재하지 않는 권합입니다.");
