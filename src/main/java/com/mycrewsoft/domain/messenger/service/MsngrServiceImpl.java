@@ -82,12 +82,12 @@ public class MsngrServiceImpl implements MsngrService {
         Long lastCfmtnMsgId = myPtcpt.getLastCfmtnMsgId() != null ? myPtcpt.getLastCfmtnMsgId() : 0L;
 
         // 채팅방 메시지 목록 조회
-        List<MsngrMsgVO> msgList = msngrMapper.selectMsgListByChtrmId(chtrmId);
+        List<MsngrMsgDetailVO> msgList = msngrMapper.selectMsgListByChtrmId(chtrmId);
 
         // mine과 read 데이터 넣어서 반환
         return msgList.stream()
                 .map(msgVO -> {
-                    ChatMessageResponse response = msngrDtoMapper.toMessageResponse(msgVO);
+                    ChatMessageResponse response = msngrDtoMapper.toResponseFromDetail(msgVO);
                     response.setMine(msgVO.getSndrId().equals(empId));
                     response.setRead(msgVO.getMsgId() <= lastCfmtnMsgId);
                     return response;
@@ -168,11 +168,10 @@ public class MsngrServiceImpl implements MsngrService {
         
         // vo -> dto 변환
         ChatMessageResponse response = msngrDtoMapper.toResponseFromDetail(savedMsg);
-        response.setMine(false);
         response.setRead(false);
 
         // 메시지 전송
-        messagingTemplate.convertAndSend("/sub/chat/" + chtrmId, response);
+        messagingTemplate.convertAndSend("/topic/chats/" + chtrmId, response);
     }
 
     // 사용자 상태 변경

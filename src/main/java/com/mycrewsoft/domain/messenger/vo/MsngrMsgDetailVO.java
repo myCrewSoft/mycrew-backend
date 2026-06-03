@@ -13,4 +13,5 @@ public class MsngrMsgDetailVO {
     private String senderName; // TB_MEMBER JOIN 결과 - DB 컬럼 아님
     private String msgCn;
     private LocalDateTime creatDt;
+    private Integer unreadCount; // 서브쿼리 계산값 - DB 컬럼 아님
 }

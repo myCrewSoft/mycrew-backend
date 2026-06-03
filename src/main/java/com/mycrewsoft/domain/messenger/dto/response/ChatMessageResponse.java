@@ -13,6 +13,9 @@ public class ChatMessageResponse {
     @Schema(description = "메시지 ID", example = "101")
     private Long id;
 
+    @Schema(description = "보낸 사람 ID", example = "1236")
+    private Long senderId;
+    
     @Schema(description = "보낸 사람 이름", example = "홍길동")
     private String senderName;
 
@@ -29,4 +32,8 @@ public class ChatMessageResponse {
     @Setter
     @Schema(description = "읽음 여부 (true: 읽음)", example = "true")
     private Boolean read;
+
+    @Setter
+    @Schema(description = "안 읽은 사람 수", example = "2")
+    private Integer unreadCount;
 }

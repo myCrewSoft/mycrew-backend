@@ -21,7 +21,7 @@ public class MsngrWebSocketController {
     private final MsngrService msngrService;
 
     @Operation(summary = "메시지 전송")
-    @MessageMapping("/chat.send/{chtrmId}")
+    @MessageMapping("/chats/{chtrmId}/messages")
     public void sendMessage(
         @DestinationVariable Long chtrmId,
         @Payload ChatMessageRequest request,

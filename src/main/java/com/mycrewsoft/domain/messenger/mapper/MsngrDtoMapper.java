@@ -40,6 +40,7 @@ public interface MsngrDtoMapper {
     List<ChatRoomResponse> toRoomResponseListFromList(List<MsngrChtrmListVO> voList);
 
     @Mapping(source = "msgId",     target = "id")
+    @Mapping(source = "sndrId",     target = "senderId")
     @Mapping(source = "msgCn",     target = "content")
     @Mapping(source = "creatDt",   target = "time", dateFormat = "HH:mm")
     @Mapping(source = "senderName", target = "senderName")

@@ -25,7 +25,7 @@ public interface MsngrMapper {
     MsngrMsgDetailVO selectMsgById(@Param("msgId") Long msgId);
 
     // 메시지 목록 조회
-    List<MsngrMsgVO> selectMsgListByChtrmId(@Param("chtrmId") Long chtrmId);
+    List<MsngrMsgDetailVO> selectMsgListByChtrmId(@Param("chtrmId") Long chtrmId);
 
     // 채팅방 생성
     int insertChtrm(MsngrChtrmVO vo);

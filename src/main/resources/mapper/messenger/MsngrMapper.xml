@@ -94,22 +94,38 @@
             M.SNDR_ID,
             M.MSG_CN,
             M.CREAT_DT,
-            E.EMP_NM AS SENDER_NAME
+            E.EMP_NM AS SENDER_NAME,
+            (
+                SELECT COUNT(*)
+                FROM TB_MSNGR_CHTRM_PTCPT P
+                WHERE P.CHTRM_ID = M.CHTRM_ID
+                AND (P.LAST_CFMTN_MSG_ID IS NULL OR <![CDATA[ P.LAST_CFMTN_MSG_ID < M.MSG_ID ]]>)
+                AND P.LEAV_DT IS NULL
+            ) AS UNREAD_COUNT
         FROM TB_MSNGR_MSG M
         JOIN TB_EMPLOYEE E ON M.SNDR_ID = E.EMP_ID
         WHERE M.MSG_ID = #{msgId}
     </select>
-    
-    <select id="selectMsgListByChtrmId" resultType="MsngrMsgVO">
+
+    <select id="selectMsgListByChtrmId" resultType="MsngrMsgDetailVO">
         SELECT
-            MSG_ID,
-            CHTRM_ID,
-            SNDR_ID,
-            MSG_CN,
-            CREAT_DT
-        FROM TB_MSNGR_MSG
-        WHERE CHTRM_ID = #{chtrmId}
-        ORDER BY CREAT_DT ASC
+            M.MSG_ID,
+            M.CHTRM_ID,
+            M.SNDR_ID,
+            M.MSG_CN,
+            M.CREAT_DT,
+            E.EMP_NM AS SENDER_NAME,
+            (
+                SELECT COUNT(*)
+                FROM TB_MSNGR_CHTRM_PTCPT P
+                WHERE P.CHTRM_ID = M.CHTRM_ID
+                AND (P.LAST_CFMTN_MSG_ID IS NULL OR <![CDATA[ P.LAST_CFMTN_MSG_ID < M.MSG_ID ]]>)
+                AND P.LEAV_DT IS NULL
+            ) AS UNREAD_COUNT
+        FROM TB_MSNGR_MSG M
+        JOIN TB_EMPLOYEE E ON M.SNDR_ID = E.EMP_ID
+        WHERE M.CHTRM_ID = #{chtrmId}
+        ORDER BY M.CREAT_DT ASC
     </select>
 
     <insert id="insertChtrm" parameterType="MsngrChtrmVO">
