@@ -80,7 +80,11 @@ public enum ErrorCode {
 
     // WEBSOCKET
     WS_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "WS_001", "WebSocket 연결 시 인증이 필요합니다."),
-    WS_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "WS_002", "WebSocket 연결 시 유효하지 않은 토큰입니다.");
+    WS_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "WS_002", "WebSocket 연결 시 유효하지 않은 토큰입니다."),
+
+    // DEPARTMENT
+    DEPARTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "DEPT_001", "존재하지 않는 부서입니다."),
+    DUPLICATE_DEPARTMENT_CODE(HttpStatus.CONFLICT, "DEPT_002", "이미 존재하는 부서 코드입니다.");
 
 	
 

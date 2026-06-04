@@ -20,6 +20,11 @@ public enum PermissionCode {
 	ADMIN_EMPLOYEE_CREATE("사원 등록", "사원 정보를 등록할 수 있는 권한입니다."),
 	ADMIN_EMPLOYEE_READ("사원 조회", "사원 정보를 조회할 수 있는 권한입니다."),
 	ADMIN_EMPLOYEE_UPDATE("사원 수정", "사원 정보를 수정할 수 있는 권한입니다."),
+	ADMIN_DEPT_CREATE("ADMIN 부서 생성", "부서를 생성할 수 있는 권한입니다."),
+	ADMIN_DEPT_READ("ADMIN 부서 조회", "부서 정보를 조회할 수 있는 권한입니다."),
+	ADMIN_DEPT_UPDATE("ADMIN 부서 수정", "부서 정보를 수정할 수 있는 권한입니다."),
+	ADMIN_DEPT_DELETE("ADMIN 부서 삭제", "부서를 삭제할 수 있는 권한입니다."),
+	ADMIN_DEPT_MEMBER_MANAGE("ADMIN 부서 구성원 관리", "부서 구성원을 배정, 이동 및 관리할 수 있는 권한입니다."),
 
 	// Department
 	DEPT_CREATE("부서 생성", "부서를 생성할 수 있는 권한입니다."),

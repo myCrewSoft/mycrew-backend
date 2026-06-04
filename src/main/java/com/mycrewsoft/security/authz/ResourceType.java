@@ -19,5 +19,6 @@ public enum ResourceType {
     SCHEDULE,
     DRIVE,
     APPROVAL,
-    EMPLOYEE
+    EMPLOYEE,
+    DEPARTMENT
 }
