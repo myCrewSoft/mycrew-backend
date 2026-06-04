@@ -1,6 +1,8 @@
-package com.mycrewsoft.domain.reservation.vo;
+package com.mycrewsoft.domain.room.vo;
 
 import java.util.List;
+
+import com.mycrewsoft.domain.reservation.vo.ConfRmRsrvVO;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -48,14 +48,14 @@ public enum ErrorCode {
     FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FILE_001", "파일 업로드에 실패했습니다."),
     INVALID_FILE_TYPE(HttpStatus.BAD_REQUEST, "FILE_002", "허용되지 않는 파일 형식입니다."),
     FILE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "FILE_003", "파일 크기가 초과되었습니다."),
-	  FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "FILE_004", "존재하지 않는 파일입니다."),
+	FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "FILE_004", "존재하지 않는 파일입니다."),
 	
-	  // SCHEDULE
-	  NOT_SCHEDULE_OWNER(HttpStatus.FORBIDDEN, "SCH-001", "해당 일정에 대한 관리 권한이 없습니다."),
-	  SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "SCH-002", "요청하신 일정을 찾을 수 없습니다."),
+	// SCHEDULE
+	NOT_SCHEDULE_OWNER(HttpStatus.FORBIDDEN, "SCH-001", "해당 일정에 대한 관리 권한이 없습니다."),
+	SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "SCH-002", "요청하신 일정을 찾을 수 없습니다."),
 	
-	  // DRIVE
-	  DRIVE_INSERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "DRIVE_001", "폴더 생성에 실패했습니다."),
+	// DRIVE
+	DRIVE_INSERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "DRIVE_001", "폴더 생성에 실패했습니다."),
     DRIVE_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "DRIVE_002", "드라이브 아이템을 찾을 수 없습니다."),
     DRIVE_RENAME_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "DRIVE_003", "폴더만 이름 수정이 가능합니다."),
 
@@ -86,7 +86,10 @@ public enum ErrorCode {
     DEPARTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "DEPT_001", "존재하지 않는 부서입니다."),
     DUPLICATE_DEPARTMENT_CODE(HttpStatus.CONFLICT, "DEPT_002", "이미 존재하는 부서 코드입니다.");
 
-	
+	// ROOM
+	CONF_RM_NOT_FOUND(HttpStatus.NOT_FOUND, "CONF_RM_001", "존재하지 않는 회의실입니다."),
+	CONF_RM_CREATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CONF_RM_002", "회의실 생성에 실패했습니다."),
+	CONF_RM_ALREADY_DISABLED(HttpStatus.BAD_REQUEST, "CONF_RM_003", "이미 비활성화된 회의실입니다.");
 
     // 팀원이 새 도메인 추가 시 아래 패턴으로 섹션 추가
     // BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지 않는 게시글입니다.")
