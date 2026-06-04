@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.department.mapper.AdminDepartmentMapper">
+
+    <resultMap id="DepartmentResultMap" type="com.mycrewsoft.domain.department.dto.response.AdminDepartmentResponseDTO">
+        <result property="deptCd" column="DEPT_CD"/>
+        <result property="deptNm" column="DEPT_NM"/>
+        <result property="parentDeptCd" column="PARENT_DEPT_CD"/>
+        <result property="parentDeptNm" column="PARENT_DEPT_NM"/>
+        <result property="useYn" column="USE_YN"/>
+        <result property="memberCount" column="MEMBER_COUNT"/>
+    </resultMap>
+
+    <resultMap id="DepartmentMemberResultMap" type="com.mycrewsoft.domain.department.dto.response.AdminDepartmentMemberResponseDTO">
+        <result property="empId" column="EMP_ID"/>
+        <result property="empNm" column="EMP_NM"/>
+        <result property="deptCd" column="DEPT_CD"/>
+        <result property="deptNm" column="DEPT_NM"/>
+        <result property="jobGrdCd" column="JOB_GRD_CD"/>
+        <result property="jobGrdNm" column="JOB_GRD_NM"/>
+        <result property="jobPstnCd" column="JOB_PSTN_CD"/>
+        <result property="jobPstnNm" column="JOB_PSTN_NM"/>
+        <result property="empStatCd" column="EMP_STAT_CD"/>
+        <result property="empStatNm" column="EMP_STAT_NM"/>
+    </resultMap>
+
+    <sql id="DepartmentColumns">
+        D.DEPT_CD,
+        D.DEPT_NM,
+        D.PRNT_DEPT_CD AS PARENT_DEPT_CD,
+        P.DEPT_NM AS PARENT_DEPT_NM,
+        D.USE_YN,
+        (
+            SELECT COUNT(1)
+            FROM TB_EMPLOYEE E
+            WHERE E.DEPT_CD = D.DEPT_CD
+              AND NVL(E.ENABLED, 'Y') = 'Y'
+        ) AS MEMBER_COUNT
+    </sql>
+
+    <select id="selectCurrentDepartmentCode" resultType="java.lang.String">
+        SELECT 'DEPT_' || LPAD(SEQ_DEPARTMENT.CURRVAL, 3, '0')
+        FROM DUAL
+    </select>
+
+    <insert id="insertDepartment" parameterType="com.mycrewsoft.domain.department.vo.DepartmentVO">
+        INSERT INTO TB_DEPARTMENT (
+            DEPT_CD,
+            PRNT_DEPT_CD,
+            DEPT_NM,
+            USE_YN,
+            FRST_REG_DT,
+            FRST_RGTR_ID,
+            LAST_MDFCN_DT,
+            LAST_MDFR_ID
+        )
+        VALUES (
+            CASE
+                WHEN #{deptCd,jdbcType=VARCHAR} IS NULL THEN 'DEPT_' || LPAD(SEQ_DEPARTMENT.NEXTVAL, 3, '0')
+                ELSE #{deptCd,jdbcType=VARCHAR}
+            END,
+            #{prntDeptCd},
+            #{deptNm},
+            #{useYn},
+            #{frstRegDt},
+            #{frstRgtrId},
+            #{lastMdfcnDt},
+            #{lastMdfrId}
+        )
+    </insert>
+
+    <select id="selectDepartmentByCode" resultMap="DepartmentResultMap">
+        SELECT
+            <include refid="DepartmentColumns"/>
+        FROM TB_DEPARTMENT D
+        LEFT JOIN TB_DEPARTMENT P
+          ON P.DEPT_CD = D.PRNT_DEPT_CD
+        WHERE D.DEPT_CD = #{deptCd}
+          AND NVL(D.USE_YN, 'Y') = 'Y'
+    </select>
+
+    <select id="selectDepartments" resultMap="DepartmentResultMap">
+        SELECT
+            <include refid="DepartmentColumns"/>
+        FROM TB_DEPARTMENT D
+        LEFT JOIN TB_DEPARTMENT P
+          ON P.DEPT_CD = D.PRNT_DEPT_CD
+        WHERE NVL(D.USE_YN, 'Y') = 'Y'
+        ORDER BY D.PRNT_DEPT_CD NULLS FIRST, D.DEPT_NM ASC, D.DEPT_CD ASC
+    </select>
+
+    <select id="countActiveDepartmentByCode" resultType="int">
+        SELECT COUNT(1)
+        FROM TB_DEPARTMENT
+        WHERE DEPT_CD = #{deptCd}
+          AND NVL(USE_YN, 'Y') = 'Y'
+    </select>
+
+    <select id="countChildDepartments" resultType="int">
+        SELECT COUNT(1)
+        FROM TB_DEPARTMENT
+        WHERE PRNT_DEPT_CD = #{deptCd}
+          AND NVL(USE_YN, 'Y') = 'Y'
+    </select>
+
+    <select id="countDescendantDepartment" resultType="int">
+        SELECT COUNT(1)
+        FROM (
+            SELECT DEPT_CD
+            FROM TB_DEPARTMENT
+            WHERE NVL(USE_YN, 'Y') = 'Y'
+            START WITH PRNT_DEPT_CD = #{deptCd}
+            CONNECT BY PRIOR DEPT_CD = PRNT_DEPT_CD
+        )
+        WHERE DEPT_CD = #{candidateParentDeptCd}
+    </select>
+
+    <update id="updateDepartment" parameterType="com.mycrewsoft.domain.department.vo.DepartmentVO">
+        UPDATE TB_DEPARTMENT
+        SET PRNT_DEPT_CD = #{prntDeptCd},
+            DEPT_NM = #{deptNm},
+            LAST_MDFCN_DT = #{lastMdfcnDt},
+            LAST_MDFR_ID = #{lastMdfrId}
+        WHERE DEPT_CD = #{deptCd}
+          AND NVL(USE_YN, 'Y') = 'Y'
+    </update>
+
+    <update id="disableDepartment">
+        UPDATE TB_DEPARTMENT
+        SET USE_YN = 'N',
+            LAST_MDFCN_DT = SYSDATE,
+            LAST_MDFR_ID = #{lastMdfrId}
+        WHERE DEPT_CD = #{deptCd}
+          AND NVL(USE_YN, 'Y') = 'Y'
+    </update>
+
+    <select id="selectEnabledEmpIdsByDeptCd" resultType="java.lang.Long">
+        SELECT E.EMP_ID
+        FROM TB_EMPLOYEE E
+        WHERE E.DEPT_CD = #{deptCd}
+          AND NVL(E.ENABLED, 'Y') = 'Y'
+    </select>
+
+    <select id="selectDepartmentMembers" resultMap="DepartmentMemberResultMap">
+        SELECT
+            E.EMP_ID,
+            E.EMP_NM,
+            E.DEPT_CD,
+            D.DEPT_NM,
+            E.JOB_GRD_CD,
+            JG.JOB_GRD_NM,
+            E.JOB_PSTN_CD,
+            JP.JOB_PSTN_NM,
+            E.EMP_STAT_CD,
+            ES.EMP_STAT_NM
+        FROM TB_EMPLOYEE E
+        LEFT JOIN TB_DEPARTMENT D
+          ON D.DEPT_CD = E.DEPT_CD
+        LEFT JOIN TB_JOB_GRADE JG
+          ON JG.JOB_GRD_CD = E.JOB_GRD_CD
+        LEFT JOIN TB_JOB_POSITION JP
+          ON JP.JOB_PSTN_CD = E.JOB_PSTN_CD
+        LEFT JOIN TB_EMP_STAT ES
+          ON ES.EMP_STAT_CD = E.EMP_STAT_CD
+        WHERE E.DEPT_CD = #{deptCd}
+          AND NVL(E.ENABLED, 'Y') = 'Y'
+        ORDER BY E.EMP_NM ASC, E.EMP_ID ASC
+    </select>
+
+    <select id="countEnabledEmployeesByIds" resultType="int">
+        SELECT COUNT(1)
+        FROM TB_EMPLOYEE
+        WHERE NVL(ENABLED, 'Y') = 'Y'
+          AND EMP_ID IN
+          <foreach collection="empIds" item="empId" open="(" separator="," close=")">
+              #{empId}
+          </foreach>
+    </select>
+
+    <select id="countEmployeesByDeptAndIds" resultType="int">
+        SELECT COUNT(1)
+        FROM TB_EMPLOYEE
+        WHERE DEPT_CD = #{deptCd}
+          AND NVL(ENABLED, 'Y') = 'Y'
+          AND EMP_ID IN
+          <foreach collection="empIds" item="empId" open="(" separator="," close=")">
+              #{empId}
+          </foreach>
+    </select>
+
+    <update id="updateDepartmentForEmployees">
+        UPDATE TB_EMPLOYEE
+        SET DEPT_CD = #{targetDeptCd}
+        WHERE NVL(ENABLED, 'Y') = 'Y'
+          AND EMP_ID IN
+          <foreach collection="empIds" item="empId" open="(" separator="," close=")">
+              #{empId}
+          </foreach>
+    </update>
+
+    <update id="updateDepartmentForAllEmployees">
+        UPDATE TB_EMPLOYEE
+        SET DEPT_CD = #{targetDeptCd}
+        WHERE DEPT_CD = #{sourceDeptCd}
+          AND NVL(ENABLED, 'Y') = 'Y'
+    </update>
+</mapper>

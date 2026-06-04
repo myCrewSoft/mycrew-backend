@@ -23,7 +23,8 @@ public class AdminDepartmentScopeController {
 
     private final AdminDepartmentScopeService adminDepartmentScopeService;
 
-    @Operation(summary = "부서의 범위를 받는 API", description = "역할 권한 설정 시 부서 범위 옵션을 반환하는 API")    @GetMapping("/scope-options")
+    @Operation(summary = "부서의 범위를 받는 API", description = "역할 권한 설정 시 부서 범위 옵션을 반환하는 API")    
+    @GetMapping("/scope-options")
     public ResponseEntity<ApiResponse<List<AdminScopeOptionResponseDTO>>> getDepartmentScopeOptions() {
         return ResponseEntity.ok(ApiResponse.success(adminDepartmentScopeService.getDepartmentScopeOptions()));
     }
