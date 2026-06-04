@@ -69,9 +69,19 @@ public enum ErrorCode {
     // ROLE 
     ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, "ROLE_001", "존재하지 않는 역할입니다."),
     DUPLICATE_ROLE_CODE(HttpStatus.CONFLICT, "ROLE_002", "해당 역할 코드가 이미 존재합니다."),
+	
+	// PERMISSION
+	PERMISSION_NOT_FOUND(HttpStatus.NOT_FOUND, "PERM_001", "존재하지 않는 권합입니다."),
 
-    // PERMISSION
-    PERMISSION_NOT_FOUND(HttpStatus.NOT_FOUND, "PERM_001", "존재하지 않는 권합입니다.");
+    // MESSENGER
+    CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND,  "CHAT_001", "존재하지 않는 채팅방입니다."),
+    CHAT_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "CHAT_002", "채팅방 참여자가 아닙니다."),
+    CHAT_ROOM_ALREADY_EXISTS(HttpStatus.CONFLICT, "CHAT_003", "이미 존재하는 1:1 채팅방입니다."),
+
+    // WEBSOCKET
+    WS_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "WS_001", "WebSocket 연결 시 인증이 필요합니다."),
+    WS_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "WS_002", "WebSocket 연결 시 유효하지 않은 토큰입니다.");
+
 	
 
     // 팀원이 새 도메인 추가 시 아래 패턴으로 섹션 추가

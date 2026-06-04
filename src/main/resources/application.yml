@@ -120,3 +120,6 @@ springdoc:
   swagger-ui:
     path: /swagger-ui/index.html
     url: /api/v3/api-docs
+
+websocket:
+  allowed-origins: http://localhost:5173

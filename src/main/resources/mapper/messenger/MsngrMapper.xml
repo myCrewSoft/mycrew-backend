@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.domain.messenger.mapper.MsngrMapper">
+
+    <resultMap id="chtrmResultMap" type="MsngrChtrmVO" autoMapping="true">
+        <id property="chtrmId" column="CHTRM_ID"/>
+        <collection property="msngrChtrmPtcpt" ofType="MsngrChtrmPtcptVO" autoMapping="true">
+            <id property="chtrmId" column="PTCPT_CHTRM_ID"/>
+            <id property="empId"   column="EMP_ID"/>
+        </collection>
+        <collection property="msngrMsg" ofType="MsngrMsgVO" autoMapping="true">
+            <id property="msgId"   column="MSG_ID"/>
+            <result property="chtrmId" column="MSG_CHTRM_ID"/>
+            <result property="creatDt" column="MSG_CREAT_DT"/>
+        </collection>
+    </resultMap>
+
+    <resultMap id="chtrmListResultMap" type="MsngrChtrmListVO" autoMapping="true">
+        <id property="chtrmId" column="CHTRM_ID"/>
+        <collection property="msngrChtrmPtcpt" ofType="MsngrChtrmPtcptVO" autoMapping="true">
+            <id property="chtrmId" column="PTCPT_CHTRM_ID"/>
+            <id property="empId"   column="EMP_ID"/>
+        </collection>
+    </resultMap>
+
+    <select id="selectChtrmListByEmpId" resultMap="chtrmListResultMap">
+        SELECT
+            C.CHTRM_ID,
+            C.CHTRM_NM,
+            C.CHTRM_EXPLN,
+            C.CHTRM_TYPE_CD,
+            C.ESTBLSH_ID,
+            C.CREAT_DT,
+            C.END_DT,
+            P.CHTRM_ID AS PTCPT_CHTRM_ID,
+            P.EMP_ID,
+            P.PTCPT_STTUS_CD,
+            P.LAST_CFMTN_MSG_ID,
+            P.JOIN_DT,
+            P.LEAV_DT
+        FROM TB_MSNGR_CHTRM C
+        JOIN TB_MSNGR_CHTRM_PTCPT P ON C.CHTRM_ID = P.CHTRM_ID
+        WHERE P.EMP_ID = #{empId}
+          AND P.LEAV_DT IS NULL
+        ORDER BY C.CREAT_DT DESC
+    </select>
+
+    <select id="selectChtrmById" resultMap="chtrmResultMap">
+        SELECT
+            C.CHTRM_ID,
+            C.CHTRM_NM,
+            C.CHTRM_EXPLN,
+            C.CHTRM_TYPE_CD,
+            C.ESTBLSH_ID,
+            C.CREAT_DT,
+            C.END_DT,
+            P.CHTRM_ID AS PTCPT_CHTRM_ID,
+            P.EMP_ID,
+            P.PTCPT_STTUS_CD,
+            P.LAST_CFMTN_MSG_ID,
+            P.JOIN_DT,
+            P.LEAV_DT,
+            M.MSG_ID,
+            M.CHTRM_ID AS MSG_CHTRM_ID,
+            M.SNDR_ID,
+            M.MSG_CN,
+            M.CREAT_DT AS MSG_CREAT_DT
+        FROM TB_MSNGR_CHTRM C
+        LEFT JOIN TB_MSNGR_CHTRM_PTCPT P ON C.CHTRM_ID = P.CHTRM_ID
+        LEFT JOIN TB_MSNGR_MSG M ON C.CHTRM_ID = M.CHTRM_ID
+        WHERE C.CHTRM_ID = #{chtrmId}
+        ORDER BY M.CREAT_DT ASC
+    </select>
+
+    <select id="selectPtcptListByChtrmId" resultType="MsngrChtrmPtcptVO">
+        SELECT
+            CHTRM_ID,
+            EMP_ID,
+            PTCPT_STTUS_CD,
+            LAST_CFMTN_MSG_ID,
+            JOIN_DT,
+            LEAV_DT
+        FROM TB_MSNGR_CHTRM_PTCPT
+        WHERE CHTRM_ID = #{chtrmId}
+          AND LEAV_DT IS NULL
+    </select>
+
+    <select id="selectMsgById" resultType="MsngrMsgDetailVO">
+        SELECT
+            M.MSG_ID,
+            M.CHTRM_ID,
+            M.SNDR_ID,
+            M.MSG_CN,
+            M.CREAT_DT,
+            E.EMP_NM AS SENDER_NAME,
+            (
+                SELECT COUNT(*)
+                FROM TB_MSNGR_CHTRM_PTCPT P
+                WHERE P.CHTRM_ID = M.CHTRM_ID
+                AND (P.LAST_CFMTN_MSG_ID IS NULL OR <![CDATA[ P.LAST_CFMTN_MSG_ID < M.MSG_ID ]]>)
+                AND P.LEAV_DT IS NULL
+            ) AS UNREAD_COUNT
+        FROM TB_MSNGR_MSG M
+        JOIN TB_EMPLOYEE E ON M.SNDR_ID = E.EMP_ID
+        WHERE M.MSG_ID = #{msgId}
+    </select>
+
+    <select id="selectMsgListByChtrmId" resultType="MsngrMsgDetailVO">
+        SELECT
+            M.MSG_ID,
+            M.CHTRM_ID,
+            M.SNDR_ID,
+            M.MSG_CN,
+            M.CREAT_DT,
+            E.EMP_NM AS SENDER_NAME,
+            (
+                SELECT COUNT(*)
+                FROM TB_MSNGR_CHTRM_PTCPT P
+                WHERE P.CHTRM_ID = M.CHTRM_ID
+                AND (P.LAST_CFMTN_MSG_ID IS NULL OR <![CDATA[ P.LAST_CFMTN_MSG_ID < M.MSG_ID ]]>)
+                AND P.LEAV_DT IS NULL
+            ) AS UNREAD_COUNT
+        FROM TB_MSNGR_MSG M
+        JOIN TB_EMPLOYEE E ON M.SNDR_ID = E.EMP_ID
+        WHERE M.CHTRM_ID = #{chtrmId}
+        ORDER BY M.CREAT_DT ASC
+    </select>
+
+    <insert id="insertChtrm" parameterType="MsngrChtrmVO">
+        <selectKey keyProperty="chtrmId" resultType="Long" order="BEFORE">
+            SELECT SEQ_CHTRM_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_MSNGR_CHTRM (
+            CHTRM_ID,
+            CHTRM_NM,
+            CHTRM_EXPLN,
+            CHTRM_TYPE_CD,
+            ESTBLSH_ID,
+            CREAT_DT
+        ) VALUES (
+            #{chtrmId},
+            #{chtrmNm},
+            #{chtrmExpln},
+            #{chtrmTypeCd},
+            #{estblshId},
+            SYSDATE
+        )
+    </insert>
+
+    <insert id="insertPtcpt" parameterType="MsngrChtrmPtcptVO">
+        INSERT INTO TB_MSNGR_CHTRM_PTCPT (
+            CHTRM_ID,
+            EMP_ID,
+            PTCPT_STTUS_CD,
+            JOIN_DT
+        ) VALUES (
+            #{chtrmId},
+            #{empId},
+            #{ptcptSttusCd},
+            SYSDATE
+        )
+    </insert>
+
+    <insert id="insertMsg" parameterType="MsngrMsgVO">
+        <selectKey keyProperty="msgId" resultType="Long" order="BEFORE">
+            SELECT SEQ_MSG_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_MSNGR_MSG (
+            MSG_ID,
+            CHTRM_ID,
+            SNDR_ID,
+            MSG_CN,
+            CREAT_DT
+        ) VALUES (
+            #{msgId},
+            #{chtrmId},
+            #{sndrId},
+            #{msgCn},
+            SYSDATE
+        )
+    </insert>
+
+    <update id="updatePtcptSttus">
+        UPDATE TB_MSNGR_CHTRM_PTCPT
+        SET PTCPT_STTUS_CD = #{ptcptSttusCd}
+        WHERE EMP_ID = #{empId}
+    </update>
+
+    <select id="selectPtcptSttus" resultType="String">
+        SELECT PTCPT_STTUS_CD
+        FROM TB_MSNGR_CHTRM_PTCPT
+        WHERE EMP_ID = #{empId}
+        AND LEAV_DT IS NULL
+        AND ROWNUM = 1
+    </select>
+
+    <update id="updateLastCfmtnMsgId">
+        UPDATE TB_MSNGR_CHTRM_PTCPT
+        SET LAST_CFMTN_MSG_ID = #{msgId}
+        WHERE CHTRM_ID = #{chtrmId}
+          AND EMP_ID   = #{empId}
+    </update>
+
+</mapper>
