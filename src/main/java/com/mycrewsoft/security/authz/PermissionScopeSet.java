@@ -7,6 +7,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.mycrewsoft.common.constant.PermissionCode;
+
 import lombok.Getter;
 
 /**
@@ -90,6 +92,10 @@ public class PermissionScopeSet {
 
     public Set<String> getProjectScopeIds() {
         return getScopeIds(ScopeType.PROJECT);
+    }
+
+    public Set<String> getTaskScopeIds() {
+        return getScopeIds(ScopeType.TASK);
     }
 
     public Set<String> getSelfScopeIds() {

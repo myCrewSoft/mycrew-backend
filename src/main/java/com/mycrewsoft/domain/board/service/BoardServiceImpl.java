@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mycrewsoft.common.constant.PermissionCode;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DtoMapper;
@@ -23,7 +24,6 @@ import com.mycrewsoft.domain.board.vo.BoardLikeVo;
 import com.mycrewsoft.domain.board.vo.BoardVO;
 import com.mycrewsoft.domain.employee.mapper.EmployeeMapper;
 import com.mycrewsoft.security.authz.AuthorizationService;
-import com.mycrewsoft.security.authz.PermissionCode;
 import com.mycrewsoft.security.authz.PermissionScopeSet;
 import com.mycrewsoft.security.authz.ResourceContext;
 import com.mycrewsoft.security.authz.ResourceType;

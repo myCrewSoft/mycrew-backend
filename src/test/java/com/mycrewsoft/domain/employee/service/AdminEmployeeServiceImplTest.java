@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.mycrewsoft.common.constant.PermissionCode;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DtoMapper;
@@ -34,7 +35,6 @@ import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 import com.mycrewsoft.domain.empstat.code.EmpStatCode;
 import com.mycrewsoft.domain.roleassignment.service.RoleAssignmentService;
 import com.mycrewsoft.security.authz.AuthorizationService;
-import com.mycrewsoft.security.authz.PermissionCode;
 import com.mycrewsoft.security.authz.ResourceContext;
 import com.mycrewsoft.security.rbac.RbacAuthorizationChangeService;
 
@@ -93,7 +93,7 @@ class AdminEmployeeServiceImplTest {
         assertThat(savedEmployee.getFrstRegDt()).isNotNull();
 
         verify(authorizationService).assertCurrentUserPermission(
-                org.mockito.ArgumentMatchers.eq(PermissionCode.EMPLOYEE_CREATE),
+                org.mockito.ArgumentMatchers.eq(PermissionCode.ADMIN_EMPLOYEE_CREATE),
                 any(ResourceContext.class));
 
         InOrder order = inOrder(employeeMapper, roleAssignmentService, rbacAuthorizationChangeService);
@@ -143,7 +143,7 @@ class AdminEmployeeServiceImplTest {
         assertThat(page.getTotalPages()).isEqualTo(3);
 
         verify(authorizationService).assertCurrentUserPermission(
-                org.mockito.ArgumentMatchers.eq(PermissionCode.EMPLOYEE_READ),
+                org.mockito.ArgumentMatchers.eq(PermissionCode.ADMIN_EMPLOYEE_READ),
                 any(ResourceContext.class));
         verify(employeeMapper).selectEmployees(condition, 2, 2);
     }
@@ -178,7 +178,7 @@ class AdminEmployeeServiceImplTest {
         adminEmployeeService.updateEmployeeStatus(empId, request);
 
         verify(authorizationService).assertCurrentUserPermission(
-                org.mockito.ArgumentMatchers.eq(PermissionCode.EMPLOYEE_UPDATE),
+                org.mockito.ArgumentMatchers.eq(PermissionCode.ADMIN_EMPLOYEE_UPDATE),
                 any(ResourceContext.class));
         verify(employeeMapper).updateEmployeeStatus(empId, EmpStatCode.EMP_INACTIVE.getCode());
     }

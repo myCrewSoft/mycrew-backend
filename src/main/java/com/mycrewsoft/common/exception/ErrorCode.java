@@ -41,23 +41,55 @@ public enum ErrorCode {
     USER_DISABLED(HttpStatus.FORBIDDEN, "USER_004", "사용자 계정이 비활성화되었습니다."),
     DUPLICATE_EMPLOYEEID(HttpStatus.CONFLICT, "USER_005", "이미 사용 중인 사원번호입니다."),
 
+    // NOTIFICATION
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIF_001", "존재하지 않는 알림입니다."),
+
     // FILE
     FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FILE_001", "파일 업로드에 실패했습니다."),
     INVALID_FILE_TYPE(HttpStatus.BAD_REQUEST, "FILE_002", "허용되지 않는 파일 형식입니다."),
     FILE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "FILE_003", "파일 크기가 초과되었습니다."),
-	FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "FILE_004", "존재하지 않는 파일입니다."),
+	  FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "FILE_004", "존재하지 않는 파일입니다."),
 	
-	// SCHEDULE
-	NOT_SCHEDULE_OWNER(HttpStatus.FORBIDDEN, "SCH-001", "해당 일정에 대한 관리 권한이 없습니다."),
-	SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "SCH-002", "요청하신 일정을 찾을 수 없습니다."),
+	  // SCHEDULE
+	  NOT_SCHEDULE_OWNER(HttpStatus.FORBIDDEN, "SCH-001", "해당 일정에 대한 관리 권한이 없습니다."),
+	  SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "SCH-002", "요청하신 일정을 찾을 수 없습니다."),
 	
-	// DRIVE
-	DRIVE_INSERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "DRIVE_001", "폴더 생성에 실패했습니다."),
+	  // DRIVE
+	  DRIVE_INSERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "DRIVE_001", "폴더 생성에 실패했습니다."),
+    DRIVE_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "DRIVE_002", "드라이브 아이템을 찾을 수 없습니다."),
+    DRIVE_RENAME_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "DRIVE_003", "폴더만 이름 수정이 가능합니다."),
+
+    // BOARD
+    BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지않는 게시판입니다."),
+
+    // JOB
+    RANK_NOT_FOUND(HttpStatus.NOT_FOUND, "JOB_001", "존재하지 않는 직급입니다."),
+    DUPLICATE_RANK_ID(HttpStatus.CONFLICT, "JOB_002", "이미 존재하는 직급 ID입니다."),
+
+    // ROLE 
+    ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, "ROLE_001", "존재하지 않는 역할입니다."),
+    DUPLICATE_ROLE_CODE(HttpStatus.CONFLICT, "ROLE_002", "해당 역할 코드가 이미 존재합니다."),
 	
-	// BOARD
-	BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001","존재하지않는 게시판입니다.");
+	// PERMISSION
+	PERMISSION_NOT_FOUND(HttpStatus.NOT_FOUND, "PERM_001", "존재하지 않는 권합입니다."),
+
+    // MESSENGER
+    CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND,  "CHAT_001", "존재하지 않는 채팅방입니다."),
+    CHAT_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "CHAT_002", "채팅방 참여자가 아닙니다."),
+    CHAT_ROOM_ALREADY_EXISTS(HttpStatus.CONFLICT, "CHAT_003", "이미 존재하는 1:1 채팅방입니다."),
+
+    // WEBSOCKET
+    WS_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "WS_001", "WebSocket 연결 시 인증이 필요합니다."),
+    WS_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "WS_002", "WebSocket 연결 시 유효하지 않은 토큰입니다."),
+
+    // DEPARTMENT
+    DEPARTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "DEPT_001", "존재하지 않는 부서입니다."),
+    DUPLICATE_DEPARTMENT_CODE(HttpStatus.CONFLICT, "DEPT_002", "이미 존재하는 부서 코드입니다.");
+
+	
+
     // 팀원이 새 도메인 추가 시 아래 패턴으로 섹션 추가
-    // BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지 않는 게시글입니다."),
+    // BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지 않는 게시글입니다.")
 	
     private final HttpStatus httpStatus;
     private final String code;

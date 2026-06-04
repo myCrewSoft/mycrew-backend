@@ -97,7 +97,8 @@ cors:
   allowed-headers: Authorization,Content-Type,Accept
   allow-credentials: true
   max-age: 3600
-
+  exposed-headers: Content-Type,Cache-Control,X-Accel-Buffering
+ 
 file:
   upload-path: ${LOCAL_STORAGE}
 
@@ -119,3 +120,6 @@ springdoc:
   swagger-ui:
     path: /swagger-ui/index.html
     url: /api/v3/api-docs
+
+websocket:
+  allowed-origins: http://localhost:5173

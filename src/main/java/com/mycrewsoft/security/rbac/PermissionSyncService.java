@@ -6,7 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.mycrewsoft.security.authz.PermissionCode;
+import com.mycrewsoft.common.constant.PermissionCode;
 
 import lombok.RequiredArgsConstructor;
 
