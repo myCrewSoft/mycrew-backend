@@ -14,7 +14,7 @@ public interface AdminDepartmentMapper {
 
     void insertDepartment(DepartmentVO department);
 
-    String selectCurrentDepartmentCode();
+    String selectNextDepartmentCode();
 
     AdminDepartmentResponseDTO selectDepartmentByCode(@Param("deptCd") String deptCd);
 

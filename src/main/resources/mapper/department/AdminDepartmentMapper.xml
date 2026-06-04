@@ -25,21 +25,32 @@
     </resultMap>
 
     <sql id="DepartmentColumns">
-        D.DEPT_CD,
+        TRIM(D.DEPT_CD) AS DEPT_CD,
         D.DEPT_NM,
-        D.PRNT_DEPT_CD AS PARENT_DEPT_CD,
+        TRIM(D.PRNT_DEPT_CD) AS PARENT_DEPT_CD,
         P.DEPT_NM AS PARENT_DEPT_NM,
         D.USE_YN,
         (
             SELECT COUNT(1)
             FROM TB_EMPLOYEE E
-            WHERE E.DEPT_CD = D.DEPT_CD
+            WHERE TRIM(E.DEPT_CD) = TRIM(D.DEPT_CD)
               AND NVL(E.ENABLED, 'Y') = 'Y'
         ) AS MEMBER_COUNT
     </sql>
 
-    <select id="selectCurrentDepartmentCode" resultType="java.lang.String">
-        SELECT 'DEPT_' || LPAD(SEQ_DEPARTMENT.CURRVAL, 3, '0')
+    <select id="selectNextDepartmentCode" resultType="java.lang.String">
+        SELECT 'DEPT_' || LPAD(
+            GREATEST(
+                SEQ_DEPARTMENT.NEXTVAL,
+                NVL((
+                    SELECT MAX(TO_NUMBER(SUBSTR(TRIM(DEPT_CD), 6)))
+                    FROM TB_DEPARTMENT
+                    WHERE REGEXP_LIKE(TRIM(DEPT_CD), '^DEPT_[0-9]+$')
+                ), 0) + 1
+            ),
+            3,
+            '0'
+        )
         FROM DUAL
     </select>
 
@@ -55,10 +66,7 @@
             LAST_MDFR_ID
         )
         VALUES (
-            CASE
-                WHEN #{deptCd,jdbcType=VARCHAR} IS NULL THEN 'DEPT_' || LPAD(SEQ_DEPARTMENT.NEXTVAL, 3, '0')
-                ELSE #{deptCd,jdbcType=VARCHAR}
-            END,
+            #{deptCd},
             #{prntDeptCd},
             #{deptNm},
             #{useYn},
@@ -74,8 +82,8 @@
             <include refid="DepartmentColumns"/>
         FROM TB_DEPARTMENT D
         LEFT JOIN TB_DEPARTMENT P
-          ON P.DEPT_CD = D.PRNT_DEPT_CD
-        WHERE D.DEPT_CD = #{deptCd}
+          ON TRIM(P.DEPT_CD) = TRIM(D.PRNT_DEPT_CD)
+        WHERE TRIM(D.DEPT_CD) = #{deptCd}
           AND NVL(D.USE_YN, 'Y') = 'Y'
     </select>
 
@@ -84,7 +92,7 @@
             <include refid="DepartmentColumns"/>
         FROM TB_DEPARTMENT D
         LEFT JOIN TB_DEPARTMENT P
-          ON P.DEPT_CD = D.PRNT_DEPT_CD
+          ON TRIM(P.DEPT_CD) = TRIM(D.PRNT_DEPT_CD)
         WHERE NVL(D.USE_YN, 'Y') = 'Y'
         ORDER BY D.PRNT_DEPT_CD NULLS FIRST, D.DEPT_NM ASC, D.DEPT_CD ASC
     </select>
@@ -92,14 +100,14 @@
     <select id="countActiveDepartmentByCode" resultType="int">
         SELECT COUNT(1)
         FROM TB_DEPARTMENT
-        WHERE DEPT_CD = #{deptCd}
+        WHERE TRIM(DEPT_CD) = #{deptCd}
           AND NVL(USE_YN, 'Y') = 'Y'
     </select>
 
     <select id="countChildDepartments" resultType="int">
         SELECT COUNT(1)
         FROM TB_DEPARTMENT
-        WHERE PRNT_DEPT_CD = #{deptCd}
+        WHERE TRIM(PRNT_DEPT_CD) = #{deptCd}
           AND NVL(USE_YN, 'Y') = 'Y'
     </select>
 
@@ -109,10 +117,10 @@
             SELECT DEPT_CD
             FROM TB_DEPARTMENT
             WHERE NVL(USE_YN, 'Y') = 'Y'
-            START WITH PRNT_DEPT_CD = #{deptCd}
-            CONNECT BY PRIOR DEPT_CD = PRNT_DEPT_CD
+            START WITH TRIM(PRNT_DEPT_CD) = #{deptCd}
+            CONNECT BY PRIOR TRIM(DEPT_CD) = TRIM(PRNT_DEPT_CD)
         )
-        WHERE DEPT_CD = #{candidateParentDeptCd}
+        WHERE TRIM(DEPT_CD) = #{candidateParentDeptCd}
     </select>
 
     <update id="updateDepartment" parameterType="com.mycrewsoft.domain.department.vo.DepartmentVO">
@@ -121,7 +129,7 @@
             DEPT_NM = #{deptNm},
             LAST_MDFCN_DT = #{lastMdfcnDt},
             LAST_MDFR_ID = #{lastMdfrId}
-        WHERE DEPT_CD = #{deptCd}
+        WHERE TRIM(DEPT_CD) = #{deptCd}
           AND NVL(USE_YN, 'Y') = 'Y'
     </update>
 
@@ -130,14 +138,14 @@
         SET USE_YN = 'N',
             LAST_MDFCN_DT = SYSDATE,
             LAST_MDFR_ID = #{lastMdfrId}
-        WHERE DEPT_CD = #{deptCd}
+        WHERE TRIM(DEPT_CD) = #{deptCd}
           AND NVL(USE_YN, 'Y') = 'Y'
     </update>
 
     <select id="selectEnabledEmpIdsByDeptCd" resultType="java.lang.Long">
         SELECT E.EMP_ID
         FROM TB_EMPLOYEE E
-        WHERE E.DEPT_CD = #{deptCd}
+        WHERE TRIM(E.DEPT_CD) = #{deptCd}
           AND NVL(E.ENABLED, 'Y') = 'Y'
     </select>
 
@@ -145,7 +153,7 @@
         SELECT
             E.EMP_ID,
             E.EMP_NM,
-            E.DEPT_CD,
+            TRIM(E.DEPT_CD) AS DEPT_CD,
             D.DEPT_NM,
             E.JOB_GRD_CD,
             JG.JOB_GRD_NM,
@@ -155,14 +163,14 @@
             ES.EMP_STAT_NM
         FROM TB_EMPLOYEE E
         LEFT JOIN TB_DEPARTMENT D
-          ON D.DEPT_CD = E.DEPT_CD
+          ON TRIM(D.DEPT_CD) = TRIM(E.DEPT_CD)
         LEFT JOIN TB_JOB_GRADE JG
           ON JG.JOB_GRD_CD = E.JOB_GRD_CD
         LEFT JOIN TB_JOB_POSITION JP
           ON JP.JOB_PSTN_CD = E.JOB_PSTN_CD
         LEFT JOIN TB_EMP_STAT ES
           ON ES.EMP_STAT_CD = E.EMP_STAT_CD
-        WHERE E.DEPT_CD = #{deptCd}
+        WHERE TRIM(E.DEPT_CD) = #{deptCd}
           AND NVL(E.ENABLED, 'Y') = 'Y'
         ORDER BY E.EMP_NM ASC, E.EMP_ID ASC
     </select>
@@ -180,7 +188,7 @@
     <select id="countEmployeesByDeptAndIds" resultType="int">
         SELECT COUNT(1)
         FROM TB_EMPLOYEE
-        WHERE DEPT_CD = #{deptCd}
+        WHERE TRIM(DEPT_CD) = #{deptCd}
           AND NVL(ENABLED, 'Y') = 'Y'
           AND EMP_ID IN
           <foreach collection="empIds" item="empId" open="(" separator="," close=")">
@@ -201,7 +209,7 @@
     <update id="updateDepartmentForAllEmployees">
         UPDATE TB_EMPLOYEE
         SET DEPT_CD = #{targetDeptCd}
-        WHERE DEPT_CD = #{sourceDeptCd}
+        WHERE TRIM(DEPT_CD) = #{sourceDeptCd}
           AND NVL(ENABLED, 'Y') = 'Y'
     </update>
 </mapper>
