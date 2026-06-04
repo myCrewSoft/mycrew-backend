@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.domain.department.mapper.DepartmentLookupMapper">
+
+    <select id="selectDepartmentsForLookup" resultType="DepartmentLookupVO">
+        SELECT
+            DEPT_CD,
+            DEPT_NM
+        FROM TB_DEPARTMENT
+        WHERE USE_YN = 'Y'
+        ORDER BY DEPT_NM ASC
+    </select>
+
+</mapper>
