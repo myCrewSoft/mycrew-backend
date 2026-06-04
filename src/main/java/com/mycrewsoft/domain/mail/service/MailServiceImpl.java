@@ -8,6 +8,8 @@ import java.util.Locale;
 import java.util.Set;
 
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -56,13 +58,18 @@ public class MailServiceImpl implements MailService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<MailSummaryResponse> getMails(String type, String keyword, Pageable pageable) {
+    public Page<MailSummaryResponse> getMails(String type, String keyword, Pageable pageable) {
         Long empId = SecurityUtil.getCurrentEmpId();
         assertPermission(PermissionCode.MAIL_READ, empId);
         MailAccountVO account = loadAccount(empId);
         requireAnyScope(account, SCOPE_GMAIL_READONLY, SCOPE_GMAIL_MODIFY);
 
         String normalizedType = normalizeType(type);
+        long total = mailMapper.countMails(
+                empId,
+                normalizedType,
+                normalizeKeyword(keyword),
+                account.getEmailAddr());
         List<MailSummaryResponse> mails = mailMapper.selectMails(
                 empId,
                 normalizedType,
@@ -71,7 +78,7 @@ public class MailServiceImpl implements MailService {
                 pageable.getOffset(),
                 pageable.getPageSize());
         fillLabels(empId, mails);
-        return mails;
+        return new PageImpl<>(mails, pageable, total);
     }
 
     @Override
@@ -226,15 +233,16 @@ public class MailServiceImpl implements MailService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<MailSummaryResponse> getTrash(Pageable pageable) {
+    public Page<MailSummaryResponse> getTrash(Pageable pageable) {
         Long empId = SecurityUtil.getCurrentEmpId();
         assertPermission(PermissionCode.MAIL_READ, empId);
         MailAccountVO account = loadAccount(empId);
         requireAnyScope(account, SCOPE_GMAIL_READONLY, SCOPE_GMAIL_MODIFY);
 
+        long total = mailMapper.countTrash(empId);
         List<MailSummaryResponse> mails = mailMapper.selectTrash(empId, pageable.getOffset(), pageable.getPageSize());
         fillLabels(empId, mails);
-        return mails;
+        return new PageImpl<>(mails, pageable, total);
     }
 
     @Override

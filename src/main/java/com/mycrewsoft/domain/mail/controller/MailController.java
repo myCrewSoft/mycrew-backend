@@ -2,6 +2,7 @@ package com.mycrewsoft.domain.mail.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -51,8 +52,8 @@ public class MailController {
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "페이지 크기")
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(ApiResponse.success(
-                mailService.getMails(type, keyword, PageRequest.of(page, size))));
+        Page<MailSummaryResponse> mailPage = mailService.getMails(type, keyword, PageRequest.of(page, size));
+        return ResponseEntity.ok(ApiResponse.success(mailPage.getContent(), mailPage));
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -99,7 +100,8 @@ public class MailController {
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "페이지 크기")
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(ApiResponse.success(mailService.getTrash(PageRequest.of(page, size))));
+        Page<MailSummaryResponse> trashPage = mailService.getTrash(PageRequest.of(page, size));
+        return ResponseEntity.ok(ApiResponse.success(trashPage.getContent(), trashPage));
     }
 
     @DeleteMapping("/trash")

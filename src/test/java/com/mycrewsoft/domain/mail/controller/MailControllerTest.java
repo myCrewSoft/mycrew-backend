@@ -9,6 +9,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 
@@ -29,7 +31,8 @@ class MailControllerTest {
         mail.setMailId(1L);
         mail.setSubject("subject");
         mail.setSentAt(LocalDateTime.now());
-        when(service.getMails("inbox", null, PageRequest.of(0, 20))).thenReturn(List.of(mail));
+        Page<MailSummaryResponse> page = new PageImpl<>(List.of(mail), PageRequest.of(0, 20), 21);
+        when(service.getMails("inbox", null, PageRequest.of(0, 20))).thenReturn(page);
 
         ResponseEntity<ApiResponse<List<MailSummaryResponse>>> response =
                 controller.getMails("inbox", null, 0, 20);
@@ -37,7 +40,31 @@ class MailControllerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().isSuccess()).isTrue();
         assertThat(response.getBody().getData()).containsExactly(mail);
+        assertThat(response.getBody().getPagination()).isNotNull();
+        assertThat(response.getBody().getPagination().getPage()).isZero();
+        assertThat(response.getBody().getPagination().getSize()).isEqualTo(20);
+        assertThat(response.getBody().getPagination().getTotalElements()).isEqualTo(21);
         verify(service).getMails("inbox", null, PageRequest.of(0, 20));
+    }
+
+    @Test
+    void getTrashReturnsPaginationResponse() {
+        MailService service = Mockito.mock(MailService.class);
+        MailController controller = new MailController(service);
+        MailSummaryResponse mail = new MailSummaryResponse();
+        mail.setMailId(2L);
+        Page<MailSummaryResponse> page = new PageImpl<>(List.of(mail), PageRequest.of(1, 10), 25);
+        when(service.getTrash(PageRequest.of(1, 10))).thenReturn(page);
+
+        ResponseEntity<ApiResponse<List<MailSummaryResponse>>> response = controller.getTrash(1, 10);
+
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getData()).containsExactly(mail);
+        assertThat(response.getBody().getPagination()).isNotNull();
+        assertThat(response.getBody().getPagination().getPage()).isEqualTo(1);
+        assertThat(response.getBody().getPagination().getSize()).isEqualTo(10);
+        assertThat(response.getBody().getPagination().getTotalElements()).isEqualTo(25);
+        verify(service).getTrash(PageRequest.of(1, 10));
     }
 
     @Test

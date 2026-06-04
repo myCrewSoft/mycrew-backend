@@ -194,6 +194,69 @@
         )
     </sql>
 
+    <select id="countMails" resultType="long">
+        SELECT COUNT(1)
+        FROM TB_MAIL_MESSAGE M
+        WHERE M.EMP_ID = #{empId}
+          AND M.DEL_YN = 'N'
+        <choose>
+            <when test="type == 'inbox'">
+                AND <include refid="notTrash"/>
+                AND EXISTS (
+                    SELECT 1
+                    FROM TB_MAIL_LABEL_MAP LM
+                    JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+                    WHERE LM.EMP_ID = M.EMP_ID
+                      AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                      AND TRIM(L.LABEL_TYPE_CD) = 'INBOX'
+                )
+            </when>
+            <when test="type == 'sent'">
+                AND <include refid="notTrash"/>
+                AND EXISTS (
+                    SELECT 1
+                    FROM TB_MAIL_LABEL_MAP LM
+                    JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+                    WHERE LM.EMP_ID = M.EMP_ID
+                      AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                      AND TRIM(L.LABEL_TYPE_CD) = 'SENT'
+                )
+            </when>
+            <when test="type == 'self'">
+                AND <include refid="notTrash"/>
+                AND LOWER(M.FROM_EMAIL) = LOWER(#{emailAddr})
+                AND EXISTS (
+                    SELECT 1 FROM TB_MAIL_PARTICIPANT P
+                    WHERE P.EMP_ID = M.EMP_ID
+                      AND P.MAIL_MSG_ID = M.MAIL_MSG_ID
+                      AND TRIM(P.PARTICIPANT_TYPE_CD) = 'TO'
+                      AND LOWER(P.EMAIL_ADDR) = LOWER(#{emailAddr})
+                )
+            </when>
+            <when test="type == 'tome'">
+                AND <include refid="notTrash"/>
+                AND EXISTS (
+                    SELECT 1 FROM TB_MAIL_PARTICIPANT P
+                    WHERE P.EMP_ID = M.EMP_ID
+                      AND P.MAIL_MSG_ID = M.MAIL_MSG_ID
+                      AND TRIM(P.PARTICIPANT_TYPE_CD) IN ('TO', 'CC')
+                      AND LOWER(P.EMAIL_ADDR) = LOWER(#{emailAddr})
+                )
+            </when>
+            <otherwise>
+                AND <include refid="notTrash"/>
+            </otherwise>
+        </choose>
+        <if test="keyword != null and keyword != ''">
+            AND (
+                LOWER(M.MAIL_SJ) LIKE '%' || LOWER(#{keyword}) || '%'
+                OR LOWER(M.SNIPPET) LIKE '%' || LOWER(#{keyword}) || '%'
+                OR LOWER(M.FROM_EMAIL) LIKE '%' || LOWER(#{keyword}) || '%'
+                OR LOWER(M.TO_SUMMARY) LIKE '%' || LOWER(#{keyword}) || '%'
+            )
+        </if>
+    </select>
+
     <select id="selectMails" resultMap="MailSummaryMap">
         SELECT
             M.MAIL_MSG_ID AS MAIL_ID,
@@ -271,6 +334,21 @@
         </if>
         ORDER BY M.MAIL_SNDNG_DT DESC NULLS LAST, M.MAIL_MSG_ID DESC
         OFFSET #{offset} ROWS FETCH NEXT #{size} ROWS ONLY
+    </select>
+
+    <select id="countTrash" resultType="long">
+        SELECT COUNT(1)
+        FROM TB_MAIL_MESSAGE M
+        WHERE M.EMP_ID = #{empId}
+          AND M.DEL_YN = 'N'
+          AND EXISTS (
+              SELECT 1
+              FROM TB_MAIL_LABEL_MAP LM
+              JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+              WHERE LM.EMP_ID = M.EMP_ID
+                AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                AND TRIM(L.LABEL_TYPE_CD) = 'TRASH'
+          )
     </select>
 
     <select id="selectTrash" resultMap="MailSummaryMap">

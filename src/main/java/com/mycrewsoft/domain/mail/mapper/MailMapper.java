@@ -45,9 +45,16 @@ public interface MailMapper {
                                           @Param("offset") long offset,
                                           @Param("size") int size);
 
+    long countMails(@Param("empId") Long empId,
+                    @Param("type") String type,
+                    @Param("keyword") String keyword,
+                    @Param("emailAddr") String emailAddr);
+
     List<MailSummaryResponse> selectTrash(@Param("empId") Long empId,
                                           @Param("offset") long offset,
                                           @Param("size") int size);
+
+    long countTrash(@Param("empId") Long empId);
 
     List<MailParticipantResponse> selectParticipants(@Param("empId") Long empId, @Param("mailId") Long mailId);
 

@@ -2,6 +2,7 @@ package com.mycrewsoft.domain.mail.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,7 +16,7 @@ import com.mycrewsoft.domain.mail.dto.response.MailTrashClearResponse;
 
 public interface MailService {
 
-    List<MailSummaryResponse> getMails(String type, String keyword, Pageable pageable);
+    Page<MailSummaryResponse> getMails(String type, String keyword, Pageable pageable);
 
     MailSendResponse sendMail(MailSendRequest request, List<MultipartFile> attachments);
 
@@ -27,7 +28,7 @@ public interface MailService {
 
     MailMutationResponse updateImportant(Long mailId, MailImportantUpdateRequest request);
 
-    List<MailSummaryResponse> getTrash(Pageable pageable);
+    Page<MailSummaryResponse> getTrash(Pageable pageable);
 
     MailTrashClearResponse clearTrash();
 
