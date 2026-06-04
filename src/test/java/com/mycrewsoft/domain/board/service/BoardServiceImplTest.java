@@ -63,7 +63,7 @@ public class BoardServiceImplTest {
                 .thenReturn(List.of(new BoardResponse()));
 
             // 2. When (실행)
-            Page<BoardResponse> result = boardService.getBoard(boardTypeCd, deptCd, searchRequest, pageable);
+            Page<BoardResponse> result = boardService.getBoardList(boardTypeCd, deptCd, searchRequest, pageable);
 
             // 3. Then (검증)
             assertNotNull(result);
