@@ -90,8 +90,8 @@ public class FileServiceImpl implements FileService {
 		
 		mapper.insertDtl(fileDtlVo);
 		
-		return fileClsfVo.getAtchFileId();
-		//호출하는 쪽에서 첨부파일ID를 사용할 수 있도록 반환 (첨부파일ID 논리FK로 사용하는 경우)
+		return fileDtlVo.getAtchFileDtlId();
+		//호출하는 쪽에서 첨부파일상세ID를 사용할 수 있도록 반환 (첨부파일ID 논리FK로 사용하는 경우)
 	}
 
 	/**
