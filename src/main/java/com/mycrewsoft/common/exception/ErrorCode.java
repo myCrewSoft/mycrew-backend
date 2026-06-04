@@ -73,6 +73,13 @@ public enum ErrorCode {
 	// PERMISSION
 	PERMISSION_NOT_FOUND(HttpStatus.NOT_FOUND, "PERM_001", "존재하지 않는 권합입니다."),
 
+    // MAIL
+    MAIL_ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "MAIL_001", "연동된 활성 메일 계정을 찾을 수 없습니다."),
+    MAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "MAIL_002", "존재하지 않는 메일입니다."),
+    MAIL_SCOPE_REQUIRED(HttpStatus.FORBIDDEN, "MAIL_003", "메일 API 사용에 필요한 Google OAuth scope가 부족합니다."),
+    MAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "MAIL_004", "메일 발송 중 오류가 발생했습니다."),
+    MAIL_SYNC_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "MAIL_005", "메일 동기화 중 오류가 발생했습니다."),
+
     // MESSENGER
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND,  "CHAT_001", "존재하지 않는 채팅방입니다."),
     CHAT_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "CHAT_002", "채팅방 참여자가 아닙니다."),
