@@ -1,6 +1,9 @@
 package com.mycrewsoft.domain.board.dto.response;
 
 import java.time.LocalDateTime;
+import java.util.List;
+
+import com.mycrewsoft.domain.board.vo.BoardCommentVO;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -53,5 +56,14 @@ public class BoardResponse {
     private String cmntUseYn;            
     
 	@Schema(description = "게시글 조회수", example = "142")
-    private Integer viewCnt;             
+    private Integer viewCnt;     
+	
+	@Schema(description = "댓글 목록")
+    private List<BoardCommentVO> commentList; 
+    
+	@Schema(description = "게시글 총 좋아요 수", example = "10")
+	private Integer likeCnt;
+	
+    @Schema(description = "현재 사용자 좋아요 여부")
+    private Boolean isLiked;
 }

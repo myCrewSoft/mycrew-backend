@@ -2,7 +2,9 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper
 	namespace="com.mycrewsoft.domain.board.mapper.BoardMapper">
-
+		<resultMap type="BoardVO" id="BoardMap" autoMapping="true">
+		    <id property="boardId" column="BOARD_ID"/>
+		</resultMap>
 
 	<!-- 게시판 개수 조회 -->
 	<select id="countBoard" resultType="long">
@@ -66,8 +68,8 @@
 				<!-- 제목 검색 예시 -->
 				<if
 					test="searchRequest.keyword != null and searchRequest.keyword != ''">
-					AND B.BOARD_SJ LIKE '%'||  #{searchRequest.keyword} || '%'
-					OR B.BOARD_CN LIKE '%'||  #{searchRequest.keyword} || '%'
+					AND (B.BOARD_SJ LIKE '%'||  #{searchRequest.keyword} || '%'
+					OR B.BOARD_CN LIKE '%'||  #{searchRequest.keyword} || '%')
 				</if>
 				
 			</if>
@@ -118,4 +120,59 @@
 		</if>
 		)
 	</select>
+	
+	
+	<select id="readBoard" resultMap="BoardMap">
+		SELECT 
+			BOARD_ID
+			,BOARD_TYPE_CD
+			,BOARD_SJ
+			,BOARD_CN
+			,FRST_RGTR_ID
+			,FRST_REG_DT
+			,LAST_MDFR_DT
+			,BOARD_ATCH_FILE_ID
+			,DEPT_CD
+			,PROJ_ID
+			,IMPRTNT_YN
+			,CMNT_USE_YN
+			,VIEW_CNT
+		FROM tb_board
+		WHERE BOARD_ID = #{boardId}
+	</select>
+	
+	
+	<select id="readCommentList" resultType="com.mycrewsoft.domain.board.vo.BoardCommentVO">
+		SELECT 
+        COMMENT_ID, BOARD_ID, COMMENT_CN, WRTER_EMP_ID, WRTE_DT, 
+        COMMENT_PRT_ID, COMMENT_DEPTH, COMMENT_ORDER
+    FROM TB_BOARD_COMMENT
+    WHERE BOARD_ID = #{boardId}
+    ORDER BY COMMENT_ORDER ASC, WRTE_DT ASC
+	</select>
+	
+	
+	<select id="readLikeStatus" resultType="com.mycrewsoft.domain.board.vo.BoardLikeVo">
+		SELECT
+			BOARD_ID,EMP_ID,FRST_REG_DT
+		FROM tb_board_like
+		WHERE BOARD_ID = #{boardId} AND EMP_ID = #{empId}
+	</select>
+	
+	<update id="updateViewCount">
+		UPDATE tb_board
+		SET VIEW_CNT = VIEW_CNT +1
+		WHERE BOARD_ID =#{boardId}
+	
+	</update>
+	
+	<select id="readLikeCount" resultType="int">
+		SELECT COUNT(*)
+		FROM tb_board_like
+		WHERE BOARD_ID = #{boardId}
+	</select>
+	
+	
+	
+	
 </mapper>

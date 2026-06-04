@@ -39,38 +39,24 @@ public class BoardController {
 
 	@Operation(summary = "일반 게시글 목록 조회 (페이징 적용)-자유,익명,공지")
 	@GetMapping("/{boardTypeCd}")
-	public ResponseEntity<ApiResponse<Page<BoardResponse>>> getBoardList(
-			@PathVariable String boardTypeCd,
+	public ResponseEntity<ApiResponse<Page<BoardResponse>>> getBoardList(@PathVariable String boardTypeCd,
 			@Validated @ModelAttribute BoardSearchRequest searchRequest,
-			@PageableDefault(
-					size =10,
-					sort = "boardId",
-					direction = Sort.Direction.DESC
-					)
-			Pageable pageable
-			) {
+			@PageableDefault(size = 10, sort = "boardId", direction = Sort.Direction.DESC) Pageable pageable) {
 		// 1. 서비스의 페이징 메서드(getBoard)를 호출하고 Page 객체로 받습니다.
-		Page<BoardResponse> boardPage = service.getBoard(boardTypeCd,null,searchRequest,pageable);
-		
+		Page<BoardResponse> boardPage = service.getBoardList(boardTypeCd, null, searchRequest, pageable);
+
 		// 2. 응답 데이터 타입을 Page<BoardResponse>로 일치시켜 전송합니다. return
 		return ResponseEntity.ok(ApiResponse.success("게시판 목록 불러오기 성공!", boardPage));
 	}
-	
+
 	@Operation(summary = "부서게시글 목록 조회 (페이징 적용)")
 	@GetMapping("/dept/{deptCd}")
-	public ResponseEntity<ApiResponse<Page<BoardResponse>>> getDeptList(
-			@PathVariable String deptCd,
+	public ResponseEntity<ApiResponse<Page<BoardResponse>>> getDeptList(@PathVariable String deptCd,
 			@Validated @ModelAttribute BoardSearchRequest searchRequest,
-			@PageableDefault(
-					size =10,
-					sort = "boardId",
-					direction = Sort.Direction.DESC
-					)
-			Pageable pageable
-			) {
+			@PageableDefault(size = 10, sort = "boardId", direction = Sort.Direction.DESC) Pageable pageable) {
 		// 1. 서비스의 페이징 메서드(getBoard)를 호출하고 Page 객체로 받습니다.
-		Page<BoardResponse> boardPage = service.getBoard("dept",deptCd,searchRequest,pageable);
-		
+		Page<BoardResponse> boardPage = service.getBoardList("dept", deptCd, searchRequest, pageable);
+
 		// 2. 응답 데이터 타입을 Page<BoardResponse>로 일치시켜 전송합니다. return
 		return ResponseEntity.ok(ApiResponse.success("게시판 목록 불러오기 성공!", boardPage));
 	}
@@ -84,4 +70,27 @@ public class BoardController {
 		return ResponseEntity.ok(ApiResponse.success(sideBar));
 	}
 
+
+	@Operation(summary = "일반 게시판 게시글 조회")
+	@GetMapping("/{boardTypeCd}/{boardId}")
+	public ResponseEntity<ApiResponse<BoardResponse>> getBoard(
+		@PathVariable String boardTypeCd,
+		@PathVariable Long boardId) {
+
+		BoardResponse boardResponse = service.getBoard(null, boardId);
+
+		return ResponseEntity.ok(ApiResponse.success("일반 게시글 상세 조회 성공!", boardResponse));
+	}
+	
+	
+	@Operation(summary = "부서 게시판 게시글 조회")
+	@GetMapping("/dept/{deptCd}/{boardId}")
+	public ResponseEntity<ApiResponse<BoardResponse>> getDept(
+		@PathVariable	String deptCd,
+		@PathVariable	Long boardId) {
+
+		BoardResponse boardResponse = service.getBoard(deptCd, boardId);
+
+		return ResponseEntity.ok(ApiResponse.success("부서 게시글 상세 조회 성공!", boardResponse));
+	}
 }
