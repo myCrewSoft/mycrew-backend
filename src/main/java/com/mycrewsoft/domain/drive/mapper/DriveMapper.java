@@ -40,18 +40,11 @@ public interface DriveMapper {
 	int updateFolderName(@Param("driveItemId") Long driveItemId, @Param("itemNm") String ItemNm);
 	
 	/**
-	 * 즐겨찾기 등록
+	 * 즐겨찾기 등록/해제
 	 * @param driveItemId
 	 * @return
 	 */
-	int updateBookmarkYn(Long driveItemId);
-	
-	/**
-	 * 즐겨찾기 등록 해제
-	 * @param driveItemId
-	 * @return
-	 */
-	int deleteBookmark(Long driveItemId);
+	int updateBookmarkYn(@Param("driveItemId") Long driveItemId, @Param("newBookmarkYn") String newBookmarkYn);
 	
 	/**
 	 * 드라이브 단건 삭제상태 변경 (부모 아이템 삭제 시 하위 아이템까지 모두 삭제 상태 변경)

@@ -75,20 +75,12 @@ public class DriveController {
     	
     }
     
-    @Operation(summary = "즐겨찾기 등록")
-    @PatchMapping("/items/{driveItemId}/bookmark/register")
+    @Operation(summary = "즐겨찾기 등록/해제")
+    @PatchMapping("/items/{driveItemId}/bookmark")
     public ResponseEntity<ApiResponse<DriveResponseDto>> registerBookmark(
     	@PathVariable Long driveItemId
     ){
-    	return ResponseEntity.ok(ApiResponse.success("즐겨찾기 등록 성공", driveService.registerBookmark(driveItemId)));
-    }
-    
-    @Operation(summary = "즐겨찾기 해제")
-    @PatchMapping("/items/{driveItemId}/bookmark/delete")
-    public ResponseEntity<ApiResponse<DriveResponseDto>> deleteBookmark(
-    	@PathVariable Long driveItemId
-    ){
-    	return ResponseEntity.ok(ApiResponse.success("즐겨찾기 해제 성공", driveService.deleteBookmark(driveItemId)));
+    	return ResponseEntity.ok(ApiResponse.success("즐겨찾기 등록 성공", driveService.toggleBookmark(driveItemId)));
     }
     
     

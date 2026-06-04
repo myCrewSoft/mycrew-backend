@@ -171,11 +171,11 @@ public class DriveServiceImpl implements DriveService {
 	}
 
 	/**
-	 * 즐겨찾기 등록
+	 * 즐겨찾기 등록/해제
 	 */
 	@Override
 	@Transactional
-	public DriveResponseDto registerBookmark(Long driveItemId) {
+	public DriveResponseDto toggleBookmark(Long driveItemId) {
 		//해당 아이템 존재 확인
 		DriveVo item = mapper.selectDriveItemById(driveItemId);
 		if(item == null) {
@@ -191,36 +191,12 @@ public class DriveServiceImpl implements DriveService {
 	                    .build());
 		
 		//즐겨찾기 등록
-		mapper.updateBookmarkYn(driveItemId);
+		String newBookmarkYn = "Y".equals(item.getBookmarkYn()) ? "N" : "Y";
+		mapper.updateBookmarkYn(driveItemId, newBookmarkYn);
 		
+		//재조회 안 하고 값 세팅 후 반환
 		DriveResponseDto respDto = dtoMapper.toDto(item, DriveResponseDto.class);
-		respDto.setBookmarkYn("Y");
-		respDto.setLastMdfcnDt(DateUtil.format(LocalDateTime.now()));
-		
-		return respDto;
-	}
-
-	@Override
-	public DriveResponseDto deleteBookmark(Long driveItemId) {
-		//해당 아이템 존재 확인
-		DriveVo item = mapper.selectDriveItemById(driveItemId);
-		if(item == null) {
-			throw new CustomException(ErrorCode.DRIVE_ITEM_NOT_FOUND);
-		}
-		
-		//권한 체크
-		authorizationService.assertCurrentUserPermission(
-	            PermissionCode.DRIVE_UPDATE,
-	            ResourceContext.builder()
-	                    .resourceType(ResourceType.DRIVE)
-	                    .ownerEmpId(item.getEmpId())
-	                    .build());
-		//즐겨찾기 해제
-		mapper.deleteBookmark(driveItemId);
-		
-		//DB다시 조회하지 않고 여부 즐겨찾기여부 "N"으로 세팅
-		DriveResponseDto respDto = dtoMapper.toDto(item, DriveResponseDto.class);
-		respDto.setBookmarkYn("N");
+		respDto.setBookmarkYn(newBookmarkYn);
 		respDto.setLastMdfcnDt(DateUtil.format(LocalDateTime.now()));
 		
 		return respDto;
