@@ -80,18 +80,10 @@
 
 <update id="updateBookmarkYn">
 	UPDATE TB_DRIVE
-	SET BOOKMARK_YN = 'Y',
+	SET BOOKMARK_YN = #{newBookmarkYn},
 		LAST_MDFCN_DT = SYSDATE
 	WHERE DRIVE_ITEM_ID = #{driveItemId}
 	  AND DEL_YN = 'N'
-</update>
-
-<update id="deleteBookmark">
-    UPDATE TB_DRIVE
-    SET BOOKMARK_YN   = 'N',
-        LAST_MDFCN_DT = SYSDATE
-    WHERE DRIVE_ITEM_ID = #{driveItemId}
-      AND DEL_YN = 'N'
 </update>
 
 <update id="softDeleteItemWithChildren">

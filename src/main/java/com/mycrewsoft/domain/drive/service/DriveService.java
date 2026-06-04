@@ -32,14 +32,7 @@ public interface DriveService {
 	 * @param driveItemId
 	 * @return
 	 */
-	DriveResponseDto registerBookmark(Long driveItemId);
-	
-	/**
-	 * 즐겨찾기 해제 (즐겨찾기여부 상태 변경)
-	 * @param driveItemId
-	 * @return
-	 */
-	DriveResponseDto deleteBookmark(Long driveItemId);
+	DriveResponseDto toggleBookmark(Long driveItemId);
 	
 	/**
 	 * 드라이브 아이템 단건 삭제 (soft delete)
