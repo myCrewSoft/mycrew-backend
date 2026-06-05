@@ -21,8 +21,7 @@
 	    JOIN TB_CONF_RM CR ON RR.CONF_RM_ID = CR.CONF_RM_ID
 	    JOIN TB_EMPLOYEE E ON RR.RSRV_EMP_ID = E.EMP_ID
 	    WHERE CR.USE_YN = 'Y'
-	      AND TRUNC(RR.BEGIN_DT) BETWEEN TO_DATE(#{beginDt}, 'YYYY-MM-DD')
-	                                 AND TO_DATE(#{endDt}, 'YYYY-MM-DD')
+	      AND TRUNC(RR.BEGIN_DT) BETWEEN #{beginDt} AND #{endDt}
 	    ORDER BY RR.CONF_RM_ID, RR.BEGIN_DT
 	</select>
 	
