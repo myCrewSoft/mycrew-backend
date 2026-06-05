@@ -96,8 +96,13 @@ public enum ErrorCode {
 	// ROOM
 	CONF_RM_NOT_FOUND(HttpStatus.NOT_FOUND, "CONF_RM_001", "존재하지 않는 회의실입니다."),
 	CONF_RM_CREATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CONF_RM_002", "회의실 생성에 실패했습니다."),
-	CONF_RM_ALREADY_DISABLED(HttpStatus.BAD_REQUEST, "CONF_RM_003", "이미 비활성화된 회의실입니다.");
+	CONF_RM_ALREADY_DISABLED(HttpStatus.BAD_REQUEST, "CONF_RM_003", "이미 비활성화된 회의실입니다."),
 
+	// RESERVATION 
+	RSRV_NOT_FOUND(HttpStatus.NOT_FOUND, "RSRV_001", "존재하지 않는 예약입니다."),
+	RSRV_CREATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "RSRV_002", "예약 생성에 실패했습니다."),
+	RSRV_TIME_CONFLICT(HttpStatus.CONFLICT, "RSRV_003", "이미 예약된 시간대입니다.");
+	
     // 팀원이 새 도메인 추가 시 아래 패턴으로 섹션 추가
     // BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지 않는 게시글입니다.")
 	
