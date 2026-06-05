@@ -62,10 +62,28 @@
 	
 <select id="selectDtlById" resultType="com.mycrewsoft.domain.file.vo.FileDtlVo">
 	SELECT
+		ATCH_FILE_ID,
 		SAVE_PATH_NM,
-		SAVE_FILE_NM
-		DEL_YN,
+		SAVE_FILE_NM,
+		DEL_YN
 	FROM TB_CMMN_ATCH_FILE_DTL
 	WHERE ATCH_FILE_DTL_ID = #{atchFilDtlId}
 </select>
+
+<update id="restoreFile">
+	UPDATE TB_CMMN_ATCH_FILE_DTL
+    SET DEL_YN = 'N'
+    WHERE ATCH_FILE_DTL_ID = #{atchFileDtlId}
+      AND DEL_YN = 'Y'
+</update>
+
+<delete id="hardDeleteFileClsf">
+	DELETE FROM TB_CMMN_ATCH_FILE_CLSF
+    WHERE ATCH_FILE_ID = #{atchFileId}
+</delete>
+
+<delete id="hardDeleteFileDtl">
+	DELETE FROM TB_CMMN_ATCH_FILE_DTL
+    WHERE ATCH_FILE_DTL_ID = #{atchFileDtlId}
+</delete>
 </mapper>

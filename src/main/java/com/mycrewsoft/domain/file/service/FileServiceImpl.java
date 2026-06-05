@@ -134,4 +134,50 @@ public class FileServiceImpl implements FileService {
 		}
 	}
 
+	/**
+	 * 파일 복원
+	 */
+	@Override
+	public void restoreFile(Long atchFileDtlId) {
+		int result = mapper.restoreFile(atchFileDtlId);
+		if(result == 0) {
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}
+	}
+
+	/**
+	 * 파일 영구 삭제
+	 * @return 
+	 */
+	@Override
+	@Transactional
+	public void hardDeleteFile(Long atchFileDtlId) {
+		//파일 정보 조회 (실제 저장 경로 가져오기)
+		FileDtlVo fileDtlVo	= mapper.selectDtlById(atchFileDtlId);
+		if(fileDtlVo == null) {
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}
+		
+		//디스크에서 실제 파일 삭제
+		Path filePath = Paths.get(fileDtlVo.getSavePathNm(), fileDtlVo.getSaveFileNm());
+		try {
+			Files.deleteIfExists(filePath);
+		}catch(Exception e) {
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}
+		
+		//무결성 제약 조건으로 상세 삭제 후 -> 분류 삭제
+		int result1 = mapper.hardDeleteFileDtl(atchFileDtlId);
+		if(result1 == 0) {
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}else {
+			int result2 = mapper.hardDeleteFileClsf(fileDtlVo.getAtchFileId());
+			if(result2 == 0) {
+				throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+			}
+		}
+	}
+	
+	
+	
 }
