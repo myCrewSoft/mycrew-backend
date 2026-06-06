@@ -12,6 +12,6 @@ public class DriveSearchRequestDto {
     @Schema(description = "페이지 번호 (0-based)", example = "0")
     private int page = 0;
 
-    @Schema(description = "페이지 크기", example = "기본값 20")
-    private int size = 20;
+    @Schema(description = "페이지 크기", example = "기본값 10")
+    private int size = 10;
 }

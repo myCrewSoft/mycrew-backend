@@ -191,6 +191,24 @@
     ORDER BY D.DEL_DT DESC
 </select>
 
+<select id="selectTrashItemById" resultType="com.mycrewsoft.domain.drive.vo.DriveVo">
+    SELECT
+        D.DRIVE_ITEM_ID,
+        D.PRNT_DRIVE_ITEM_ID,
+        D.FRST_RGTR_ID,
+        D.ITEM_TYPE_CD,
+        D.ITEM_NM,
+        D.DEL_YN,
+        D.DEL_DT,
+        D.DELTR_MBR_ID,
+        D.DRIVE_ATCH_FILE_ID,
+        D.DRIVE_SCOPE_CD,
+        D.PROJ_ID
+    FROM TB_DRIVE D
+    WHERE D.DRIVE_ITEM_ID = #{driveItemId}
+      AND D.DEL_YN = 'Y'
+</select>
+
 <select id="selectTrashFileChildrenByItemId" resultType="com.mycrewsoft.domain.drive.vo.DriveVo">
 	SELECT
         D.DRIVE_ITEM_ID,

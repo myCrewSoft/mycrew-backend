@@ -63,11 +63,8 @@ public class DriveController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<DriveResponseDto>>> getMyDriveList(
     		@ModelAttribute DriveSearchRequestDto reqDto){
-    	
     	Page<DriveResponseDto> result = driveService.getMyDriveList(reqDto);
-    	
-		return ResponseEntity.ok(
-			ApiResponse.success(result.getContent(), result));
+    	return ResponseEntity.ok(ApiResponse.success(result.getContent(), result));
     }
     
     @Operation(summary = "폴더명 수정")
@@ -104,7 +101,7 @@ public class DriveController {
     }
     
     @Operation(summary = "휴지통 복원")
-    @PatchMapping("/items/{driveItemId}/restore")
+    @PatchMapping("/trash/{driveItemId}/restore")
     public ResponseEntity<ApiResponse<String>> restoreItem(@PathVariable Long driveItemId){
     	driveService.restoreItem(driveItemId);
     	return ResponseEntity.ok(ApiResponse.success("복원되었습니다"));
@@ -117,7 +114,7 @@ public class DriveController {
     }
     
     @Operation(summary = "영구 삭제")
-    @DeleteMapping("/items/{driveItemId}/hard")
+    @DeleteMapping("/trash/{driveItemId}")
     public ResponseEntity<ApiResponse<String>> hardDeleteItem(@PathVariable Long driveItemId) {
 		driveService.hardDeleteItem(driveItemId);
 		return ResponseEntity.ok(ApiResponse.success("영구 삭제되었습니다."));
