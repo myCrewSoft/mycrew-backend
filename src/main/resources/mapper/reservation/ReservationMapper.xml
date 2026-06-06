@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.mycrewsoft.domain.reservation.mapper.ReservationMapper">
+	
+	<select id="selectConfRmRsrvList" resultType="ReservationDetailVO">
+	    SELECT
+	        RR.RSRV_ID
+	        , RR.CONF_RM_ID
+	        , RR.RSRV_EMP_ID
+	        , RR.RSRV_PURPS
+	        , RR.BEGIN_DT
+	        , RR.END_DT
+	        , RR.RSRV_STTUS_CD
+	        , RR.INTG_RSRV_YN
+	        , E.EMP_NM          AS RSRV_EMP_NM
+	        , E.DEPT_CD         AS RSRV_EMP_DEPT_CD
+	        , E.JOB_GRD_CD      AS RSRV_EMP_JOB_GRD_CD
+	        , E.PRFL_IMG_FILE_ID AS RSRV_EMP_PRFL_IMG_FILE_ID
+	    FROM TB_CONF_RM_RSRV RR
+	    JOIN TB_CONF_RM CR ON RR.CONF_RM_ID = CR.CONF_RM_ID
+	    JOIN TB_EMPLOYEE E ON RR.RSRV_EMP_ID = E.EMP_ID
+	    WHERE CR.USE_YN = 'Y'
+	      AND TRUNC(RR.BEGIN_DT) BETWEEN #{beginDt} AND #{endDt}
+	    ORDER BY RR.CONF_RM_ID, RR.BEGIN_DT
+	</select>
+	
+	<select id="selectConfRmRsrv" resultType="ReservationDetailVO">
+	    SELECT
+	        RR.RSRV_ID
+	        , RR.CONF_RM_ID
+	        , RR.RSRV_EMP_ID
+	        , RR.RSRV_PURPS
+	        , RR.BEGIN_DT
+	        , RR.END_DT
+	        , RR.RSRV_STTUS_CD
+	        , RR.INTG_RSRV_YN
+	        , E.EMP_NM          AS RSRV_EMP_NM
+	        , E.DEPT_CD         AS RSRV_EMP_DEPT_CD
+	        , E.JOB_GRD_CD      AS RSRV_EMP_JOB_GRD_CD
+	        , E.PRFL_IMG_FILE_ID AS RSRV_EMP_PRFL_IMG_FILE_ID
+	    FROM TB_CONF_RM_RSRV RR
+	    JOIN TB_EMPLOYEE E ON RR.RSRV_EMP_ID = E.EMP_ID
+	    WHERE RR.RSRV_ID = #{rsrvId}
+	</select>
+
+	<insert id="insertConfRmRsrv">
+	    <selectKey keyProperty="rsrvId" resultType="long" order="BEFORE">
+	        SELECT SEQ_RSRV_ID.NEXTVAL FROM DUAL
+	    </selectKey>
+	    INSERT INTO TB_CONF_RM_RSRV (
+	        RSRV_ID
+	        , CONF_RM_ID
+	        , RSRV_EMP_ID
+	        , RSRV_PURPS
+	        , BEGIN_DT
+	        , END_DT
+	        , RSRV_STTUS_CD
+	        , INTG_RSRV_YN
+	    ) VALUES (
+	        #{rsrvId}
+	        , #{confRmId}
+	        , #{rsrvEmpId}
+	        , #{rsrvPurps}
+	        , #{beginDt}
+	        , #{endDt}
+	        , '01'
+	        , #{intgRsrvYn}
+	    )
+	</insert>
+
+    <update id="updateConfRmRsrv">
+	    UPDATE TB_CONF_RM_RSRV
+	       SET RSRV_PURPS    = #{rsrvPurps},
+	           BEGIN_DT      = #{beginDt},
+	           END_DT        = #{endDt},
+	           RSRV_STTUS_CD = #{rsrvSttusCd},
+	           INTG_RSRV_YN  = #{intgRsrvYn}
+	     WHERE RSRV_ID = #{rsrvId}
+	</update>
+
+    <delete id="deleteConfRmRsrv">
+        DELETE FROM TB_CONF_RM_RSRV
+        WHERE RSRV_ID = #{rsrvId}
+    </delete>
+
+	<select id="countOverlappingRsrv" resultType="int">
+	    SELECT COUNT(*)
+	    FROM TB_CONF_RM_RSRV
+	    WHERE CONF_RM_ID = #{confRmId}
+	      AND RSRV_STTUS_CD != '03'
+	      AND RSRV_ID != #{rsrvId}
+	      AND BEGIN_DT  <![CDATA[ < ]]> #{endDt}
+	      AND END_DT    <![CDATA[ > ]]> #{beginDt}
+	</select>
+    
+</mapper>
