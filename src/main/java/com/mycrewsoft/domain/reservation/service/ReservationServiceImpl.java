@@ -68,6 +68,7 @@ public class ReservationServiceImpl implements ReservationService {
 
 	// 예약 생성
 	@Override
+ @Transactional
 	public Long createReservation(ReservationCreateRequest request) {
 		
 		// dto -> vo 변환
@@ -98,6 +99,7 @@ public class ReservationServiceImpl implements ReservationService {
 	}
 
 	@Override
+ @Transactional
 	public void modifyReservation(Long rsrvId, ReservationUpdateRequest request) {
 
 		// 검증(본인이 예약 담당자인지)
