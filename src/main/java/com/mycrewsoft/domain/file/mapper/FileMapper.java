@@ -22,4 +22,11 @@ public interface FileMapper {
 	
 	//파일 정보 조회
 	FileDtlVo selectDtlById(Long atchFiledtlId);
+	
+	//파일 복원 (파일 삭제 상태 변경)
+	int restoreFile(Long atchFileDtlId);
+	
+	//파일 영구 삭제
+	int hardDeleteFileClsf(Long atchFileId);
+	int hardDeleteFileDtl(Long atchFileDtlId);
 }

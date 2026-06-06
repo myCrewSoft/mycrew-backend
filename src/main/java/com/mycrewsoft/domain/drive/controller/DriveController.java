@@ -2,8 +2,11 @@ package com.mycrewsoft.domain.drive.controller;
 
 import java.util.List;
 
+import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -18,6 +21,7 @@ import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.drive.dto.DriveFolderCreateRequestDto;
 import com.mycrewsoft.domain.drive.dto.DriveRenameRequestDto;
 import com.mycrewsoft.domain.drive.dto.DriveResponseDto;
+import com.mycrewsoft.domain.drive.dto.DriveSearchRequestDto;
 import com.mycrewsoft.domain.drive.service.DriveService;
 import com.mycrewsoft.domain.file.dto.FileUploadRequestDto;
 import com.mycrewsoft.domain.file.service.FileService;
@@ -39,29 +43,28 @@ public class DriveController {
     
     private final FileService fileService;
 
-    @Operation(summary = "Create folder")
+    @Operation(summary = "폴더 생성")
     @PostMapping("/folders")
     public ResponseEntity<ApiResponse<DriveResponseDto>> createFolder(
             @Validated @RequestBody DriveFolderCreateRequestDto reqDto) {
-        return ResponseEntity.ok(ApiResponse.success("Folder created.", driveService.createFolder(reqDto)));
+        return ResponseEntity.ok(ApiResponse.success("폴더 생성 성공", driveService.createFolder(reqDto)));
     }
 
-    @Operation(summary = "Upload file")
+    @Operation(summary = "파일 업로드")
     @PostMapping("/files")
     public ResponseEntity<ApiResponse<DriveResponseDto>> uploadFile(
             @Validated @ModelAttribute FileUploadRequestDto reqDto,
             @RequestParam(value = "prntDriveItemId", required = false) Long prntDriveItemId) {
-        return ResponseEntity.ok(ApiResponse.success("File uploaded.",
+        return ResponseEntity.ok(ApiResponse.success("파일 업로드 성공",
                 driveService.uploadFile(reqDto, prntDriveItemId)));
     }
 
-    @Operation(summary = "Get my drive list")
+    @Operation(summary = "개인 드라이브 목록 조회")
     @GetMapping
     public ResponseEntity<ApiResponse<List<DriveResponseDto>>> getMyDriveList(
-    		@RequestParam(required = false) Long prntDriveItemId){
-		return ResponseEntity.ok(
-			ApiResponse.success("드라이브 목록 조회 성공", driveService.getMyDriveList(prntDriveItemId))
-		);
+    		@ModelAttribute DriveSearchRequestDto reqDto){
+    	Page<DriveResponseDto> result = driveService.getMyDriveList(reqDto);
+    	return ResponseEntity.ok(ApiResponse.success(result.getContent(), result));
     }
     
     @Operation(summary = "폴더명 수정")
@@ -84,9 +87,36 @@ public class DriveController {
     }
     
     
+    @Operation(summary = "드라이브 단건 삭제")
     @PatchMapping("/items/{driveItemId}/delete")
     public ResponseEntity<ApiResponse<String>> deleteItem(@PathVariable Long driveItemId){
     	driveService.deleteItem(driveItemId);
 		return ResponseEntity.ok(ApiResponse.success("삭제되었습니다."));
     }
+    
+    @Operation(summary = "휴지통 목록 조회")
+    @GetMapping("/trash")
+    public ResponseEntity<ApiResponse<List<DriveResponseDto>>> getTrashList(){
+    	return ResponseEntity.ok(ApiResponse.success("휴지통 목록 조회 성공", driveService.getTrashList()));
+    }
+    
+    @Operation(summary = "휴지통 복원")
+    @PatchMapping("/trash/{driveItemId}/restore")
+    public ResponseEntity<ApiResponse<String>> restoreItem(@PathVariable Long driveItemId){
+    	driveService.restoreItem(driveItemId);
+    	return ResponseEntity.ok(ApiResponse.success("복원되었습니다"));
+    }
+    
+    @Operation(summary = "파일 다운로드")
+    @GetMapping("/files/{driveItemId}/download")
+    public ResponseEntity<Resource> downloadFile(@PathVariable Long driveItemId){
+    	return driveService.downloadFile(driveItemId);
+    }
+    
+    @Operation(summary = "영구 삭제")
+    @DeleteMapping("/trash/{driveItemId}")
+    public ResponseEntity<ApiResponse<String>> hardDeleteItem(@PathVariable Long driveItemId) {
+		driveService.hardDeleteItem(driveItemId);
+		return ResponseEntity.ok(ApiResponse.success("영구 삭제되었습니다."));
+	}
 }
