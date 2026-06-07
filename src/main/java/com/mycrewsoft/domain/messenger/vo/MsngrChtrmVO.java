@@ -18,8 +18,8 @@ public class MsngrChtrmVO {
 	
 	private LocalDateTime creatDt;		// 개설일시
 	private LocalDateTime endDt;			// 종료일시
+	private Integer participantCount;	// 현재 참여자 수 - DB 컬럼 아님
 	
 	private List<MsngrChtrmPtcptVO> msngrChtrmPtcpt; // 참여자 목록
-	private List<MsngrMsgVO> msngrMsg; // 메시지 목록
 	
 }
