@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.project.mapper.ProjectMapper">
+<insert id="insertProject">
+	<selectKey keyProperty="projId" resultType="long" order="BEFORE">
+		SELECT SEQ_PROJ_ID.NEXTVAL FROM DUAL
+	</selectKey>
+	INSERT INTO TB_PROJECT (
+		PROJ_ID,
+		CHTRM_ID,
+		PROJ_NM,
+		PROJ_CN,
+		PROJ_BGNG_YMD,
+		PROJ_END_YMD,
+		PROJ_STAT_CD,
+		PROJ_CREAT_DT,
+		PROJ_LDR_EMP_ID
+	) VALUES (
+		#{projId},
+        #{chtrmId},
+        #{projNm},
+        #{projCn},
+        #{projBgngYmd},
+        #{projEndYmd},
+        '01',
+        SYSDATE,
+        #{projLdrEmpId}
+	)
+</insert>
+</mapper>
