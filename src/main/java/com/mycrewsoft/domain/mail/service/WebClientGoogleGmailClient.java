@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,6 +21,8 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.mail.config.GoogleOAuthProperties;
@@ -33,7 +37,10 @@ import com.mycrewsoft.domain.mail.mapper.MailMapper;
 import com.mycrewsoft.domain.mail.vo.MailAccountVO;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class WebClientGoogleGmailClient implements GoogleGmailClient {
@@ -41,6 +48,8 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
     private static final String TOKEN_URI = "https://oauth2.googleapis.com/token";
     private static final String GMAIL_USER_API = "https://gmail.googleapis.com/gmail/v1/users/me";
     private static final String GMAIL_API = GMAIL_USER_API + "/messages";
+    private static final int GMAIL_MAX_IN_MEMORY_SIZE = 50 * 1024 * 1024;
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final WebClient.Builder webClientBuilder;
     private final GoogleOAuthProperties properties;
@@ -53,7 +62,7 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
                     .withoutPadding()
                     .encodeToString(buildMimeMessage(command).getBytes(StandardCharsets.UTF_8));
 
-            Map<?, ?> response = webClientBuilder.build()
+            Map<?, ?> response = webClient()
                     .post()
                     .uri(GMAIL_API + "/send")
                     .headers(headers -> headers.setBearerAuth(accessToken(account)))
@@ -80,7 +89,7 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
     @Override
     public GmailMessageContent getMessage(MailAccountVO account, String externalMessageId) {
         try {
-            Map<?, ?> response = webClientBuilder.build()
+            Map<?, ?> response = webClient()
                     .get()
                     .uri(GMAIL_API + "/" + externalMessageId + "?format=full")
                     .headers(headers -> headers.setBearerAuth(accessToken(account)))
@@ -96,6 +105,9 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
             return new GmailMessageContent(content, snippet);
         } catch (CustomException e) {
             throw e;
+        } catch (WebClientResponseException e) {
+            logGmailApiFailure("get-message", e);
+            throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
         } catch (Exception e) {
             throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
         }
@@ -128,7 +140,7 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
     @Override
     public void deleteMessage(MailAccountVO account, String externalMessageId) {
         try {
-            webClientBuilder.build()
+            webClient()
                     .delete()
                     .uri(GMAIL_API + "/" + externalMessageId)
                     .headers(headers -> headers.setBearerAuth(accessToken(account)))
@@ -137,6 +149,9 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
                     .block();
         } catch (CustomException e) {
             throw e;
+        } catch (WebClientResponseException e) {
+            logGmailApiFailure("delete-message", e);
+            throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
         } catch (Exception e) {
             throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
         }
@@ -150,17 +165,50 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
             }
             return historySync(account, startHistoryId, maxResults);
         } catch (WebClientResponseException.NotFound e) {
-            return initialSync(account, maxResults);
+            try {
+                return initialSync(account, maxResults);
+            } catch (WebClientResponseException fallbackException) {
+                logGmailApiFailure("initial-sync-after-history-not-found", fallbackException);
+                throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
+            }
         } catch (CustomException e) {
             throw e;
+        } catch (WebClientResponseException e) {
+            logGmailApiFailure("sync", e);
+            throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
         } catch (Exception e) {
             throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
         }
     }
 
+    private void logGmailApiFailure(String phase, WebClientResponseException e) {
+        String uri = e.getRequest() == null ? "unknown" : e.getRequest().getURI().toString();
+        log.error(
+                "Gmail API request failed. phase={}, status={}, uri={}, responseBody={}",
+                phase,
+                e.getStatusCode(),
+                uri,
+                abbreviate(e.getResponseBodyAsString()),
+                e);
+    }
+
+    private String abbreviate(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        String normalized = value.replaceAll("\\s+", " ").trim();
+        return normalized.length() > 1000 ? normalized.substring(0, 1000) + "..." : normalized;
+    }
+
+    private WebClient webClient() {
+        return webClientBuilder.clone()
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(GMAIL_MAX_IN_MEMORY_SIZE))
+                .build();
+    }
+
     @SuppressWarnings("unchecked")
     private GmailSyncResult initialSync(MailAccountVO account, int maxResults) {
-        Map<?, ?> response = webClientBuilder.build()
+        Map<?, ?> response = webClient()
                 .get()
                 .uri(uriBuilder -> uriBuilder
                         .scheme("https")
@@ -186,7 +234,7 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
 
     @SuppressWarnings("unchecked")
     private GmailSyncResult historySync(MailAccountVO account, String startHistoryId, int maxResults) {
-        Map<?, ?> response = webClientBuilder.build()
+        Map<?, ?> response = webClient()
                 .get()
                 .uri(uriBuilder -> uriBuilder
                         .scheme("https")
@@ -264,7 +312,7 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
     }
 
     private Map<?, ?> fetchMessageMap(MailAccountVO account, String messageId) {
-        return webClientBuilder.build()
+        return webClient()
                 .get()
                 .uri(GMAIL_API + "/" + messageId + "?format=full")
                 .headers(headers -> headers.setBearerAuth(accessToken(account)))
@@ -387,14 +435,42 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
         if (attachmentId == null || attachmentId.isBlank()) {
             return null;
         }
-        Map<?, ?> response = webClientBuilder.build()
+        Map<?, ?> response = fetchAttachmentMap(account, messageId, attachmentId);
+        return value(response == null ? null : response.get("data"));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<?, ?> fetchAttachmentMap(MailAccountVO account, String messageId, String attachmentId) {
+        String responseBody = webClient()
                 .get()
                 .uri(GMAIL_API + "/" + messageId + "/attachments/" + attachmentId)
                 .headers(headers -> headers.setBearerAuth(accessToken(account)))
-                .retrieve()
-                .bodyToMono(Map.class)
+                .exchangeToMono(response -> {
+                    if (response.statusCode().isError()) {
+                        return response.createException().flatMap(Mono::error);
+                    }
+                    return DataBufferUtils.join(response.bodyToFlux(DataBuffer.class), GMAIL_MAX_IN_MEMORY_SIZE)
+                            .map(this::toStringAndRelease);
+                })
                 .block();
-        return value(response == null ? null : response.get("data"));
+        if (responseBody == null || responseBody.isBlank()) {
+            return null;
+        }
+        try {
+            return OBJECT_MAPPER.readValue(responseBody, Map.class);
+        } catch (JsonProcessingException e) {
+            throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
+        }
+    }
+
+    private String toStringAndRelease(DataBuffer dataBuffer) {
+        try {
+            byte[] bytes = new byte[dataBuffer.readableByteCount()];
+            dataBuffer.read(bytes);
+            return new String(bytes, StandardCharsets.UTF_8);
+        } finally {
+            DataBufferUtils.release(dataBuffer);
+        }
     }
 
     private void modifyLabels(MailAccountVO account,
@@ -402,7 +478,7 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
                               List<String> addLabelIds,
                               List<String> removeLabelIds) {
         try {
-            webClientBuilder.build()
+            webClient()
                     .post()
                     .uri(GMAIL_API + "/" + externalMessageId + "/modify")
                     .headers(headers -> headers.setBearerAuth(accessToken(account)))
@@ -415,6 +491,9 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
                     .block();
         } catch (CustomException e) {
             throw e;
+        } catch (WebClientResponseException e) {
+            logGmailApiFailure("modify-labels", e);
+            throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
         } catch (Exception e) {
             throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
         }
@@ -422,7 +501,7 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
 
     private void postWithoutBody(MailAccountVO account, String uri) {
         try {
-            webClientBuilder.build()
+            webClient()
                     .post()
                     .uri(uri)
                     .headers(headers -> headers.setBearerAuth(accessToken(account)))
@@ -431,6 +510,9 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
                     .block();
         } catch (CustomException e) {
             throw e;
+        } catch (WebClientResponseException e) {
+            logGmailApiFailure("post-without-body", e);
+            throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
         } catch (Exception e) {
             throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
         }
@@ -445,7 +527,7 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
 
-        GoogleTokenResponse response = webClientBuilder.build()
+        GoogleTokenResponse response = webClient()
                 .post()
                 .uri(TOKEN_URI)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)

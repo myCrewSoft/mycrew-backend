@@ -109,6 +109,7 @@ google:
     redirect-uri: http://localhost/api/mail/oauth/google/callback
     frontend-success-uri: http://localhost:5173/first-login?mailConnected=Y
     frontend-failure-uri: http://localhost:5173/first-login?mailConnected=N
+    frontend-mail-success-uri: http://localhost:5173/mail
     scopes:
       - openid
       - email
@@ -116,6 +117,7 @@ google:
       - https://www.googleapis.com/auth/gmail.readonly
       - https://www.googleapis.com/auth/gmail.send
       - https://www.googleapis.com/auth/gmail.modify
+      - https://mail.google.com/
 
 springdoc:
   swagger-ui:

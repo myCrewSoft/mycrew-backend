@@ -2,7 +2,11 @@ package com.mycrewsoft.domain.mail.service;
 
 public interface GoogleOAuthStateStore {
 
-    void save(String state, Long empId);
+    default void save(String state, Long empId) {
+        save(state, empId, null);
+    }
 
-    Long consume(String state);
+    void save(String state, Long empId, String context);
+
+    GoogleOAuthState consume(String state);
 }

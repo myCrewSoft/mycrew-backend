@@ -20,12 +20,12 @@ public class RedisGoogleOAuthStateStore implements GoogleOAuthStateStore {
     private final RedisTemplate<String, String> redisTemplate;
 
     @Override
-    public void save(String state, Long empId) {
-        redisTemplate.opsForValue().set(key(state), String.valueOf(empId), STATE_TTL_MINUTES, TimeUnit.MINUTES);
+    public void save(String state, Long empId, String context) {
+        redisTemplate.opsForValue().set(key(state), value(empId, context), STATE_TTL_MINUTES, TimeUnit.MINUTES);
     }
 
     @Override
-    public Long consume(String state) {
+    public GoogleOAuthState consume(String state) {
         String key = key(state);
         String value = redisTemplate.opsForValue().get(key);
         redisTemplate.delete(key);
@@ -34,10 +34,19 @@ public class RedisGoogleOAuthStateStore implements GoogleOAuthStateStore {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
 
-        return Long.valueOf(value);
+        String[] parts = value.split("\\|", 2);
+        String context = parts.length == 2 && !parts[1].isBlank() ? parts[1] : null;
+        return new GoogleOAuthState(Long.valueOf(parts[0]), context);
     }
 
     private String key(String state) {
         return STATE_PREFIX + state;
+    }
+
+    private String value(Long empId, String context) {
+        if (context == null || context.isBlank()) {
+            return String.valueOf(empId);
+        }
+        return empId + "|" + context.trim();
     }
 }

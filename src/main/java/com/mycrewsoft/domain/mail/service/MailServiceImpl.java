@@ -43,14 +43,17 @@ import com.mycrewsoft.security.authz.ResourceType;
 import com.mycrewsoft.security.util.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MailServiceImpl implements MailService {
 
     private static final String SCOPE_GMAIL_READONLY = "https://www.googleapis.com/auth/gmail.readonly";
     private static final String SCOPE_GMAIL_SEND = "https://www.googleapis.com/auth/gmail.send";
     private static final String SCOPE_GMAIL_MODIFY = "https://www.googleapis.com/auth/gmail.modify";
+    private static final String SCOPE_GMAIL_FULL_ACCESS = "https://mail.google.com/";
     private static final String MAIL_ATTACHMENT_BIZ_CD = "05";
     private static final Set<String> MAILBOX_TYPES = Set.of("inbox", "sent", "all", "self", "tome");
     private static final List<String> SYSTEM_LABELS = List.of("INBOX", "SENT", "TRASH", "UNREAD", "IMPORTANT");
@@ -255,9 +258,10 @@ public class MailServiceImpl implements MailService {
         Long empId = SecurityUtil.getCurrentEmpId();
         assertPermission(PermissionCode.MAIL_DELETE, empId);
         MailAccountVO account = loadAccount(empId);
-        requireScope(account, SCOPE_GMAIL_MODIFY);
+        requireScope(account, SCOPE_GMAIL_FULL_ACCESS);
 
         List<MailMessageRow> trashRows = mailMapper.selectTrashRows(empId);
+        log.info("Mail trash clear target loaded. empId={}, targetCount={}", empId, trashRows.size());
         if (trashRows.isEmpty()) {
             return new MailTrashClearResponse(0);
         }

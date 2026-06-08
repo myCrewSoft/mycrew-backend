@@ -18,5 +18,6 @@ public class GoogleOAuthProperties {
     private String redirectUri;
     private String frontendSuccessUri;
     private String frontendFailureUri;
+    private String frontendMailSuccessUri;
     private List<String> scopes = new ArrayList<>();
 }
