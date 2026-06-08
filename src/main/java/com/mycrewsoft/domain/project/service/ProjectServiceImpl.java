@@ -12,6 +12,7 @@ import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DtoMapper;
 import com.mycrewsoft.domain.messenger.service.MsngrServiceImpl;
 import com.mycrewsoft.domain.project.dto.ProjectCreateRequestDto;
+import com.mycrewsoft.domain.project.dto.ProjectListResponseDto;
 import com.mycrewsoft.domain.project.mapper.ProjectMapper;
 import com.mycrewsoft.domain.project.vo.ProjectVO;
 import com.mycrewsoft.domain.projectmember.mapper.ProjectMemberMapper;
@@ -74,6 +75,23 @@ public class ProjectServiceImpl implements ProjectService{
 		//참여자 일괄 등록
 		int memberResult = projectMemberMapper.insertProjectMemberList(memberList);
 		if(memberResult == 0) throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+	}
+
+	@Override
+	public List<ProjectListResponseDto> getProjectList() {
+		//권한 체크
+		authorizationService.assertCurrentUserPermission(
+				PermissionCode.PROJECT_READ,
+				ResourceContext.builder()
+					.resourceType(ResourceType.PROJECT)
+					.build()
+		);
+		
+		//본인이 참여하는 프로젝트만 조회
+		Long empId = SecurityUtil.getCurrentEmpId();
+		List<ProjectVO> voList = projectMapper.selectProjectList(empId);
+		
+		return dtoMapper.toDtoList(voList, ProjectListResponseDto.class);
 	}
 
 }
