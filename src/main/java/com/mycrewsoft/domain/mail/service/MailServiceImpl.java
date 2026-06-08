@@ -25,10 +25,14 @@ import com.mycrewsoft.domain.mail.dto.response.MailDetailResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailMutationResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSendResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSummaryResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailSyncResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailTrashClearResponse;
 import com.mycrewsoft.domain.mail.gmail.GmailMessageContent;
 import com.mycrewsoft.domain.mail.gmail.GmailSendCommand;
 import com.mycrewsoft.domain.mail.gmail.GmailSendResult;
+import com.mycrewsoft.domain.mail.gmail.GmailSyncResult;
+import com.mycrewsoft.domain.mail.gmail.GmailSyncedAttachment;
+import com.mycrewsoft.domain.mail.gmail.GmailSyncedMessage;
 import com.mycrewsoft.domain.mail.mapper.MailMapper;
 import com.mycrewsoft.domain.mail.vo.MailAccountVO;
 import com.mycrewsoft.domain.mail.vo.MailMessageRow;
@@ -279,6 +283,68 @@ public class MailServiceImpl implements MailService {
         return new MailMutationResponse(mailId, "RESTORED");
     }
 
+    @Override
+    @Transactional
+    public MailSyncResponse syncMails(int maxResults) {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        assertPermission(PermissionCode.MAIL_READ, empId);
+        MailAccountVO account = loadAccount(empId);
+        requireAnyScope(account, SCOPE_GMAIL_READONLY, SCOPE_GMAIL_MODIFY);
+
+        int limit = normalizeSyncLimit(maxResults);
+        ensureSystemLabels(empId);
+        GmailSyncResult result = googleGmailClient.syncMessages(account, account.getGoogleHistoryId(), limit);
+        if (result == null) {
+            throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
+        }
+        List<GmailSyncedMessage> messages = result.getMessages() == null
+                ? List.of()
+                : result.getMessages();
+
+        int inserted = 0;
+        int updated = 0;
+        int skipped = 0;
+        for (GmailSyncedMessage message : messages) {
+            if (message == null || message.getExternalMessageId() == null || message.getExternalMessageId().isBlank()) {
+                skipped++;
+                continue;
+            }
+
+            Long mailId = mailMapper.selectMailIdByExternalMessageId(empId, message.getExternalMessageId());
+            boolean newMessage = mailId == null;
+            if (mailId == null) {
+                mailId = mailMapper.selectNextMailMessageId();
+                mailMapper.insertMailMessage(toMailMessageRow(empId, mailId, message));
+                inserted++;
+            } else {
+                MailMessageRow row = toMailMessageRow(empId, mailId, message);
+                mailMapper.updateMailMessage(row);
+                mailMapper.deleteParticipantsByMail(empId, mailId);
+                mailMapper.deleteLabelMapsByMail(empId, mailId);
+                updated++;
+            }
+
+            syncParticipants(empId, mailId, message);
+            syncLabels(empId, mailId, message.getLabels());
+            if (newMessage) {
+                syncAttachments(empId, mailId, message.getAttachments());
+            }
+        }
+
+        String latestHistoryId = latestHistoryId(result, account);
+        if (latestHistoryId != null && !latestHistoryId.isBlank()) {
+            mailMapper.updateMailAccountSyncState(empId, latestHistoryId);
+        }
+
+        return new MailSyncResponse(
+                messages.size(),
+                inserted,
+                updated,
+                skipped,
+                latestHistoryId,
+                LocalDateTime.now());
+    }
+
     private void assertPermission(PermissionCode permissionCode, Long empId) {
         authorizationService.assertCurrentUserPermission(
                 permissionCode,
@@ -404,6 +470,84 @@ public class MailServiceImpl implements MailService {
         participant.setEmail(email);
         participant.setType(type);
         mailMapper.insertParticipant(participant);
+    }
+
+    private void syncParticipants(Long empId, Long mailId, GmailSyncedMessage message) {
+        insertParticipantIfPresent(empId, mailId, message.getFromEmail(), "FROM");
+        for (String email : normalizeEmails(message.getTo())) {
+            insertParticipant(empId, mailId, email, "TO");
+        }
+        for (String email : normalizeEmails(message.getCc())) {
+            insertParticipant(empId, mailId, email, "CC");
+        }
+        for (String email : normalizeEmails(message.getBcc())) {
+            insertParticipant(empId, mailId, email, "BCC");
+        }
+        insertParticipantIfPresent(empId, mailId, message.getReplyToEmail(), "REPLY_TO");
+    }
+
+    private void insertParticipantIfPresent(Long empId, Long mailId, String email, String type) {
+        if (email != null && !email.isBlank()) {
+            insertParticipant(empId, mailId, email.trim(), type);
+        }
+    }
+
+    private void syncLabels(Long empId, Long mailId, List<String> labels) {
+        for (String label : labels == null ? List.<String>of() : labels) {
+            if (label != null && SYSTEM_LABELS.contains(label.trim())) {
+                addLabel(empId, mailId, label.trim());
+            }
+        }
+    }
+
+    private void syncAttachments(Long empId, Long mailId, List<GmailSyncedAttachment> attachments) {
+        for (GmailSyncedAttachment attachment : attachments == null ? List.<GmailSyncedAttachment>of() : attachments) {
+            if (attachment == null || attachment.getContent() == null || attachment.getContent().length == 0) {
+                continue;
+            }
+            FileUploadRequestDto uploadRequest = new FileUploadRequestDto();
+            uploadRequest.setFile(new InMemoryMailMultipartFile(
+                    attachment.getOriginalFileName(),
+                    attachment.getContentType(),
+                    attachment.getContent()));
+            uploadRequest.setFileCn("메일 수신 첨부파일");
+            Long attachmentId = fileService.upload(uploadRequest, MAIL_ATTACHMENT_BIZ_CD);
+            mailMapper.insertAttachment(attachmentId, empId, mailId);
+        }
+    }
+
+    private MailMessageRow toMailMessageRow(Long empId, Long mailId, GmailSyncedMessage message) {
+        MailMessageRow row = new MailMessageRow();
+        row.setMailId(mailId);
+        row.setEmpId(empId);
+        row.setExternalMessageId(message.getExternalMessageId());
+        row.setThreadId(message.getThreadId());
+        row.setMessageIdHeader(message.getMessageIdHeader());
+        row.setSubject(message.getSubject());
+        row.setContent(message.getContent());
+        row.setSnippet(message.getSnippet());
+        row.setFromEmail(message.getFromEmail());
+        row.setToSummary(buildToSummary(normalizeEmails(message.getTo())));
+        row.setSentAt(message.getSentAt());
+        row.setInternalDate(message.getInternalDate());
+        row.setDraftYn("N");
+        row.setBodySyncYn(message.getContent() == null || message.getContent().isBlank() ? "N" : "Y");
+        row.setDelYn("N");
+        return row;
+    }
+
+    private String latestHistoryId(GmailSyncResult result, MailAccountVO account) {
+        if (result.getLatestHistoryId() != null && !result.getLatestHistoryId().isBlank()) {
+            return result.getLatestHistoryId();
+        }
+        return account.getGoogleHistoryId();
+    }
+
+    private int normalizeSyncLimit(int maxResults) {
+        if (maxResults <= 0) {
+            return 50;
+        }
+        return Math.min(maxResults, 200);
     }
 
     private String buildToSummary(List<String> to) {

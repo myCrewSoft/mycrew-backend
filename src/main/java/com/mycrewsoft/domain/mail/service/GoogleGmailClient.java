@@ -3,6 +3,7 @@ package com.mycrewsoft.domain.mail.service;
 import com.mycrewsoft.domain.mail.gmail.GmailMessageContent;
 import com.mycrewsoft.domain.mail.gmail.GmailSendCommand;
 import com.mycrewsoft.domain.mail.gmail.GmailSendResult;
+import com.mycrewsoft.domain.mail.gmail.GmailSyncResult;
 import com.mycrewsoft.domain.mail.vo.MailAccountVO;
 
 public interface GoogleGmailClient {
@@ -20,4 +21,6 @@ public interface GoogleGmailClient {
     void untrashMessage(MailAccountVO account, String externalMessageId);
 
     void deleteMessage(MailAccountVO account, String externalMessageId);
+
+    GmailSyncResult syncMessages(MailAccountVO account, String startHistoryId, int maxResults);
 }

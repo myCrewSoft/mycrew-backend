@@ -2,10 +2,14 @@ package com.mycrewsoft.domain.mail.service;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.http.MediaType;
@@ -13,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
@@ -21,6 +26,9 @@ import com.mycrewsoft.domain.mail.dto.response.GoogleTokenResponse;
 import com.mycrewsoft.domain.mail.gmail.GmailMessageContent;
 import com.mycrewsoft.domain.mail.gmail.GmailSendCommand;
 import com.mycrewsoft.domain.mail.gmail.GmailSendResult;
+import com.mycrewsoft.domain.mail.gmail.GmailSyncResult;
+import com.mycrewsoft.domain.mail.gmail.GmailSyncedAttachment;
+import com.mycrewsoft.domain.mail.gmail.GmailSyncedMessage;
 import com.mycrewsoft.domain.mail.mapper.MailMapper;
 import com.mycrewsoft.domain.mail.vo.MailAccountVO;
 
@@ -31,7 +39,8 @@ import lombok.RequiredArgsConstructor;
 public class WebClientGoogleGmailClient implements GoogleGmailClient {
 
     private static final String TOKEN_URI = "https://oauth2.googleapis.com/token";
-    private static final String GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me/messages";
+    private static final String GMAIL_USER_API = "https://gmail.googleapis.com/gmail/v1/users/me";
+    private static final String GMAIL_API = GMAIL_USER_API + "/messages";
 
     private final WebClient.Builder webClientBuilder;
     private final GoogleOAuthProperties properties;
@@ -131,6 +140,261 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
         } catch (Exception e) {
             throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
         }
+    }
+
+    @Override
+    public GmailSyncResult syncMessages(MailAccountVO account, String startHistoryId, int maxResults) {
+        try {
+            if (startHistoryId == null || startHistoryId.isBlank()) {
+                return initialSync(account, maxResults);
+            }
+            return historySync(account, startHistoryId, maxResults);
+        } catch (WebClientResponseException.NotFound e) {
+            return initialSync(account, maxResults);
+        } catch (CustomException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private GmailSyncResult initialSync(MailAccountVO account, int maxResults) {
+        Map<?, ?> response = webClientBuilder.build()
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .scheme("https")
+                        .host("gmail.googleapis.com")
+                        .path("/gmail/v1/users/me/messages")
+                        .queryParam("maxResults", maxResults)
+                        .build())
+                .headers(headers -> headers.setBearerAuth(accessToken(account)))
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block();
+
+        Set<String> messageIds = new LinkedHashSet<>();
+        if (response != null && response.get("messages") instanceof List<?> messages) {
+            for (Object message : messages) {
+                if (message instanceof Map<?, ?> messageMap && messageMap.get("id") != null) {
+                    messageIds.add(String.valueOf(messageMap.get("id")));
+                }
+            }
+        }
+        return fetchMessages(account, messageIds, value(response == null ? null : response.get("historyId")));
+    }
+
+    @SuppressWarnings("unchecked")
+    private GmailSyncResult historySync(MailAccountVO account, String startHistoryId, int maxResults) {
+        Map<?, ?> response = webClientBuilder.build()
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .scheme("https")
+                        .host("gmail.googleapis.com")
+                        .path("/gmail/v1/users/me/history")
+                        .queryParam("startHistoryId", startHistoryId)
+                        .queryParam("maxResults", maxResults)
+                        .queryParam("historyTypes", "messageAdded")
+                        .queryParam("historyTypes", "labelAdded")
+                        .queryParam("historyTypes", "labelRemoved")
+                        .build())
+                .headers(headers -> headers.setBearerAuth(accessToken(account)))
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block();
+
+        Set<String> messageIds = new LinkedHashSet<>();
+        if (response != null && response.get("history") instanceof List<?> historyList) {
+            for (Object history : historyList) {
+                if (history instanceof Map<?, ?> historyMap) {
+                    collectHistoryMessageIds(historyMap, "messages", messageIds);
+                    collectHistoryMessageIds(historyMap, "messagesAdded", messageIds);
+                    collectHistoryMessageIds(historyMap, "labelsAdded", messageIds);
+                    collectHistoryMessageIds(historyMap, "labelsRemoved", messageIds);
+                }
+            }
+        }
+        return fetchMessages(account, limitIds(messageIds, maxResults), value(response == null ? null : response.get("historyId")));
+    }
+
+    private Set<String> limitIds(Set<String> messageIds, int maxResults) {
+        Set<String> limited = new LinkedHashSet<>();
+        for (String messageId : messageIds) {
+            if (limited.size() >= maxResults) {
+                break;
+            }
+            limited.add(messageId);
+        }
+        return limited;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void collectHistoryMessageIds(Map<?, ?> historyMap, String key, Set<String> messageIds) {
+        Object entries = historyMap.get(key);
+        if (!(entries instanceof List<?> list)) {
+            return;
+        }
+        for (Object entry : list) {
+            if (entry instanceof Map<?, ?> entryMap) {
+                Object message = entryMap.get("message");
+                if (message instanceof Map<?, ?> messageMap && messageMap.get("id") != null) {
+                    messageIds.add(String.valueOf(messageMap.get("id")));
+                } else if (entryMap.get("id") != null) {
+                    messageIds.add(String.valueOf(entryMap.get("id")));
+                }
+            }
+        }
+    }
+
+    private GmailSyncResult fetchMessages(MailAccountVO account, Set<String> messageIds, String latestHistoryId) {
+        GmailSyncResult result = new GmailSyncResult();
+        result.setLatestHistoryId(latestHistoryId);
+        for (String messageId : messageIds) {
+            Map<?, ?> response = fetchMessageMap(account, messageId);
+            if (response == null) {
+                continue;
+            }
+            GmailSyncedMessage message = toSyncedMessage(account, response);
+            result.getMessages().add(message);
+            if (message.getHistoryId() != null) {
+                result.setLatestHistoryId(message.getHistoryId());
+            }
+        }
+        return result;
+    }
+
+    private Map<?, ?> fetchMessageMap(MailAccountVO account, String messageId) {
+        return webClientBuilder.build()
+                .get()
+                .uri(GMAIL_API + "/" + messageId + "?format=full")
+                .headers(headers -> headers.setBearerAuth(accessToken(account)))
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block();
+    }
+
+    @SuppressWarnings("unchecked")
+    private GmailSyncedMessage toSyncedMessage(MailAccountVO account, Map<?, ?> response) {
+        GmailSyncedMessage message = new GmailSyncedMessage();
+        message.setExternalMessageId(value(response.get("id")));
+        message.setThreadId(value(response.get("threadId")));
+        message.setHistoryId(value(response.get("historyId")));
+        message.setSnippet(value(response.get("snippet")));
+        message.setInternalDate(toLocalDateTime(value(response.get("internalDate"))));
+
+        if (response.get("labelIds") instanceof List<?> labelIds) {
+            for (Object labelId : labelIds) {
+                if (labelId != null) {
+                    message.getLabels().add(String.valueOf(labelId));
+                }
+            }
+        }
+
+        Object payload = response.get("payload");
+        if (payload instanceof Map<?, ?> payloadMap) {
+            message.setSubject(header(payloadMap, "Subject"));
+            message.setMessageIdHeader(header(payloadMap, "Message-ID"));
+            message.setFromEmail(header(payloadMap, "From"));
+            message.setReplyToEmail(header(payloadMap, "Reply-To"));
+            message.setTo(splitRecipients(header(payloadMap, "To")));
+            message.setCc(splitRecipients(header(payloadMap, "Cc")));
+            message.setBcc(splitRecipients(header(payloadMap, "Bcc")));
+            message.setSentAt(parseDateHeader(header(payloadMap, "Date"), message.getInternalDate()));
+            message.setContent(extractBody(response));
+            message.setAttachments(extractAttachments(account, message.getExternalMessageId(), payloadMap));
+        }
+        return message;
+    }
+
+    private LocalDateTime toLocalDateTime(String epochMillis) {
+        if (epochMillis == null || epochMillis.isBlank()) {
+            return null;
+        }
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(Long.parseLong(epochMillis)), ZoneId.systemDefault());
+    }
+
+    private LocalDateTime parseDateHeader(String value, LocalDateTime fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        try {
+            return java.time.ZonedDateTime.parse(value, java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME)
+                    .toLocalDateTime();
+        } catch (Exception e) {
+            return fallback;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String header(Map<?, ?> payloadMap, String headerName) {
+        Object headers = payloadMap.get("headers");
+        if (!(headers instanceof List<?> headerList)) {
+            return null;
+        }
+        for (Object header : headerList) {
+            if (header instanceof Map<?, ?> headerMap
+                    && headerName.equalsIgnoreCase(value(headerMap.get("name")))) {
+                return value(headerMap.get("value"));
+            }
+        }
+        return null;
+    }
+
+    private List<String> splitRecipients(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        List<String> recipients = new ArrayList<>();
+        for (String value : raw.split(",")) {
+            if (!value.isBlank()) {
+                recipients.add(value.trim());
+            }
+        }
+        return recipients;
+    }
+
+    private List<GmailSyncedAttachment> extractAttachments(MailAccountVO account, String messageId, Map<?, ?> payloadMap) {
+        List<Map<?, ?>> parts = new ArrayList<>();
+        collectBodyCandidates(payloadMap, parts);
+        List<GmailSyncedAttachment> attachments = new ArrayList<>();
+        for (Map<?, ?> part : parts) {
+            String filename = value(part.get("filename"));
+            if (filename == null || filename.isBlank()) {
+                continue;
+            }
+            String data = attachmentData(account, messageId, part);
+            if (data == null || data.isBlank()) {
+                continue;
+            }
+            attachments.add(new GmailSyncedAttachment(
+                    filename,
+                    value(part.get("mimeType")),
+                    Base64.getUrlDecoder().decode(padBase64(data))));
+        }
+        return attachments;
+    }
+
+    private String attachmentData(MailAccountVO account, String messageId, Map<?, ?> part) {
+        Object body = part.get("body");
+        if (!(body instanceof Map<?, ?> bodyMap)) {
+            return null;
+        }
+        String data = value(bodyMap.get("data"));
+        if (data != null && !data.isBlank()) {
+            return data;
+        }
+        String attachmentId = value(bodyMap.get("attachmentId"));
+        if (attachmentId == null || attachmentId.isBlank()) {
+            return null;
+        }
+        Map<?, ?> response = webClientBuilder.build()
+                .get()
+                .uri(GMAIL_API + "/" + messageId + "/attachments/" + attachmentId)
+                .headers(headers -> headers.setBearerAuth(accessToken(account)))
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block();
+        return value(response == null ? null : response.get("data"));
     }
 
     private void modifyLabels(MailAccountVO account,

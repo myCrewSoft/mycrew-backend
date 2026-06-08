@@ -22,6 +22,5 @@ public class FirstLoginRequestDTO {
 	
 	@NotBlank(message = "새 비밀번호는 필수 입력값입니다.")
 	@Schema(description = "새 비밀번호", example = "ㄴㅇㅁㄴㅇㅇㄴ?")
-	@StrongPassword
 	String newPassword;  // 새 비밀번호
 }

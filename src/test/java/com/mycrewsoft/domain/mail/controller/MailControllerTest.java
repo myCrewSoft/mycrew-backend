@@ -18,6 +18,7 @@ import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.mail.dto.request.MailImportantUpdateRequest;
 import com.mycrewsoft.domain.mail.dto.response.MailMutationResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSummaryResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailSyncResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailTrashClearResponse;
 import com.mycrewsoft.domain.mail.service.MailService;
 
@@ -109,5 +110,19 @@ class MailControllerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getData()).isEqualTo(result);
         verify(service).clearTrash();
+    }
+
+    @Test
+    void syncDelegatesToService() {
+        MailService service = Mockito.mock(MailService.class);
+        MailController controller = new MailController(service);
+        MailSyncResponse result = new MailSyncResponse(2, 1, 1, 0, "history-2", LocalDateTime.now());
+        when(service.syncMails(30)).thenReturn(result);
+
+        ResponseEntity<ApiResponse<MailSyncResponse>> response = controller.syncMails(30);
+
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getData()).isEqualTo(result);
+        verify(service).syncMails(30);
     }
 }
