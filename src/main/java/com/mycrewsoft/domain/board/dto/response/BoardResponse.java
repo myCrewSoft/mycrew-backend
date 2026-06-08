@@ -47,7 +47,14 @@ public class BoardResponse {
     private String deptCd;                
     
 	@Schema(description = "프로젝트 ID", example = "15")
-    private Long projId;                 
+    private Long projId;
+	
+	
+	@Schema(description = "프로젝트명", example = "마이크루소프트 차세대 시스템 구축")
+	private String projNm;
+
+	@Schema(description = "프로젝트 상태코드", example = "01")
+	private String projStatCd;
     
 	@Schema(description = "중요 공지 여부 (Y / N)", example = "N")
     private String imprtntYn;         

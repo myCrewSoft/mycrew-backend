@@ -13,6 +13,7 @@ import com.mycrewsoft.domain.board.vo.BoardCommentVO;
 import com.mycrewsoft.domain.board.vo.BoardLikeVo;
 import com.mycrewsoft.domain.board.vo.BoardVO;
 
+
 @Mapper
 public interface BoardMapper {
 
@@ -21,7 +22,11 @@ public interface BoardMapper {
 	 * @param searchRequest
 	 * @return
 	 */
-	long countBoard(BoardSearchRequest searchRequest,String boardTypeCd,String deptCd);
+	int countBoard(
+		    @Param("searchRequest") BoardSearchRequest searchRequest,
+		    @Param("boardTypeCd") String boardTypeCd,
+		    @Param("deptCd") String deptCd
+		);
 
 	/**
 	 * 권한 스코프와 페이징 처리가 결합된 통합 게시글 목록 조회
@@ -33,6 +38,27 @@ public interface BoardMapper {
 			@Param("boardTypeCd")String boardTypeCd,
 			@Param("deptCd")String deptCd
 			);
+	
+	
+	
+	/**
+	 *   프로젝트 목록 조회
+	 */
+	
+	List<BoardResponse>	getProjList(
+			@Param("getOffset") long getOffset,
+			@Param("getPageSize") int getPageSize,
+			@Param("searchRequest") BoardSearchRequest searchRequest,
+			@Param("projId") Long projId
+			
+			);
+	
+	int countProjBoard(
+			@Param("searchRequest")BoardSearchRequest searchRequest,
+			@Param("projId") Long projId
+			
+			);
+	
 
 	/**
 	 *   사이드바 목록 조회

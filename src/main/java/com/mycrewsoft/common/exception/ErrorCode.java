@@ -84,7 +84,7 @@ public enum ErrorCode {
 
     // DEPARTMENT
     DEPARTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "DEPT_001", "존재하지 않는 부서입니다."),
-    DUPLICATE_DEPARTMENT_CODE(HttpStatus.CONFLICT, "DEPT_002", "이미 존재하는 부서 코드입니다.");
+    DUPLICATE_DEPARTMENT_CODE(HttpStatus.CONFLICT, "DEPT_002", "이미 존재하는 부서 코드입니다."),
 
 	// ROOM
 	CONF_RM_NOT_FOUND(HttpStatus.NOT_FOUND, "CONF_RM_001", "존재하지 않는 회의실입니다."),
