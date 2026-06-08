@@ -17,4 +17,9 @@ public interface ProjectService {
 	 * @return
 	 */
 	List<ProjectListResponseDto> getProjectList();
+	
+	/**
+	 * 예정 → 진행 중 상태 자동 전환 (배치용)
+	 */
+	void updateProjStateToInProgress();
 }

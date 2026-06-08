@@ -3,6 +3,7 @@ package com.mycrewsoft.domain.project.service;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,9 +24,11 @@ import com.mycrewsoft.security.authz.ResourceType;
 import com.mycrewsoft.security.util.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProjectServiceImpl implements ProjectService{
 	private final AuthorizationService authorizationService;
 	private final ProjectMapper projectMapper;
@@ -92,6 +95,21 @@ public class ProjectServiceImpl implements ProjectService{
 		List<ProjectVO> voList = projectMapper.selectProjectList(empId);
 		
 		return dtoMapper.toDtoList(voList, ProjectListResponseDto.class);
+	}
+
+	/**
+	 * 매일 자정 예정 → 진행 중 상태 자동 전환 (배치용)
+	 */
+	@Override
+	@Scheduled(cron = "0 0 0 * * *")
+	public void updateProjStateToInProgress() {
+		try {
+            int count = projectMapper.updateProjStateToInProgress();
+            log.info("[ProjectStatScheduler] 예정 → 진행 중 전환 완료: {}건", count);
+        } catch (Exception e) {
+            log.error("[ProjectStatScheduler] 배치 실패: {}", e.getMessage(), e);
+            // TODO: 슬랙 또는 메일 알림 추가
+        }
 	}
 
 }

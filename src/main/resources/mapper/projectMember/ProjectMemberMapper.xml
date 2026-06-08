@@ -3,7 +3,7 @@
 <mapper namespace="com.mycrewsoft.domain.projectmember.mapper.ProjectMemberMapper">
 <insert id="insertProjectMemberList">
 	INSERT ALL
-    <foreach collection="list" item="m">
+    <foreach collection="memberList" item="m">
         INTO TB_PROJ_MEMBER (
             PROJ_ID,
             EMP_ID,
