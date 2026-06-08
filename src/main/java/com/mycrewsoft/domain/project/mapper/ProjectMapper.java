@@ -23,4 +23,10 @@ public interface ProjectMapper {
 	 * @return
 	 */
 	List<ProjectVO> selectProjectList(Long empId);
+	
+	/**
+	 * 프로젝트 상태코드 예정 -> 진행 중으로 자동 전환 (배치용)
+	 * @return
+	 */
+	int updateProjStateToInProgress();
 }

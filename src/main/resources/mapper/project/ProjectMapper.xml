@@ -34,9 +34,13 @@
         P.PROJ_NM,
         P.PROJ_BGNG_YMD,
         P.PROJ_END_YMD,
-        P.PROJ_STAT_CD,
-        E.EMP_NM    AS PROJ_LDR_NM,
-        PR.PRGRS_RATE
+        CASE
+            WHEN P.PROJ_STAT_CD = '01'
+             AND P.PROJ_BGNG_YMD &lt;= TRUNC(SYSDATE)
+            THEN '02'
+            ELSE P.PROJ_STAT_CD
+        END AS PROJ_STAT_CD,
+        E.EMP_NM AS PROJ_LDR_NM
     FROM TB_PROJECT P
     JOIN TB_PROJ_MEMBER PM
         ON PM.PROJ_ID   = P.PROJ_ID
@@ -44,15 +48,15 @@
        AND PM.LEAVE_DT IS NULL
     JOIN TB_EMPLOYEE E
         ON E.EMP_ID = P.PROJ_LDR_EMP_ID
-    LEFT JOIN (
-        SELECT
-            T.PROJ_ID,
-            ROUND(AVG(PS.PRGRS_RT)) AS PRGRS_RATE
-        FROM TB_TASK T
-        JOIN TB_PRGRS_SMRY PS
-            ON PS.TASK_ID = T.TASK_ID
-        GROUP BY T.PROJ_ID
-    ) PR ON PR.PROJ_ID = P.PROJ_ID
     ORDER BY P.PROJ_CREAT_DT DESC
 </select>
+
+<update id="updateProjStateToInProgress">
+	UPDATE TB_PROJECT
+	SET 
+		PROJ_STAT_CD = '02',
+		PROJ_STAT_CHG_DT = SYSDATE
+	WHERE PROJ_STAT_CD = '01'
+	  AND TRUNC(PROJ_BGNG_YMD) &lt;= TRUNC(SYSDATE)
+</update>
 </mapper>
