@@ -11,13 +11,10 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@Schema(description ="게시글 저장 DTO")
-public class BoardSaveRequest {
+@Schema(description ="게시글 생성 DTO")
+public class BoardCreateRequest {
 	
-	@NotNull(message = "게시글 번호는 필수입니다.")
-	@Schema(description = "게시글 ID", example = "1")
-	private Long boardId;
-	
+
 	@NotBlank(message ="게시판 유형코드는 필수 입니다." ) 
 	@Size(max = 10, message = "게시판 유형 코드는 10자 이하여야 합니다.")
 	@Schema(description = "게시판유형코드", example = "NOTICE")
@@ -43,7 +40,7 @@ public class BoardSaveRequest {
 	private String deptCd;
 	
 	@Schema(description = "프로젝트 ID (프로젝트 관련 게시글일 경우 입력)", example = "15")
-	private Long proId;
+	private Long projId;
 	
 	@NotBlank(message = "중요 공지 여부는 필수입니다.")
     @Size(min = 1, max = 1,message = "중요 공지 여부는 1자여야 합니다.") 

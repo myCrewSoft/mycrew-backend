@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import com.mycrewsoft.domain.board.dto.request.BoardCreateRequest;
 import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
 import com.mycrewsoft.domain.board.dto.response.BoardResponse;
 import com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse;
@@ -36,7 +37,8 @@ public interface BoardService {
 	Page<BoardResponse> getProjList(Long projId, BoardSearchRequest searchRequest,Pageable pageable);
 	
 	
-
+	// 게시글 생성 
+	Long createBoard(BoardCreateRequest boardCreateRequest);
 	
 	
 }

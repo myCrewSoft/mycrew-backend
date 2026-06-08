@@ -15,6 +15,7 @@ import com.mycrewsoft.common.constant.PermissionCode;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DtoMapper;
+import com.mycrewsoft.domain.board.dto.request.BoardCreateRequest;
 import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
 import com.mycrewsoft.domain.board.dto.response.BoardResponse;
 import com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse;
@@ -206,6 +207,33 @@ public class BoardServiceImpl implements BoardService {
 		
 		// 3. Spring Page 객체로 바인딩하여 최종 반환
 		return new PageImpl<>(content, pageable, total);
+	}
+
+	
+	// 게시글 생성 메서드 
+	@Override
+	public Long createBoard(BoardCreateRequest boardCreateRequest) {
+
+		//권한 체크
+		if("notice".equals(boardCreateRequest.getBoardTypeCd())) {
+			// 공지사항 일때는 관리자만 
+			
+		}else if("dept".equals(boardCreateRequest.getBoardTypeCd())) {
+			// 부서게시판은 소속된 부서사람들만 
+			
+		}else if("proj".equals(boardCreateRequest.getBoardTypeCd())) {
+			// 프로젝트 게시판은 프로젝트하는 사람들만 
+		}else {
+			//자유와 익명은 직원들 전체 아무나
+		}
+
+		// DTO -> VO로 변환
+		BoardVO boardVo = dtoMapper.toDto(boardCreateRequest, BoardVO.class);
+		
+		//데이터베이스에서 생성
+		boardMapper.createBoard(boardVo);
+		
+		return boardVo.getBoardId();
 	}
 
 

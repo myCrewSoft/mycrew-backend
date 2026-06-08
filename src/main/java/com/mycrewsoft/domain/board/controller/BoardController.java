@@ -11,10 +11,13 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute; // 💡 @ModelAttribute 명시 권장
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mycrewsoft.common.response.ApiResponse;
+import com.mycrewsoft.domain.board.dto.request.BoardCreateRequest;
 import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
 import com.mycrewsoft.domain.board.dto.response.BoardResponse;
 import com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse;
@@ -22,6 +25,7 @@ import com.mycrewsoft.domain.board.service.BoardService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -107,6 +111,18 @@ public class BoardController {
 		BoardResponse boardResponse = service.getBoard(deptCd, boardId);
 
 		return ResponseEntity.ok(ApiResponse.success("부서 게시글 상세 조회 성공!", boardResponse));
+	}
+	
+
+	@Operation(summary = "게시글 작성")
+	@PostMapping
+	public ResponseEntity<ApiResponse<Long>> wirteBoard(
+		@Valid	@RequestBody  BoardCreateRequest boardCreateRequest
+	) {
+
+		Long boardId = service.createBoard(boardCreateRequest);
+
+		return ResponseEntity.ok(ApiResponse.success("부서 게시글 상세 조회 성공!", boardId));
 	}
 	
 

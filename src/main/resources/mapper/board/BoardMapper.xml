@@ -215,6 +215,41 @@
 	</select>
 
 
+	<insert id="createBoard">
+	<selectKey keyProperty="boardId" resultType="long" order="BEFORE">
+        SELECT SEQ_BOARD_ID.NEXTVAL FROM DUAL
+    </selectKey>
+		INSERT INTO TB_BOARD (
+	        BOARD_ID,              
+	        BOARD_TYPE_CD,
+	        BOARD_SJ,
+	        BOARD_CN,
+	        FRST_RGTR_ID,
+	        FRST_REG_DT,           
+	        LAST_MDFR_DT,
+	        BOARD_ATCH_FILE_ID,
+	        DEPT_CD,
+	        PROJ_ID,
+	        IMPRTNT_YN,
+	        CMNT_USE_YN,
+	        VIEW_CNT
+	        
+	    ) VALUES (
+	        #{boardId},            
+	        #{boardTypeCd},
+	        #{boardSj},
+	        #{boardCn},
+	        #{frstRgtrId},
+	        SYSDATE,               
+	        SYSDATE,
+	        #{boardAtchFileId},
+	        #{deptCd},
+	        #{projId},
+	        #{imprtntYn},
+	        #{cmntUseYn},
+	        0                                          
+	     )
+	</insert>
 
    
    
