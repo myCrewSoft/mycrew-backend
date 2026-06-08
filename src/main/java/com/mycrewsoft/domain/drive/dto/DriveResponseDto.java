@@ -1,5 +1,8 @@
 package com.mycrewsoft.domain.drive.dto;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -56,9 +59,6 @@ public class DriveResponseDto {
     @Schema(description = "원본 파일명")
     private String orgnlFileNm;
 
-    @Schema(description = "몇 분 전/몇 시간 전")
-    private String timeAgo;
-    
     @Schema(description = "하위 아이템 개수")
     private Integer childCnt; 
     

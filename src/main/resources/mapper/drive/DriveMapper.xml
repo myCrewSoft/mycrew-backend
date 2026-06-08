@@ -62,7 +62,7 @@
                     (#{prntDriveItemId} IS NULL AND D.PRNT_DRIVE_ITEM_ID IS NULL)
                     OR D.PRNT_DRIVE_ITEM_ID = #{prntDriveItemId}
               )
-            ORDER BY D.ITEM_TYPE_CD ASC, D.FRST_REG_DT ASC
+            ORDER BY D.ITEM_TYPE_CD DESC, D.FRST_REG_DT DESC
         ) A WHERE ROWNUM &lt;= #{offset} + #{size}
     ) WHERE RN &gt; #{offset}
 </select>

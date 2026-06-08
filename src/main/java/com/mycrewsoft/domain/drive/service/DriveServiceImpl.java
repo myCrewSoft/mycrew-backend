@@ -1,9 +1,7 @@
 package com.mycrewsoft.domain.drive.service;
 
-import java.awt.print.Pageable;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.net.http.HttpHeaders;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -141,7 +139,6 @@ public class DriveServiceImpl implements DriveService {
 	        DriveResponseDto dto = dtoMapper.toDto(vo, DriveResponseDto.class);
 	        dto.setFrstRegDt(DateUtil.format(vo.getFrstRegDt()));
 	        dto.setLastMdfcnDt(DateUtil.format(vo.getLastMdfcnDt()));
-	        dto.setTimeAgo(DateUtil.timeAgo(vo.getFrstRegDt()));
 	        dto.setFileSz(vo.getFileSz() != null ? FileUtil.formatFileSize(vo.getFileSz()) : null);
 	        return dto;
 	    }).collect(Collectors.toList());
