@@ -20,8 +20,8 @@ public class RedisGoogleOAuthStateStore implements GoogleOAuthStateStore {
     private final RedisTemplate<String, String> redisTemplate;
 
     @Override
-    public void save(String state, Long empId, String context) {
-        redisTemplate.opsForValue().set(key(state), value(empId, context), STATE_TTL_MINUTES, TimeUnit.MINUTES);
+    public void save(String state, Long empId, String context, String emailAddr) {
+        redisTemplate.opsForValue().set(key(state), value(empId, context, emailAddr), STATE_TTL_MINUTES, TimeUnit.MINUTES);
     }
 
     @Override
@@ -34,19 +34,23 @@ public class RedisGoogleOAuthStateStore implements GoogleOAuthStateStore {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
 
-        String[] parts = value.split("\\|", 2);
-        String context = parts.length == 2 && !parts[1].isBlank() ? parts[1] : null;
-        return new GoogleOAuthState(Long.valueOf(parts[0]), context);
+        String[] parts = value.split("\\|", 3);
+        String context = parts.length >= 2 && !parts[1].isBlank() ? parts[1] : null;
+        String emailAddr = parts.length == 3 && !parts[2].isBlank() ? parts[2] : null;
+        return new GoogleOAuthState(Long.valueOf(parts[0]), context, emailAddr);
     }
 
     private String key(String state) {
         return STATE_PREFIX + state;
     }
 
-    private String value(Long empId, String context) {
+    private String value(Long empId, String context, String emailAddr) {
         if (context == null || context.isBlank()) {
             return String.valueOf(empId);
         }
-        return empId + "|" + context.trim();
+        if (emailAddr == null || emailAddr.isBlank()) {
+            return empId + "|" + context.trim();
+        }
+        return empId + "|" + context.trim() + "|" + emailAddr.trim();
     }
 }
