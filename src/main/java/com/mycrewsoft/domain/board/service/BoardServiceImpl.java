@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -16,7 +15,6 @@ import com.mycrewsoft.common.constant.PermissionCode;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DtoMapper;
-import com.mycrewsoft.domain.board.controller.BoardController;
 import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
 import com.mycrewsoft.domain.board.dto.response.BoardResponse;
 import com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse;
@@ -45,8 +43,7 @@ public class BoardServiceImpl implements BoardService {
 	private final ObjectMapper objectMapper;
 	private final DtoMapper dtoMapper;
 	
-	@Autowired
-	private javax.sql.DataSource dataSource;
+
 	// 데이터를 몇 페이지에 몇개씩 보여줄지
 	@Override
 	@Transactional(readOnly = true)
