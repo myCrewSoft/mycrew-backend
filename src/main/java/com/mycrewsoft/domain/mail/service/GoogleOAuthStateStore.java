@@ -6,7 +6,11 @@ public interface GoogleOAuthStateStore {
         save(state, empId, null);
     }
 
-    void save(String state, Long empId, String context);
+    default void save(String state, Long empId, String context) {
+        save(state, empId, context, null);
+    }
+
+    void save(String state, Long empId, String context, String emailAddr);
 
     GoogleOAuthState consume(String state);
 }

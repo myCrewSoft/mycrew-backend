@@ -70,6 +70,34 @@ class GoogleOAuthServiceTest {
         assertThat(redirectUri).isEqualTo("http://localhost:5173/mail");
     }
 
+    @Test
+    void callbackRedirectsToMyPageWhenRequestedEmailMatchesGoogleAccount() {
+        FakeStateStore stateStore = new FakeStateStore();
+        FakeMailAccountMapper mapper = new FakeMailAccountMapper();
+        GoogleOAuthService service = newService(stateStore, mapper, new FakeGoogleOAuthClient());
+
+        service.createAuthorizationUrl(1001L, "mypage-email", "person@gmail.com");
+        String redirectUri = service.handleCallback("auth-code", stateStore.savedState);
+
+        assertThat(stateStore.savedContext).isEqualTo("mypage-email");
+        assertThat(stateStore.savedEmailAddr).isEqualTo("person@gmail.com");
+        assertThat(mapper.saved.getEmailAddr()).isEqualTo("person@gmail.com");
+        assertThat(redirectUri).isEqualTo("http://localhost:5173/mypage?mailConnected=Y");
+    }
+
+    @Test
+    void callbackRejectsMyPageEmailChangeWhenRequestedEmailDiffersFromGoogleAccount() {
+        FakeStateStore stateStore = new FakeStateStore();
+        FakeMailAccountMapper mapper = new FakeMailAccountMapper();
+        GoogleOAuthService service = newService(stateStore, mapper, new FakeGoogleOAuthClient());
+
+        service.createAuthorizationUrl(1001L, "mypage-email", "other@gmail.com");
+        String redirectUri = service.handleCallback("auth-code", stateStore.savedState);
+
+        assertThat(redirectUri).isEqualTo("http://localhost:5173/mypage?mailConnected=N");
+        assertThat(mapper.saved).isNull();
+    }
+
     private GoogleOAuthService newService(
             GoogleOAuthStateStore stateStore,
             MailAccountMapper mapper,
@@ -81,6 +109,8 @@ class GoogleOAuthServiceTest {
         properties.setFrontendSuccessUri("http://localhost:5173/first-login?mailConnected=Y");
         properties.setFrontendFailureUri("http://localhost:5173/first-login?mailConnected=N");
         properties.setFrontendMailSuccessUri("http://localhost:5173/mail");
+        properties.setFrontendMyPageSuccessUri("http://localhost:5173/mypage?mailConnected=Y");
+        properties.setFrontendMyPageFailureUri("http://localhost:5173/mypage?mailConnected=N");
         properties.setScopes(List.of(
                 "openid",
                 "email",
@@ -94,6 +124,7 @@ class GoogleOAuthServiceTest {
         private String savedState;
         private Long savedEmpId;
         private String savedContext;
+        private String savedEmailAddr;
 
         @Override
         public void save(String state, Long empId) {
@@ -102,14 +133,20 @@ class GoogleOAuthServiceTest {
 
         @Override
         public void save(String state, Long empId, String context) {
+            save(state, empId, context, null);
+        }
+
+        @Override
+        public void save(String state, Long empId, String context, String emailAddr) {
             this.savedState = state;
             this.savedEmpId = empId;
             this.savedContext = context;
+            this.savedEmailAddr = emailAddr;
         }
 
         @Override
         public GoogleOAuthState consume(String state) {
-            return new GoogleOAuthState(savedEmpId, savedContext);
+            return new GoogleOAuthState(savedEmpId, savedContext, savedEmailAddr);
         }
     }
 

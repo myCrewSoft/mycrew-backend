@@ -110,6 +110,8 @@ google:
     frontend-success-uri: http://localhost:5173/first-login?mailConnected=Y
     frontend-failure-uri: http://localhost:5173/first-login?mailConnected=N
     frontend-mail-success-uri: http://localhost:5173/mail
+    frontend-my-page-success-uri: http://localhost:5173/mypage?mailConnected=Y
+    frontend-my-page-failure-uri: http://localhost:5173/mypage?mailConnected=N
     scopes:
       - openid
       - email
