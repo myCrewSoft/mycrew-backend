@@ -31,4 +31,12 @@ public interface BoardService {
 	
 	// 게시판 게시글 읽기
 	BoardResponse getBoard(String deptCd,Long boardId);
+	
+	// 프로젝트 목록 조회
+	Page<BoardResponse> getProjList(Long projId, BoardSearchRequest searchRequest,Pageable pageable);
+	
+	
+
+	
+	
 }

@@ -36,11 +36,13 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class BoardServiceImpl implements BoardService {
+
 	private final EmployeeMapper employeeMapper;
 	private final BoardMapper boardMapper;
 	private final AuthorizationService authorizationService;
 	private final ObjectMapper objectMapper;
 	private final DtoMapper dtoMapper;
+	
 
 	// 데이터를 몇 페이지에 몇개씩 보여줄지
 	@Override
@@ -60,20 +62,24 @@ public class BoardServiceImpl implements BoardService {
 			authorizationService.assertCurrentUserPermission(PermissionCode.BOARD_POST_READ, resource);
 		}
 
+		if(StringUtils.isBlank(boardTypeCd)) {
+			boardTypeCd = "DEPT";
+			searchRequest.setBoardTypeCd(boardTypeCd);
+		}
+		
 		// 2. 권한 정보(부서코드, 글로벌 여부, 스코프 ID 세트 등) 조회
 		Long currentEmpId = SecurityUtil.getCurrentEmpId();
 		String myDeptCd = employeeMapper.selectEmpDeptCodeByEmpId(currentEmpId);
 		PermissionScopeSet scopes = authorizationService.getCurrentPermissionScopes(PermissionCode.BOARD_POST_READ);
 
 		// 3. 데이터베이스 조회 (전체 카운트 및 페이징된 리스트)
-		long total = boardMapper.countBoard(searchRequest, boardTypeCd, deptCd);
+		int total = boardMapper.countBoard(searchRequest, boardTypeCd, deptCd);
 
 		// 4. 한 페이지에 보여지는 게시물
 		List<BoardResponse> content = boardMapper.getBoardList(pageable.getOffset(), // pageNumber* pageSize
 				pageable.getPageSize(), // 한 페이지당 몇개 ?
 				searchRequest, // 검색기능
 				boardTypeCd, deptCd);
-
 		// 5. Spring Page 객체로 바인딩하여 반환
 		return new PageImpl<>(content, pageable, total);
 	}
@@ -172,4 +178,35 @@ public class BoardServiceImpl implements BoardService {
         }
 		return boardResponse;
 	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Page<BoardResponse> getProjList(Long projId, BoardSearchRequest searchRequest, Pageable pageable) {
+		
+		// 프로젝트가 없으면 프로젝트가 없다는 예외
+		if (projId == null) {
+			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+		}
+		
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
+		
+		// 프로젝트 하는 이들만 볼 수있는 권한 체크 -> 지금 목록을 보려고 하는 사람이 프로젝트 참여자인지
+		// currentEmpId == mapper.getempId(projId);
+		
+		// 1. 해당 프로젝트 게시글의 전체 카운트 조회
+		int total = boardMapper.countProjBoard(searchRequest, projId);
+		
+		// 2. 한 페이지에 보여지는 프로젝트 게시물 리스트 조회 (getBoardList와 동일 포맷)
+		List<BoardResponse> content = boardMapper.getProjList(
+				pageable.getOffset(), 
+				pageable.getPageSize(), 
+				searchRequest, 
+				projId
+		);
+		
+		// 3. Spring Page 객체로 바인딩하여 최종 반환
+		return new PageImpl<>(content, pageable, total);
+	}
+
+
 }

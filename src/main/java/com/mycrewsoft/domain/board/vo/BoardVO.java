@@ -30,6 +30,10 @@ public class BoardVO {
 	private String cmntUseYn; //댓글 허용
 	private Integer viewCnt; // 조회수
 	
+	private String projNm;         // 프로젝트명 (ERD: PROJ_NM)
+	private String projStatCd;     // 프로젝트 상태코드 (ERD: PROJ_STAT_CD)
+	
+	
 	private List<BoardCommentVO>commentList; // 하나의 게시글 상세 내용을 불러올 때 댓글 목록도 함께
 	private List<BoardAnlsVO> boardAnlsList; // 하나의 게시글 여러 분석 결과 목록을 가짐
 }
