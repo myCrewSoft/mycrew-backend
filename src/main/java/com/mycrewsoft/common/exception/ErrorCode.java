@@ -85,6 +85,8 @@ public enum ErrorCode {
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND,  "CHAT_001", "존재하지 않는 채팅방입니다."),
     CHAT_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "CHAT_002", "채팅방 참여자가 아닙니다."),
     CHAT_ROOM_ALREADY_EXISTS(HttpStatus.CONFLICT, "CHAT_003", "이미 존재하는 1:1 채팅방입니다."),
+    CHAT_DIRECT_ROOM_CANNOT_ADD_PARTICIPANT(HttpStatus.BAD_REQUEST, "CHAT_004", "1:1 채팅방에는 참여자를 추가할 수 없습니다."),
+    CHAT_OWNER_CANNOT_BE_REMOVED(HttpStatus.BAD_REQUEST, "CHAT_005", "채팅방 개설자는 제거할 수 없습니다."),
 
     // WEBSOCKET
     WS_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "WS_001", "WebSocket 연결 시 인증이 필요합니다."),
