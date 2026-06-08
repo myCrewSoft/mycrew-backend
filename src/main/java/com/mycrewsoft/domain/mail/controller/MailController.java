@@ -24,6 +24,7 @@ import com.mycrewsoft.domain.mail.dto.response.MailDetailResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailMutationResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSendResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSummaryResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailSyncResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailTrashClearResponse;
 import com.mycrewsoft.domain.mail.service.MailService;
 
@@ -62,6 +63,14 @@ public class MailController {
             @Valid @RequestPart("request") MailSendRequest request,
             @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments) {
         return ResponseEntity.ok(ApiResponse.success(mailService.sendMail(request, attachments)));
+    }
+
+    @PostMapping("/sync")
+    @Operation(summary = "Gmail 메일 동기화", description = "Gmail에서 신규/변경 메일을 가져와 로컬 메일 DB에 반영합니다.")
+    public ResponseEntity<ApiResponse<MailSyncResponse>> syncMails(
+            @Parameter(description = "최대 동기화 메시지 수")
+            @RequestParam(defaultValue = "50") int maxResults) {
+        return ResponseEntity.ok(ApiResponse.success(mailService.syncMails(maxResults)));
     }
 
     @GetMapping("/{mailId}")

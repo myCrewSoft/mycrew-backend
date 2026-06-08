@@ -33,9 +33,10 @@ public class MailOAuthController {
             summary = "Google OAuth 인증 URL 발급",
             description = "현재 로그인한 사원이 Gmail 계정을 연동할 수 있도록 Google OAuth 인증 URL을 생성."
         )
-    public ResponseEntity<ApiResponse<GoogleOAuthAuthorizeResponse>> authorize() {
+    public ResponseEntity<ApiResponse<GoogleOAuthAuthorizeResponse>> authorize(
+            @RequestParam(required = false) String context) {
         GoogleOAuthAuthorizeResponse response =
-                googleOAuthService.createAuthorizationUrl(SecurityUtil.getCurrentEmpId());
+                googleOAuthService.createAuthorizationUrl(SecurityUtil.getCurrentEmpId(), context);
 
         return ResponseEntity.ok(ApiResponse.success("Google 메일 연결 URL 생성 완료", response));
     }

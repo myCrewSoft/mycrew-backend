@@ -35,12 +35,16 @@ public class GoogleOAuthService {
     private final SecureRandom secureRandom = new SecureRandom();
 
     public GoogleOAuthAuthorizeResponse createAuthorizationUrl(Long empId) {
+        return createAuthorizationUrl(empId, null);
+    }
+
+    public GoogleOAuthAuthorizeResponse createAuthorizationUrl(Long empId, String context) {
         if (empId == null) {
             throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
 
         String state = createState();
-        stateStore.save(state, empId);
+        stateStore.save(state, empId, normalizeContext(context));
 
         String authorizationUrl = UriComponentsBuilder.fromUriString(AUTHORIZATION_URI)
                 .queryParam("client_id", properties.getClientId())
@@ -62,7 +66,8 @@ public class GoogleOAuthService {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
         
-        Long empId = stateStore.consume(state);
+        GoogleOAuthState oauthState = stateStore.consume(state);
+        Long empId = oauthState.empId();
         GoogleTokenResponse token = googleOAuthClient.exchangeCode(code);
         GoogleUserInfoResponse userInfo = googleOAuthClient.fetchUserInfo(token.getAccessToken());
 
@@ -81,7 +86,7 @@ public class GoogleOAuthService {
         mailAccount.setFrstRegDt(LocalDateTime.now());
 
         mailAccountMapper.upsertGoogleMailAccount(mailAccount);
-        return properties.getFrontendSuccessUri();
+        return successUri(oauthState.context());
     }
 
     private String createState() {
@@ -94,6 +99,20 @@ public class GoogleOAuthService {
         StringJoiner joiner = new StringJoiner(" ");
         properties.getScopes().forEach(joiner::add);
         return joiner.toString();
+    }
+
+    private String normalizeContext(String context) {
+        if (!StringUtils.hasText(context)) {
+            return null;
+        }
+        return "mail".equalsIgnoreCase(context.trim()) ? "mail" : null;
+    }
+
+    private String successUri(String context) {
+        if ("mail".equals(context) && StringUtils.hasText(properties.getFrontendMailSuccessUri())) {
+            return properties.getFrontendMailSuccessUri();
+        }
+        return properties.getFrontendSuccessUri();
     }
 
     private LocalDateTime expiresAt(Long expiresIn) {

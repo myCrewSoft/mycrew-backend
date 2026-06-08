@@ -2,8 +2,10 @@ package com.mycrewsoft.domain.mail.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -26,7 +28,11 @@ import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.file.service.FileService;
 import com.mycrewsoft.domain.mail.dto.response.MailDetailResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailMutationResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailSyncResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailTrashClearResponse;
 import com.mycrewsoft.domain.mail.gmail.GmailMessageContent;
+import com.mycrewsoft.domain.mail.gmail.GmailSyncResult;
+import com.mycrewsoft.domain.mail.gmail.GmailSyncedMessage;
 import com.mycrewsoft.domain.mail.mapper.MailMapper;
 import com.mycrewsoft.domain.mail.vo.MailAccountVO;
 import com.mycrewsoft.domain.mail.vo.MailMessageRow;
@@ -117,6 +123,94 @@ class MailServiceImplTest {
         inOrder.verify(mailMapper).updateMailBody(EMP_ID, 10L, "<p>본문</p>", "본문");
     }
 
+    @Test
+    void syncMailsInsertsNewGmailMessageAndUpdatesHistoryId() {
+        authenticate(PermissionCode.MAIL_READ);
+        MailAccountVO account = account("https://www.googleapis.com/auth/gmail.readonly");
+        account.setGoogleHistoryId(null);
+        GmailSyncedMessage message = syncedMessage();
+        GmailSyncResult syncResult = new GmailSyncResult();
+        syncResult.setMessages(List.of(message));
+        syncResult.setLatestHistoryId("history-11");
+
+        when(mailMapper.selectActiveMailAccount(EMP_ID)).thenReturn(account);
+        when(googleGmailClient.syncMessages(account, null, 50)).thenReturn(syncResult);
+        when(mailMapper.selectMailIdByExternalMessageId(EMP_ID, "gmail-new")).thenReturn(null);
+        when(mailMapper.selectNextMailMessageId()).thenReturn(100L);
+        when(mailMapper.selectNextMailLabelId()).thenReturn(1L, 2L, 3L, 4L, 5L);
+        when(mailMapper.selectLabelIdByType(EMP_ID, "INBOX")).thenReturn(1L);
+        when(mailMapper.selectLabelIdByType(EMP_ID, "UNREAD")).thenReturn(4L);
+        when(mailMapper.existsLabelMap(any(), any(), any())).thenReturn(0);
+        when(mailMapper.selectNextMailLabelMapId()).thenReturn(10L, 11L);
+        when(mailMapper.selectNextMailParticipantId()).thenReturn(20L, 21L);
+
+        MailSyncResponse response = service.syncMails(50);
+
+        assertThat(response.getSyncedCount()).isEqualTo(1);
+        assertThat(response.getInsertedCount()).isEqualTo(1);
+        assertThat(response.getUpdatedCount()).isZero();
+        assertThat(response.getLatestHistoryId()).isEqualTo("history-11");
+        verify(mailMapper).insertMailMessage(any(MailMessageRow.class));
+        verify(mailMapper, times(2)).insertParticipant(any());
+        verify(mailMapper).updateMailAccountSyncState(EMP_ID, "history-11");
+    }
+
+    @Test
+    void syncMailsTreatsNullMessagesAsEmptySync() {
+        authenticate(PermissionCode.MAIL_READ);
+        MailAccountVO account = account("https://www.googleapis.com/auth/gmail.readonly");
+        GmailSyncResult syncResult = new GmailSyncResult();
+        syncResult.setMessages(null);
+        syncResult.setLatestHistoryId("history-empty");
+
+        when(mailMapper.selectActiveMailAccount(EMP_ID)).thenReturn(account);
+        when(googleGmailClient.syncMessages(account, null, 50)).thenReturn(syncResult);
+        when(mailMapper.selectNextMailLabelId()).thenReturn(1L, 2L, 3L, 4L, 5L);
+
+        MailSyncResponse response = service.syncMails(50);
+
+        assertThat(response.getSyncedCount()).isZero();
+        assertThat(response.getInsertedCount()).isZero();
+        assertThat(response.getUpdatedCount()).isZero();
+        assertThat(response.getLatestHistoryId()).isEqualTo("history-empty");
+        verify(mailMapper).updateMailAccountSyncState(EMP_ID, "history-empty");
+    }
+
+    @Test
+    void clearTrashRequiresFullMailScopeBeforeCallingGmailDelete() {
+        authenticate(PermissionCode.MAIL_DELETE);
+        MailAccountVO account = account("https://www.googleapis.com/auth/gmail.modify");
+        when(mailMapper.selectActiveMailAccount(EMP_ID)).thenReturn(account);
+
+        assertThatThrownBy(() -> service.clearTrash())
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.MAIL_SCOPE_REQUIRED);
+
+        verify(mailMapper, never()).selectTrashRows(EMP_ID);
+        verifyNoInteractions(googleGmailClient);
+    }
+
+    @Test
+    void clearTrashDeletesGmailMessagesAndMarksLocalRowsDeletedWithFullMailScope() {
+        authenticate(PermissionCode.MAIL_DELETE);
+        MailAccountVO account = account("https://mail.google.com/");
+        MailMessageRow first = mailRow();
+        MailMessageRow second = mailRow();
+        second.setMailId(11L);
+        second.setExternalMessageId("gmail-11");
+        when(mailMapper.selectActiveMailAccount(EMP_ID)).thenReturn(account);
+        when(mailMapper.selectTrashRows(EMP_ID)).thenReturn(List.of(first, second));
+
+        MailTrashClearResponse response = service.clearTrash();
+
+        assertThat(response.getDeletedCount()).isEqualTo(2);
+        InOrder inOrder = inOrder(googleGmailClient, mailMapper);
+        inOrder.verify(googleGmailClient).deleteMessage(account, "gmail-10");
+        inOrder.verify(googleGmailClient).deleteMessage(account, "gmail-11");
+        inOrder.verify(mailMapper).markMessagesDeleted(EMP_ID, List.of(10L, 11L));
+    }
+
     private void authenticate(PermissionCode permissionCode) {
         AuthorizationUserDetails principal = new AuthorizationUserDetails(
                 EMP_ID,
@@ -148,5 +242,21 @@ class MailServiceImplTest {
         row.setBodySyncYn("Y");
         row.setDelYn("N");
         return row;
+    }
+    private GmailSyncedMessage syncedMessage() {
+        GmailSyncedMessage message = new GmailSyncedMessage();
+        message.setExternalMessageId("gmail-new");
+        message.setThreadId("thread-new");
+        message.setHistoryId("history-10");
+        message.setMessageIdHeader("<message@example.com>");
+        message.setSubject("subject");
+        message.setContent("<p>content</p>");
+        message.setSnippet("content");
+        message.setFromEmail("sender@example.com");
+        message.setTo(List.of("user@example.com"));
+        message.setLabels(List.of("INBOX", "UNREAD"));
+        message.setSentAt(java.time.LocalDateTime.now());
+        message.setInternalDate(message.getSentAt());
+        return message;
     }
 }

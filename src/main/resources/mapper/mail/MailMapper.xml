@@ -141,6 +141,25 @@
           AND DEL_YN = 'N'
     </update>
 
+    <update id="updateMailMessage" parameterType="com.mycrewsoft.domain.mail.vo.MailMessageRow">
+        UPDATE TB_MAIL_MESSAGE
+        SET EXTERNAL_THREAD_ID = #{threadId},
+            MESSAGE_ID_HEADER = #{messageIdHeader},
+            MAIL_SJ = #{subject},
+            MAIL_CN = #{content},
+            SNIPPET = #{snippet},
+            FROM_EMAIL = #{fromEmail},
+            TO_SUMMARY = #{toSummary},
+            MAIL_SNDNG_DT = #{sentAt},
+            INTERNAL_DATE = #{internalDate},
+            DRAFT_YN = #{draftYn},
+            BODY_SYNC_YN = #{bodySyncYn},
+            DEL_YN = #{delYn},
+            LAST_MDFCN_DT = SYSDATE
+        WHERE EMP_ID = #{empId}
+          AND MAIL_MSG_ID = #{mailId}
+    </update>
+
     <select id="selectMailRow" resultMap="MailMessageRowMap">
         SELECT
             MAIL_MSG_ID AS MAIL_ID,
@@ -162,6 +181,13 @@
         WHERE EMP_ID = #{empId}
           AND MAIL_MSG_ID = #{mailId}
           AND DEL_YN = 'N'
+    </select>
+
+    <select id="selectMailIdByExternalMessageId" resultType="long">
+        SELECT MAIL_MSG_ID
+        FROM TB_MAIL_MESSAGE
+        WHERE EMP_ID = #{empId}
+          AND EXTERNAL_MSG_ID = #{externalMessageId}
     </select>
 
     <sql id="mailFlags">
@@ -545,6 +571,12 @@
           )
     </delete>
 
+    <delete id="deleteLabelMapsByMail">
+        DELETE FROM TB_MAIL_LABEL_MAP
+        WHERE EMP_ID = #{empId}
+          AND MAIL_MSG_ID = #{mailId}
+    </delete>
+
     <update id="markMessagesDeleted">
         UPDATE TB_MAIL_MESSAGE
         SET DEL_YN = 'Y',
@@ -572,6 +604,12 @@
         )
     </insert>
 
+    <delete id="deleteParticipantsByMail">
+        DELETE FROM TB_MAIL_PARTICIPANT
+        WHERE EMP_ID = #{empId}
+          AND MAIL_MSG_ID = #{mailId}
+    </delete>
+
     <insert id="insertAttachment">
         INSERT INTO TB_MAIL_ATTACHMENT (
             MAIL_ATCH_FILE_ID,
@@ -589,6 +627,15 @@
         SET ACCESS_TOKEN = #{accessToken},
             TOKEN_EXPR_DT = #{tokenExprDt},
             TOKEN_STATUS_CD = #{tokenStatusCd},
+            LAST_MDFCN_DT = SYSDATE
+        WHERE EMP_ID = #{empId}
+          AND PROVIDER_CD = 'GOOGLE'
+    </update>
+
+    <update id="updateMailAccountSyncState">
+        UPDATE TB_MAIL_ACCOUNT
+        SET GOOGLE_HISTORY_ID = #{googleHistoryId},
+            SYNC_LAST_DT = SYSDATE,
             LAST_MDFCN_DT = SYSDATE
         WHERE EMP_ID = #{empId}
           AND PROVIDER_CD = 'GOOGLE'

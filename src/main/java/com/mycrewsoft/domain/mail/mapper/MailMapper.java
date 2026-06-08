@@ -34,7 +34,12 @@ public interface MailMapper {
                         @Param("content") String content,
                         @Param("snippet") String snippet);
 
+    void updateMailMessage(MailMessageRow row);
+
     MailMessageRow selectMailRow(@Param("empId") Long empId, @Param("mailId") Long mailId);
+
+    Long selectMailIdByExternalMessageId(@Param("empId") Long empId,
+                                         @Param("externalMessageId") String externalMessageId);
 
     MailDetailResponse selectMailDetail(@Param("empId") Long empId, @Param("mailId") Long mailId);
 
@@ -85,9 +90,13 @@ public interface MailMapper {
                               @Param("mailId") Long mailId,
                               @Param("labelTypeCd") String labelTypeCd);
 
+    void deleteLabelMapsByMail(@Param("empId") Long empId, @Param("mailId") Long mailId);
+
     void markMessagesDeleted(@Param("empId") Long empId, @Param("mailIds") List<Long> mailIds);
 
     void insertParticipant(MailParticipantRow row);
+
+    void deleteParticipantsByMail(@Param("empId") Long empId, @Param("mailId") Long mailId);
 
     void insertAttachment(@Param("attachmentId") Long attachmentId,
                           @Param("empId") Long empId,
@@ -97,4 +106,7 @@ public interface MailMapper {
                                  @Param("accessToken") String accessToken,
                                  @Param("tokenExprDt") LocalDateTime tokenExprDt,
                                  @Param("tokenStatusCd") String tokenStatusCd);
+
+    void updateMailAccountSyncState(@Param("empId") Long empId,
+                                    @Param("googleHistoryId") String googleHistoryId);
 }

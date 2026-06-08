@@ -12,6 +12,7 @@ import com.mycrewsoft.domain.mail.dto.response.MailDetailResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailMutationResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSendResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSummaryResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailSyncResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailTrashClearResponse;
 
 public interface MailService {
@@ -33,4 +34,6 @@ public interface MailService {
     MailTrashClearResponse clearTrash();
 
     MailMutationResponse restore(Long mailId);
+
+    MailSyncResponse syncMails(int maxResults);
 }
