@@ -1,10 +1,10 @@
 package com.mycrewsoft.domain.task.vo;
 
-import lombok.Getter;
-import lombok.Setter;
-
 import java.time.LocalDateTime;
 import java.util.List;
+
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * 업무 관리 VO
@@ -37,10 +37,9 @@ public class TaskVO {
     private Long deltrMbrId;             // 삭제자ID
 
     private Long taskAtchFileId;         // 업무첨부파일ID
+    private Integer taskPrgrsSmry;		// 진척률
+    private String taskImprtncCd;		// 중요도
 
     // has many
-    private List<TaskMemberVO> taskMemberList;   // 업무 참여자 목록
-
-    // has one
-    private PrgrsSmryVO prgrsSmry;		// 업무 진척률
+    private List<TaskPtcptVO> taskEmployeeList;   // 업무 참여자 목록
 }
