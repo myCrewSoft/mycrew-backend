@@ -2,15 +2,19 @@ package com.mycrewsoft.domain.board.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-@Schema(description ="게시글 생성 DTO")
-public class BoardCreateRequest {
+@Schema(description ="게시글 수정 DTO")
+public class BoardUpdateRequest {
 	
+	@NotNull(message = "수정할 게시글 ID는 필수입니다.") 
+	@Schema(description = "게시판 아이디", example = "1024")
+	private Long boardId;
 
 	@NotBlank(message ="게시판 유형코드는 필수 입니다." ) 
 	@Size(max = 10, message = "게시판 유형 코드는 10자 이하여야 합니다.")
@@ -23,12 +27,9 @@ public class BoardCreateRequest {
 	private String boardSj;
 	
 	@NotBlank(message = "내용은 필수입니다.")
-    @Size(max = 4000, message = "내용은 4000자 이하여야 합니다.") 
-    @Schema(description = "게시판 내용", example = "안녕하세요. 총무팀입니다.")
+	@Size(max = 4000, message = "내용은 4000자 이하여야 합니다.") 
+	@Schema(description = "게시판 내용", example = "안녕하세요. 총무팀입니다.")
 	private String boardCn;
-	
-	@Schema(description = "최초 등록자 사원 ID", example = "2")
-	private Long frstRgtrId;
 	
 	@Schema(description = "게시판 첨부파일 ID (첨부파일이 없을 경우 null)", example = "458")
 	private Long boardAtchFileId;
@@ -40,15 +41,12 @@ public class BoardCreateRequest {
 	private Long projId;
 	
 	@NotBlank(message = "중요 공지 여부는 필수입니다.")
-    @Size(min = 1, max = 1,message = "중요 공지 여부는 1자여야 합니다.") 
+	@Size(min = 1, max = 1,message = "중요 공지 여부는 1자여야 합니다.") 
 	@Schema(description = "중요 공지 여부 (Y / N)", example = "N", defaultValue = "N")
-	private String imprtntYn ="N";
+	private String imprtntYn = "N";
 	
 	@NotBlank(message = "댓글 허용 여부는 필수입니다.")
-    @Size(min = 1, max = 1, message = "댓글 허용 여부는 1자여야 합니다.") 
+	@Size(min = 1, max = 1, message = "댓글 허용 여부는 1자여야 합니다.") 
 	@Schema(description = "댓글 허용 여부 (Y / N)", example = "Y", defaultValue = "Y")
-	private String cmntUseYn ="Y";
-
-	
-
+	private String cmntUseYn = "Y";
 }

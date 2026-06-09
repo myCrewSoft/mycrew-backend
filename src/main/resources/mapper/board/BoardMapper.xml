@@ -244,13 +244,37 @@
 	        SYSDATE,
 	        #{boardAtchFileId},
 	        #{deptCd},
-	        #{projId},
+	       #{projId, jdbcType=NUMERIC},
 	        #{imprtntYn},
 	        #{cmntUseYn},
 	        0                                          
 	     )
 	</insert>
-
-   
+	
+	<update id="updateBoardDetails" parameterType="com.mycrewsoft.domain.board.vo.BoardVO">
+	    /* 게시글 상세 수정 (Oracle) - updateBoardDetails */
+	    UPDATE BOARD
+	    <set>
+	        <if test="boardSj != null and boardSj != ''">
+	            BOARD_SJ = #{boardSj},
+	        </if>
+	        
+	        <if test="boardCn != null and boardCn != ''">
+	            BOARD_CN = #{boardCn},
+	        </if>
+	        
+	        <if test="boardAtchFileId != null">
+	            BOARD_ATCH_FILE_ID = #{boardAtchFileId},
+	        </if>
+	        
+	        <if test="boardTypeCd != null and boardTypeCd != ''">
+	            BOARD_TYPE_CD = #{boardTypeCd},
+	        </if>
+	        
+	        LAST_MDFR_DT = SYSDATE
+	    </set>
+	    WHERE BOARD_ID = #{boardId}
+	</update>
+	 
    
 </mapper>

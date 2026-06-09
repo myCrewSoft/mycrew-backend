@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 
 import com.mycrewsoft.domain.board.dto.request.BoardCreateRequest;
 import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
+import com.mycrewsoft.domain.board.dto.request.BoardUpdateRequest;
 import com.mycrewsoft.domain.board.dto.response.BoardResponse;
 import com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse;
 
@@ -39,6 +40,9 @@ public interface BoardService {
 	
 	// 게시글 생성 
 	Long createBoard(BoardCreateRequest boardCreateRequest);
+	
+	// 게시글 수정
+	Long updateBoardDetail(BoardUpdateRequest boardUpdateRequest);
 	
 	
 }
