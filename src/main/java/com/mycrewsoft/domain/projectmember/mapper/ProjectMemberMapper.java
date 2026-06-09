@@ -21,5 +21,5 @@ public interface ProjectMemberMapper {
 	 * @param projId
 	 * @return
 	 */
-	int selectProjectMemberList(Long projId);
+	List<ProjectMemberVO> selectProjectMemberList(Long projId);
 }
