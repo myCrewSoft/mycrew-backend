@@ -12,10 +12,6 @@ import lombok.Setter;
 @Schema(description ="게시글 수정 DTO")
 public class BoardUpdateRequest {
 	
-	@NotNull(message = "수정할 게시글 ID는 필수입니다.") 
-	@Schema(description = "게시판 아이디", example = "1024")
-	private Long boardId;
-
 	@NotBlank(message ="게시판 유형코드는 필수 입니다." ) 
 	@Size(max = 10, message = "게시판 유형 코드는 10자 이하여야 합니다.")
 	@Schema(description = "게시판유형코드", example = "NOTICE")

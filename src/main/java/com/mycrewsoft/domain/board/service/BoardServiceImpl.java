@@ -220,10 +220,12 @@ public class BoardServiceImpl implements BoardService {
 		} else {
 			// 자유와 익명은 직원들 전체 아무나
 		}
-
+		Long empId = SecurityUtil.getCurrentEmpId();
+		
 		// DTO -> VO로 변환
 		BoardVO boardVo = dtoMapper.toDto(boardCreateRequest, BoardVO.class);
 
+		boardVo.setFrstRgtrId(empId);
 		// 데이터베이스에서 생성
 		boardMapper.createBoard(boardVo);
 
@@ -231,14 +233,13 @@ public class BoardServiceImpl implements BoardService {
 	}
 
 	@Override
-	public Long updateBoardDetail(BoardUpdateRequest boardUpdateRequest) {
+	public Long updateBoardDetail(Long boardId, BoardUpdateRequest boardUpdateRequest) {
 		// 로그인한 사원 아이디 empId
 		Long empId = SecurityUtil.getCurrentEmpId();
 		
-		Long currentBoardId = boardUpdateRequest.getBoardId();
 		
 		// db에서 글을 조회
-		BoardVO writtenBoard  = boardMapper.readBoard(currentBoardId);
+		BoardVO writtenBoard  = boardMapper.readBoard(boardId);
 		Long writer	= writtenBoard.getFrstRgtrId();
 		
 		//내가 작성한 글만 권한

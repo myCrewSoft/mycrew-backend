@@ -128,19 +128,18 @@ public class BoardController {
 	}
 	
 
-
 	@Operation(summary = "게시글 수정")
-	@PutMapping
+	@PutMapping("/{boardId}")
 	public ResponseEntity<ApiResponse<Long>> updateBoardDetail(
-		@Valid	@RequestBody  BoardUpdateRequest boardUpdateDetail
+		@PathVariable Long boardId, 
+		@Valid @RequestBody BoardUpdateRequest boardUpdateDetail
 	) {
+		
 
-		Long boardId = service.updateBoardDetail(boardUpdateDetail);
+		Long updatedBoardId = service.updateBoardDetail(boardId,boardUpdateDetail);
 
-		return ResponseEntity.ok(ApiResponse.success(" 게시글 수정 성공!", boardId));
+		return ResponseEntity.ok(ApiResponse.success("게시글 수정 성공!", updatedBoardId));
 	}
-	
-
 	
 	
 }

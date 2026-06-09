@@ -30,6 +30,8 @@ public class BoardVO {
 	private String cmntUseYn; //댓글 허용
 	private Integer viewCnt; // 조회수
 	
+	private String empNm; // 작성자 사원명
+	
 	private String projNm;         // 프로젝트명 (ERD: PROJ_NM)
 	private String projStatCd;     // 프로젝트 상태코드 (ERD: PROJ_STAT_CD)
 	

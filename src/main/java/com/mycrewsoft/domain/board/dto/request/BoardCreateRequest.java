@@ -39,6 +39,13 @@ public class BoardCreateRequest {
 	@Schema(description = "프로젝트 ID (프로젝트 관련 게시글일 경우 입력)", example = "15")
 	private Long projId;
 	
+	public void setProjId(Long projId) {
+	    if (projId != null && projId == 0) {
+	        this.projId = null;
+	    } else {
+	        this.projId = projId;
+	    }
+	}
 	@NotBlank(message = "중요 공지 여부는 필수입니다.")
     @Size(min = 1, max = 1,message = "중요 공지 여부는 1자여야 합니다.") 
 	@Schema(description = "중요 공지 여부 (Y / N)", example = "N", defaultValue = "N")

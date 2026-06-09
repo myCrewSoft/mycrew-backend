@@ -42,7 +42,7 @@ public interface BoardService {
 	Long createBoard(BoardCreateRequest boardCreateRequest);
 	
 	// 게시글 수정
-	Long updateBoardDetail(BoardUpdateRequest boardUpdateRequest);
+	Long updateBoardDetail(Long boardId,BoardUpdateRequest boardUpdateRequest);
 	
 	
 }
