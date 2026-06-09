@@ -71,10 +71,10 @@ public interface BoardMapper {
 			@Param("departmentScopeIds") Set<String> departmentScopeIds
 			);
 
-	// 게시판 읽기  
+	// 게시판 조회 
 	BoardVO readBoard(@Param("boardId") Long boardId);
 	
-	//게시판 댓글 읽기
+	//게시판 댓글 조회
 	List<BoardCommentVO>  readCommentList(@Param("boardId") Long boardId);
 	
 	//게시판 좋아요 읽기
@@ -92,5 +92,7 @@ public interface BoardMapper {
 	 // 게시글 생성
 	 void createBoard(BoardVO boardVo);
 	 
+	 // 게시글 수정
+	  int updateBoardDetails(BoardVO updateBoardDetails);
 	 
 }
