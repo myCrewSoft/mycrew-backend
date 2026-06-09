@@ -14,13 +14,13 @@ public class VideoMomVO {
 	
 	private Long vconfId;			// 화상방 ID(TB_VIDEO_CONF)
 
-	private Long momCn;				// 회의록 내용
+	private String momCn;				// 회의록 내용
 	
 	private LocalDateTime creatDt;	// 생성 일시
 	private LocalDateTime delDt;	// 삭제 일시
 
-	private LocalDateTime momSttusCd;	// 회의록 상태
-	private LocalDateTime edtrId;		// 담당자 ID (TB_MEMBER)
+	private String momSttusCd;	// 회의록 상태
+	private Long edtrId;		// 담당자 ID (TB_MEMBER)
 	
 	private LocalDateTime revwReqDt;	// 검토 요청 발송 일시
 	private LocalDateTime cnfrmDt;		// 정식 등록 일시
