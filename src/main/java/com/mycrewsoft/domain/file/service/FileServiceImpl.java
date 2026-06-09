@@ -27,9 +27,11 @@ import com.mycrewsoft.domain.file.vo.FileDtlVo;
 import com.mycrewsoft.security.util.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FileServiceImpl implements FileService {
 	private final DtoMapper dtoMapper;
 	private final FileMapper mapper;
@@ -199,7 +201,7 @@ public class FileServiceImpl implements FileService {
 		if(!Files.exists(savePath)) {
 			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
 		}
-		
+		log.info("fileExtsn: {}", dtlVo.getFileExtsn());
 		try {
 			return new UrlResource(savePath.toUri());
 		}catch(MalformedURLException e) {
