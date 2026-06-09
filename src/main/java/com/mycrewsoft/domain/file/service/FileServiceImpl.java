@@ -177,6 +177,35 @@ public class FileServiceImpl implements FileService {
 			}
 		}
 	}
+
+	/**
+	 * 이미지 서빙
+	 */
+	@Override
+	public Resource serveImage(Long atchFileDtlId) {
+		//파일 존재 여부 확인
+		FileDtlVo dtlVo = mapper.selectDtlById(atchFileDtlId);
+		if(dtlVo == null || "Y".equals(dtlVo.getDelYn())) {
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}
+		
+		//이미지 파일인지 확인 (첨부파일타입코드 "01" = IMAGE)
+		if(!"01".equals(dtlVo.getAtchFileTyCd())) {
+			throw new CustomException(ErrorCode.INVALID_FILE_TYPE);
+		}
+		
+		//저장 경로 확인
+		Path savePath = Paths.get(dtlVo.getSavePathNm(), dtlVo.getSaveFileNm());
+		if(!Files.exists(savePath)) {
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}
+		
+		try {
+			return new UrlResource(savePath.toUri());
+		}catch(MalformedURLException e) {
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}
+	}
 	
 	
 	

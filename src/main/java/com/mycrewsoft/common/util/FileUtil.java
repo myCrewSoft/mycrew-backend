@@ -138,4 +138,22 @@ public final class FileUtil {
         if (!allowedExtensions.contains(extension))
             throw new CustomException(ErrorCode.INVALID_FILE_TYPE);
     }
+    
+    /**
+     * 이미지 확장자를 Content-Type 문자열로 변환한다.
+     * 예) "jpg" → "image/jpeg"
+     *
+     * @param ext 소문자 확장자
+     * @return Content-Type 문자열
+     * @throws CustomException 이미지 확장자가 아니면 INVALID_FILE_TYPE
+     */
+    public static String resolveImageContentType(String ext) {
+        return switch (ext) {
+            case "jpg", "jpeg" -> "image/jpeg";
+            case "png"         -> "image/png";
+            case "gif"         -> "image/gif";
+            case "webp"        -> "image/webp";
+            default            -> throw new CustomException(ErrorCode.INVALID_FILE_TYPE);
+        };
+    }
 }
