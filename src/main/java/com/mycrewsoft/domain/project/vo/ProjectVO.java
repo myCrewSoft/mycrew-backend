@@ -24,8 +24,9 @@ public class ProjectVO {
 	private LocalDateTime projCreatDt;		//프로젝트 생성날짜
 	private LocalDateTime projMdfcnDt;		//프로젝트 수정날짜
 	private LocalDateTime projStatChgDt;	//프로젝트 상태코드 변경날짜
-	private Long projLdrEmpId;			//프로젝트 리더 아이디
+	private Long projLdrEmpId;				//프로젝트 리더 아이디
 	private Long projAtchFileId;			//프로젝트 첨부파일 아이디
+	private Integer projPrgrsRt;			//프로젝트 진척률
 	
 	// Has
 	private List<TaskVO> taskList;	

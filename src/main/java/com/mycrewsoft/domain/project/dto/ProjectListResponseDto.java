@@ -25,4 +25,7 @@ public class ProjectListResponseDto {
 
     @Schema(description = "프로젝트 장 이름", example = "홍길동")
     private String projLdrNm;
+    
+    @Schema(description = "프로젝트 진척률", example = "100")
+    private Integer projPrgrsRt;
 }
