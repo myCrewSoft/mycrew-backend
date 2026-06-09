@@ -35,12 +35,20 @@ public class GoogleOAuthService {
     private final SecureRandom secureRandom = new SecureRandom();
 
     public GoogleOAuthAuthorizeResponse createAuthorizationUrl(Long empId) {
+        return createAuthorizationUrl(empId, null);
+    }
+
+    public GoogleOAuthAuthorizeResponse createAuthorizationUrl(Long empId, String context) {
+        return createAuthorizationUrl(empId, context, null);
+    }
+
+    public GoogleOAuthAuthorizeResponse createAuthorizationUrl(Long empId, String context, String emailAddr) {
         if (empId == null) {
             throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
 
         String state = createState();
-        stateStore.save(state, empId);
+        stateStore.save(state, empId, normalizeContext(context), normalizeEmailAddr(emailAddr));
 
         String authorizationUrl = UriComponentsBuilder.fromUriString(AUTHORIZATION_URI)
                 .queryParam("client_id", properties.getClientId())
@@ -62,9 +70,13 @@ public class GoogleOAuthService {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
         
-        Long empId = stateStore.consume(state);
+        GoogleOAuthState oauthState = stateStore.consume(state);
+        Long empId = oauthState.empId();
         GoogleTokenResponse token = googleOAuthClient.exchangeCode(code);
         GoogleUserInfoResponse userInfo = googleOAuthClient.fetchUserInfo(token.getAccessToken());
+        if (!requestedEmailMatches(oauthState, userInfo)) {
+            return failureUri(oauthState.context());
+        }
 
         MailAccountVO mailAccount = new MailAccountVO();
         mailAccount.setEmpId(empId);
@@ -81,7 +93,7 @@ public class GoogleOAuthService {
         mailAccount.setFrstRegDt(LocalDateTime.now());
 
         mailAccountMapper.upsertGoogleMailAccount(mailAccount);
-        return properties.getFrontendSuccessUri();
+        return successUri(oauthState.context());
     }
 
     private String createState() {
@@ -94,6 +106,48 @@ public class GoogleOAuthService {
         StringJoiner joiner = new StringJoiner(" ");
         properties.getScopes().forEach(joiner::add);
         return joiner.toString();
+    }
+
+    private String normalizeContext(String context) {
+        if (!StringUtils.hasText(context)) {
+            return null;
+        }
+        String trimmed = context.trim();
+        if ("mail".equalsIgnoreCase(trimmed)) {
+            return "mail";
+        }
+        if ("mypage-email".equalsIgnoreCase(trimmed)) {
+            return "mypage-email";
+        }
+        return null;
+    }
+
+    private String successUri(String context) {
+        if ("mail".equals(context) && StringUtils.hasText(properties.getFrontendMailSuccessUri())) {
+            return properties.getFrontendMailSuccessUri();
+        }
+        if ("mypage-email".equals(context) && StringUtils.hasText(properties.getFrontendMyPageSuccessUri())) {
+            return properties.getFrontendMyPageSuccessUri();
+        }
+        return properties.getFrontendSuccessUri();
+    }
+
+    private String failureUri(String context) {
+        if ("mypage-email".equals(context) && StringUtils.hasText(properties.getFrontendMyPageFailureUri())) {
+            return properties.getFrontendMyPageFailureUri();
+        }
+        return properties.getFrontendFailureUri();
+    }
+
+    private String normalizeEmailAddr(String emailAddr) {
+        return StringUtils.hasText(emailAddr) ? emailAddr.trim() : null;
+    }
+
+    private boolean requestedEmailMatches(GoogleOAuthState oauthState, GoogleUserInfoResponse userInfo) {
+        if (!StringUtils.hasText(oauthState.emailAddr())) {
+            return true;
+        }
+        return userInfo != null && oauthState.emailAddr().equalsIgnoreCase(userInfo.getEmail());
     }
 
     private LocalDateTime expiresAt(Long expiresIn) {

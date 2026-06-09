@@ -10,7 +10,7 @@ import lombok.Setter;
 public class MsngrChtrmPtcptVO {
 	private Long chtrmId;			// 채팅방 ID(MSNGR_CHTRM) - PK, FK
 	
-	private Long cbrId;				// 참여자 ID(TB_MEMBER)
+	private Long empId;				// 참여자 ID(TB_MEMBER) - PK, FK
 	private String ptcptSttusCd;	// 참여자 상태(로그인, 비로그인, 자리비움)
 	private Long lastCfmtnMsgId;	// 마지막 확인 메시지(MSNGR_MSG)
 	

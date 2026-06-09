@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.project.mapper.ProjectMapper">
+<insert id="insertProject">
+	<selectKey keyProperty="projId" resultType="long" order="BEFORE">
+		SELECT SEQ_PROJ_ID.NEXTVAL FROM DUAL
+	</selectKey>
+	INSERT INTO TB_PROJECT (
+		PROJ_ID,
+		CHTRM_ID,
+		PROJ_NM,
+		PROJ_CN,
+		PROJ_BGNG_YMD,
+		PROJ_END_YMD,
+		PROJ_STAT_CD,
+		PROJ_CREAT_DT,
+		PROJ_LDR_EMP_ID
+	) VALUES (
+		#{projId},
+        #{chtrmId},
+        #{projNm},
+        #{projCn},
+        #{projBgngYmd},
+        #{projEndYmd},
+        '01',
+        SYSDATE,
+        #{projLdrEmpId}
+	)
+</insert>
+
+<select id="selectProjectList" resultType="com.mycrewsoft.domain.project.vo.ProjectVO">
+	SELECT
+        P.PROJ_ID,
+        P.PROJ_NM,
+        P.PROJ_BGNG_YMD,
+        P.PROJ_END_YMD,
+        CASE
+            WHEN P.PROJ_STAT_CD = '01'
+             AND P.PROJ_BGNG_YMD &lt;= TRUNC(SYSDATE)
+            THEN '02'
+            ELSE P.PROJ_STAT_CD
+        END AS PROJ_STAT_CD,
+        E.EMP_NM AS PROJ_LDR_NM
+    FROM TB_PROJECT P
+    JOIN TB_PROJ_MEMBER PM
+        ON PM.PROJ_ID   = P.PROJ_ID
+       AND PM.EMP_ID    = #{empId}
+       AND PM.LEAVE_DT IS NULL
+    JOIN TB_EMPLOYEE E
+        ON E.EMP_ID = P.PROJ_LDR_EMP_ID
+    ORDER BY P.PROJ_CREAT_DT DESC
+</select>
+
+<update id="updateProjStateToInProgress">
+	UPDATE TB_PROJECT
+	SET 
+		PROJ_STAT_CD = '02',
+		PROJ_STAT_CHG_DT = SYSDATE
+	WHERE PROJ_STAT_CD = '01'
+	  AND TRUNC(PROJ_BGNG_YMD) &lt;= TRUNC(SYSDATE)
+</update>
+</mapper>

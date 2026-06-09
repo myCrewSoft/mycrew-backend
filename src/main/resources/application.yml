@@ -38,7 +38,7 @@ spring:
   ai:
     openai:
 # ▶ 사내 LM Studio 주소
-      base-url: http://192.168.35.112:1234
+      base-url: http://192.168.35.100:1234
       api-key: dummy
 
       chat:
@@ -109,14 +109,22 @@ google:
     redirect-uri: http://localhost/api/mail/oauth/google/callback
     frontend-success-uri: http://localhost:5173/first-login?mailConnected=Y
     frontend-failure-uri: http://localhost:5173/first-login?mailConnected=N
+    frontend-mail-success-uri: http://localhost:5173/mail
+    frontend-my-page-success-uri: http://localhost:5173/mypage?mailConnected=Y
+    frontend-my-page-failure-uri: http://localhost:5173/mypage?mailConnected=N
     scopes:
       - openid
       - email
       - profile
       - https://www.googleapis.com/auth/gmail.readonly
       - https://www.googleapis.com/auth/gmail.send
+      - https://www.googleapis.com/auth/gmail.modify
+      - https://mail.google.com/
 
 springdoc:
   swagger-ui:
     path: /swagger-ui/index.html
     url: /api/v3/api-docs
+
+websocket:
+  allowed-origins: http://localhost:5173

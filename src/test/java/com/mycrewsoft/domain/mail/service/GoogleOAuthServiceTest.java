@@ -23,9 +23,10 @@ class GoogleOAuthServiceTest {
         FakeMailAccountMapper mapper = new FakeMailAccountMapper();
         GoogleOAuthService service = newService(stateStore, mapper, new FakeGoogleOAuthClient());
 
-        GoogleOAuthAuthorizeResponse response = service.createAuthorizationUrl(1001L);
+        GoogleOAuthAuthorizeResponse response = service.createAuthorizationUrl(1001L, null);
 
         assertThat(stateStore.savedEmpId).isEqualTo(1001L);
+        assertThat(stateStore.savedContext).isNull();
         assertThat(response.getAuthorizationUrl())
                 .contains("https://accounts.google.com/o/oauth2/v2/auth")
                 .contains("client_id=test-client")
@@ -38,7 +39,7 @@ class GoogleOAuthServiceTest {
     @Test
     void callbackExchangesCodeAndStoresGoogleMailAccount() {
         FakeStateStore stateStore = new FakeStateStore();
-        stateStore.save("state-1", 1001L);
+        stateStore.save("state-1", 1001L, null);
         FakeMailAccountMapper mapper = new FakeMailAccountMapper();
         FakeGoogleOAuthClient client = new FakeGoogleOAuthClient();
         GoogleOAuthService service = newService(stateStore, mapper, client);
@@ -56,6 +57,47 @@ class GoogleOAuthServiceTest {
         assertThat(redirectUri).isEqualTo("http://localhost:5173/first-login?mailConnected=Y");
     }
 
+    @Test
+    void callbackRedirectsToMailWhenAuthorizationStartedFromMailContext() {
+        FakeStateStore stateStore = new FakeStateStore();
+        FakeMailAccountMapper mapper = new FakeMailAccountMapper();
+        GoogleOAuthService service = newService(stateStore, mapper, new FakeGoogleOAuthClient());
+
+        service.createAuthorizationUrl(1001L, "mail");
+        String redirectUri = service.handleCallback("auth-code", stateStore.savedState);
+
+        assertThat(stateStore.savedContext).isEqualTo("mail");
+        assertThat(redirectUri).isEqualTo("http://localhost:5173/mail");
+    }
+
+    @Test
+    void callbackRedirectsToMyPageWhenRequestedEmailMatchesGoogleAccount() {
+        FakeStateStore stateStore = new FakeStateStore();
+        FakeMailAccountMapper mapper = new FakeMailAccountMapper();
+        GoogleOAuthService service = newService(stateStore, mapper, new FakeGoogleOAuthClient());
+
+        service.createAuthorizationUrl(1001L, "mypage-email", "person@gmail.com");
+        String redirectUri = service.handleCallback("auth-code", stateStore.savedState);
+
+        assertThat(stateStore.savedContext).isEqualTo("mypage-email");
+        assertThat(stateStore.savedEmailAddr).isEqualTo("person@gmail.com");
+        assertThat(mapper.saved.getEmailAddr()).isEqualTo("person@gmail.com");
+        assertThat(redirectUri).isEqualTo("http://localhost:5173/mypage?mailConnected=Y");
+    }
+
+    @Test
+    void callbackRejectsMyPageEmailChangeWhenRequestedEmailDiffersFromGoogleAccount() {
+        FakeStateStore stateStore = new FakeStateStore();
+        FakeMailAccountMapper mapper = new FakeMailAccountMapper();
+        GoogleOAuthService service = newService(stateStore, mapper, new FakeGoogleOAuthClient());
+
+        service.createAuthorizationUrl(1001L, "mypage-email", "other@gmail.com");
+        String redirectUri = service.handleCallback("auth-code", stateStore.savedState);
+
+        assertThat(redirectUri).isEqualTo("http://localhost:5173/mypage?mailConnected=N");
+        assertThat(mapper.saved).isNull();
+    }
+
     private GoogleOAuthService newService(
             GoogleOAuthStateStore stateStore,
             MailAccountMapper mapper,
@@ -66,6 +108,9 @@ class GoogleOAuthServiceTest {
         properties.setRedirectUri("http://localhost/api/mail/oauth/google/callback");
         properties.setFrontendSuccessUri("http://localhost:5173/first-login?mailConnected=Y");
         properties.setFrontendFailureUri("http://localhost:5173/first-login?mailConnected=N");
+        properties.setFrontendMailSuccessUri("http://localhost:5173/mail");
+        properties.setFrontendMyPageSuccessUri("http://localhost:5173/mypage?mailConnected=Y");
+        properties.setFrontendMyPageFailureUri("http://localhost:5173/mypage?mailConnected=N");
         properties.setScopes(List.of(
                 "openid",
                 "email",
@@ -78,16 +123,30 @@ class GoogleOAuthServiceTest {
     private static class FakeStateStore implements GoogleOAuthStateStore {
         private String savedState;
         private Long savedEmpId;
+        private String savedContext;
+        private String savedEmailAddr;
 
         @Override
         public void save(String state, Long empId) {
-            this.savedState = state;
-            this.savedEmpId = empId;
+            save(state, empId, null);
         }
 
         @Override
-        public Long consume(String state) {
-            return savedEmpId;
+        public void save(String state, Long empId, String context) {
+            save(state, empId, context, null);
+        }
+
+        @Override
+        public void save(String state, Long empId, String context, String emailAddr) {
+            this.savedState = state;
+            this.savedEmpId = empId;
+            this.savedContext = context;
+            this.savedEmailAddr = emailAddr;
+        }
+
+        @Override
+        public GoogleOAuthState consume(String state) {
+            return new GoogleOAuthState(savedEmpId, savedContext, savedEmailAddr);
         }
     }
 

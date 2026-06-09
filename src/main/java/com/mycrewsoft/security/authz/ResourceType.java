@@ -18,6 +18,8 @@ public enum ResourceType {
     TASK,
     SCHEDULE,
     DRIVE,
+    MAIL,
     APPROVAL,
-    EMPLOYEE
+    EMPLOYEE,
+    DEPARTMENT
 }

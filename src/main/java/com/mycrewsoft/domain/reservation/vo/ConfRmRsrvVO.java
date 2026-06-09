@@ -13,7 +13,7 @@ public class ConfRmRsrvVO {
 	
 	private Long confRmId;			// 회의실 ID - FK
 	
-	private Long rsrvMberId;		// 예약자 ID(TB_MEMBER)
+	private Long rsrvEmpId;		// 예약자 ID(TB_EMPLOYEE)
 	private String rsrvPurps;		// 예약 목적
 	private LocalDateTime beginDt;	// 시작 일시
 	private LocalDateTime endDt;	// 종료 일시

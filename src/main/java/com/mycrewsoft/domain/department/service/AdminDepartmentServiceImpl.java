@@ -1,0 +1,281 @@
+package com.mycrewsoft.domain.department.service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import com.mycrewsoft.common.constant.PermissionCode;
+import com.mycrewsoft.common.exception.CustomException;
+import com.mycrewsoft.common.exception.ErrorCode;
+import com.mycrewsoft.domain.department.dto.request.DepartmentCreateRequestDTO;
+import com.mycrewsoft.domain.department.dto.request.DepartmentDeleteRequestDTO;
+import com.mycrewsoft.domain.department.dto.request.DepartmentMemberAssignRequestDTO;
+import com.mycrewsoft.domain.department.dto.request.DepartmentMemberTransferRequestDTO;
+import com.mycrewsoft.domain.department.dto.request.DepartmentUpdateRequestDTO;
+import com.mycrewsoft.domain.department.dto.response.AdminDepartmentMemberResponseDTO;
+import com.mycrewsoft.domain.department.dto.response.AdminDepartmentResponseDTO;
+import com.mycrewsoft.domain.department.dto.response.DepartmentMemberMutationResponseDTO;
+import com.mycrewsoft.domain.department.mapper.AdminDepartmentMapper;
+import com.mycrewsoft.domain.department.vo.DepartmentVO;
+import com.mycrewsoft.security.authz.AuthorizationService;
+import com.mycrewsoft.security.authz.ResourceContext;
+import com.mycrewsoft.security.authz.ResourceType;
+import com.mycrewsoft.security.rbac.RbacAuthorizationChangeService;
+import com.mycrewsoft.security.util.SecurityUtil;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class AdminDepartmentServiceImpl implements AdminDepartmentService {
+
+    private final AdminDepartmentMapper departmentMapper;
+    private final AuthorizationService authorizationService;
+    private final RbacAuthorizationChangeService rbacAuthorizationChangeService;
+
+    @Override
+    @Transactional
+    public AdminDepartmentResponseDTO createDepartment(DepartmentCreateRequestDTO request) {
+        assertDepartmentPermission(PermissionCode.ADMIN_DEPT_CREATE, null);
+        validateCreateRequest(request);
+
+        String deptCd = StringUtils.hasText(request.getDeptCd())
+                ? normalizeDepartmentCode(request.getDeptCd().trim())
+                : departmentMapper.selectNextDepartmentCode();
+        if (departmentMapper.countActiveDepartmentByCode(deptCd) > 0) {
+            throw new CustomException(ErrorCode.DUPLICATE_DEPARTMENT_CODE);
+        }
+
+        String parentDeptCd = normalizeNullableCode(request.getParentDeptCd());
+        if (parentDeptCd != null) {
+            assertActiveDepartment(parentDeptCd);
+        }
+
+        Long currentEmpId = SecurityUtil.getCurrentEmpId();
+        DepartmentVO department = new DepartmentVO();
+        department.setDeptCd(deptCd);
+        department.setPrntDeptCd(parentDeptCd);
+        department.setDeptNm(request.getDeptNm().trim());
+        department.setUseYn("Y");
+        department.setFrstRgtrId(currentEmpId);
+        department.setFrstRegDt(LocalDateTime.now());
+        department.setLastMdfrId(currentEmpId);
+        department.setLastMdfcnDt(LocalDateTime.now());
+
+        departmentMapper.insertDepartment(department);
+        return loadDepartment(deptCd);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AdminDepartmentResponseDTO> getDepartmentList() {
+        assertDepartmentPermission(PermissionCode.ADMIN_DEPT_READ, null);
+        return departmentMapper.selectDepartments();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AdminDepartmentResponseDTO getDepartment(String deptCd) {
+        String normalizedDeptCd = normalizeCode(deptCd);
+        assertDepartmentPermission(PermissionCode.ADMIN_DEPT_READ, normalizedDeptCd);
+        return loadDepartment(normalizedDeptCd);
+    }
+
+    @Override
+    @Transactional
+    public AdminDepartmentResponseDTO updateDepartment(String deptCd, DepartmentUpdateRequestDTO request) {
+        String normalizedDeptCd = normalizeCode(deptCd);
+        assertDepartmentPermission(PermissionCode.ADMIN_DEPT_UPDATE, normalizedDeptCd);
+        validateUpdateRequest(request);
+        loadDepartment(normalizedDeptCd);
+
+        String parentDeptCd = normalizeNullableCode(request.getParentDeptCd());
+        if (parentDeptCd != null) {
+            assertActiveDepartment(parentDeptCd);
+            if (Objects.equals(normalizedDeptCd, parentDeptCd)
+                    || departmentMapper.countDescendantDepartment(normalizedDeptCd, parentDeptCd) > 0) {
+                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            }
+        }
+
+        DepartmentVO department = new DepartmentVO();
+        department.setDeptCd(normalizedDeptCd);
+        department.setPrntDeptCd(parentDeptCd);
+        department.setDeptNm(request.getDeptNm().trim());
+        department.setLastMdfrId(SecurityUtil.getCurrentEmpId());
+        department.setLastMdfcnDt(LocalDateTime.now());
+
+        departmentMapper.updateDepartment(department);
+        return loadDepartment(normalizedDeptCd);
+    }
+
+    @Override
+    @Transactional
+    public void deleteDepartment(String deptCd, DepartmentDeleteRequestDTO request) {
+        String normalizedDeptCd = normalizeCode(deptCd);
+        assertDepartmentPermission(PermissionCode.ADMIN_DEPT_DELETE, normalizedDeptCd);
+        loadDepartment(normalizedDeptCd);
+
+        if (departmentMapper.countChildDepartments(normalizedDeptCd) > 0) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        List<Long> affectedEmpIds = nullToEmpty(departmentMapper.selectEnabledEmpIdsByDeptCd(normalizedDeptCd));
+        if (!affectedEmpIds.isEmpty()) {
+            String replacementDeptCd = normalizeReplacementDeptCd(request, normalizedDeptCd);
+            assertActiveDepartment(replacementDeptCd);
+            departmentMapper.updateDepartmentForAllEmployees(normalizedDeptCd, replacementDeptCd);
+        }
+
+        departmentMapper.disableDepartment(normalizedDeptCd, SecurityUtil.getCurrentEmpId());
+        if (!affectedEmpIds.isEmpty()) {
+            rbacAuthorizationChangeService.refreshEmployeesPermissions(affectedEmpIds);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AdminDepartmentMemberResponseDTO> getDepartmentMembers(String deptCd) {
+        String normalizedDeptCd = normalizeCode(deptCd);
+        assertDepartmentPermission(PermissionCode.ADMIN_DEPT_READ, normalizedDeptCd);
+        loadDepartment(normalizedDeptCd);
+        return departmentMapper.selectDepartmentMembers(normalizedDeptCd);
+    }
+
+    @Override
+    @Transactional
+    public DepartmentMemberMutationResponseDTO assignDepartmentMembers(
+            String deptCd,
+            DepartmentMemberAssignRequestDTO request) {
+        String normalizedDeptCd = normalizeCode(deptCd);
+        assertDepartmentPermission(PermissionCode.ADMIN_DEPT_MEMBER_MANAGE, normalizedDeptCd);
+        loadDepartment(normalizedDeptCd);
+        List<Long> empIds = normalizeEmpIds(request == null ? null : request.getEmpIds());
+        validateEnabledEmployees(empIds);
+
+        departmentMapper.updateDepartmentForEmployees(normalizedDeptCd, empIds);
+        rbacAuthorizationChangeService.refreshEmployeesPermissions(empIds);
+        return new DepartmentMemberMutationResponseDTO(null, normalizedDeptCd, empIds.size());
+    }
+
+    @Override
+    @Transactional
+    public DepartmentMemberMutationResponseDTO transferDepartmentMembers(
+            String deptCd,
+            DepartmentMemberTransferRequestDTO request) {
+        String sourceDeptCd = normalizeCode(deptCd);
+        assertDepartmentPermission(PermissionCode.ADMIN_DEPT_MEMBER_MANAGE, sourceDeptCd);
+        if (request == null || !StringUtils.hasText(request.getTargetDeptCd())) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        String targetDeptCd = normalizeCode(request.getTargetDeptCd());
+        if (Objects.equals(sourceDeptCd, targetDeptCd)) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        loadDepartment(sourceDeptCd);
+        loadDepartment(targetDeptCd);
+
+        List<Long> empIds = normalizeEmpIds(request.getEmpIds());
+        if (departmentMapper.countEmployeesByDeptAndIds(sourceDeptCd, empIds) != empIds.size()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        departmentMapper.updateDepartmentForEmployees(targetDeptCd, empIds);
+        rbacAuthorizationChangeService.refreshEmployeesPermissions(empIds);
+        return new DepartmentMemberMutationResponseDTO(sourceDeptCd, targetDeptCd, empIds.size());
+    }
+
+    private void assertDepartmentPermission(PermissionCode permissionCode, String deptCd) {
+        ResourceContext.ResourceContextBuilder builder = ResourceContext.builder()
+                .resourceType(ResourceType.DEPARTMENT);
+        if (deptCd != null) {
+            builder.deptCd(deptCd).resourceId(deptCd);
+        }
+        authorizationService.assertCurrentUserPermission(permissionCode, builder.build());
+    }
+
+    private AdminDepartmentResponseDTO loadDepartment(String deptCd) {
+        AdminDepartmentResponseDTO department = departmentMapper.selectDepartmentByCode(deptCd);
+        if (department == null) {
+            throw new CustomException(ErrorCode.DEPARTMENT_NOT_FOUND);
+        }
+        return department;
+    }
+
+    private void assertActiveDepartment(String deptCd) {
+        if (departmentMapper.countActiveDepartmentByCode(deptCd) == 0) {
+            throw new CustomException(ErrorCode.DEPARTMENT_NOT_FOUND);
+        }
+    }
+
+    private void validateCreateRequest(DepartmentCreateRequestDTO request) {
+        if (request == null || !StringUtils.hasText(request.getDeptNm())) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private void validateUpdateRequest(DepartmentUpdateRequestDTO request) {
+        if (request == null || !StringUtils.hasText(request.getDeptNm())) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private String normalizeCode(String code) {
+        if (!StringUtils.hasText(code)) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return normalizeDepartmentCode(code.trim());
+    }
+
+    private String normalizeNullableCode(String code) {
+        return StringUtils.hasText(code) ? normalizeDepartmentCode(code.trim()) : null;
+    }
+
+    private String normalizeDepartmentCode(String code) {
+        if (!code.startsWith("DEPT_")) {
+            return code;
+        }
+
+        String numberPart = code.substring("DEPT_".length());
+        if (!numberPart.matches("\\d{1,3}")) {
+            return code;
+        }
+
+        return "DEPT_" + String.format("%03d", Integer.parseInt(numberPart));
+    }
+
+    private String normalizeReplacementDeptCd(DepartmentDeleteRequestDTO request, String deptCd) {
+        if (request == null || !StringUtils.hasText(request.getReplacementDeptCd())) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        String replacementDeptCd = normalizeDepartmentCode(request.getReplacementDeptCd().trim());
+        if (Objects.equals(deptCd, replacementDeptCd)) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return replacementDeptCd;
+    }
+
+    private List<Long> normalizeEmpIds(List<Long> empIds) {
+        if (empIds == null || empIds.isEmpty() || empIds.stream().anyMatch(Objects::isNull)) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return empIds.stream().distinct().toList();
+    }
+
+    private void validateEnabledEmployees(List<Long> empIds) {
+        if (departmentMapper.countEnabledEmployeesByIds(empIds) != empIds.size()) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+    }
+
+    private List<Long> nullToEmpty(List<Long> values) {
+        return values == null ? List.of() : values;
+    }
+}
