@@ -16,4 +16,15 @@
     </foreach>
     SELECT 1 FROM DUAL
 </insert>
+
+<select id="selectProjectMemberList" resultType="com.mycrewsoft.domain.projectmember.vo.ProjectMemberVO">
+	SELECT
+		EMP_ID,
+		PROJ_ID,
+		JOIN_DT,
+		LEAVE_DT
+	FROM TB_PROJ_MEMBER
+	WHERE PROJ_ID = #{projId}
+		AND LEAVE_DT IS NULL
+</select>
 </mapper>

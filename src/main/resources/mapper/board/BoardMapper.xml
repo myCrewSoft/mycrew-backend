@@ -7,6 +7,7 @@
 
 <result property="projNm" column="PROJ_NM" />
 		<result property="projStatCd" column="PROJ_STAT_CD" />
+		<result property="empNm" column="EMP_NM" />
 
       </resultMap>
 
@@ -40,20 +41,22 @@
    <!-- 게시판 조회 -->
    <select id="getBoardList" resultType="com.mycrewsoft.domain.board.dto.response.BoardResponse">
       SELECT
-      BOARD_ID
-      ,BOARD_TYPE_CD
-      ,BOARD_SJ
-      ,BOARD_CN
-      ,FRST_RGTR_ID
-      ,FRST_REG_DT
-      ,LAST_MDFR_DT
-      ,BOARD_ATCH_FILE_ID
-      ,TRIM(DEPT_CD) AS DEPT_CD
-      ,PROJ_ID
-      ,IMPRTNT_YN
-      ,CMNT_USE_YN
-      ,VIEW_CNT
+      B.BOARD_ID
+      ,B.BOARD_TYPE_CD
+      ,B.BOARD_SJ
+      ,B.BOARD_CN
+      ,B.FRST_RGTR_ID
+      ,E.EMP_NM AS empNm
+      ,B.FRST_REG_DT
+      ,B.LAST_MDFR_DT
+      ,B.BOARD_ATCH_FILE_ID
+      ,TRIM(B.DEPT_CD) AS DEPT_CD
+      ,B.PROJ_ID
+      ,B.IMPRTNT_YN
+      ,B.CMNT_USE_YN
+      ,B.VIEW_CNT
       FROM tb_board B
+      LEFT JOIN TB_EMPLOYEE E ON B.FRST_RGTR_ID = E.EMP_ID
       WHERE 1 = 1
          <!-- 1. 기본 게시판 타입 조건 -->
           <if test="boardTypeCd != null and boardTypeCd != ''">
@@ -128,21 +131,23 @@
    
    <select id="readBoard" resultMap="BoardMap">
       SELECT 
-         BOARD_ID
-         ,BOARD_TYPE_CD
-         ,BOARD_SJ
-         ,BOARD_CN
-         ,FRST_RGTR_ID
-         ,FRST_REG_DT
-         ,LAST_MDFR_DT
-         ,BOARD_ATCH_FILE_ID
-         ,DEPT_CD
-         ,PROJ_ID
-         ,IMPRTNT_YN
-         ,CMNT_USE_YN
-         ,VIEW_CNT
-      FROM tb_board
-      WHERE BOARD_ID = #{boardId}
+         B.BOARD_ID
+         ,B.BOARD_TYPE_CD
+         ,B.BOARD_SJ
+         ,B.BOARD_CN
+         ,B.FRST_RGTR_ID
+         ,E.EMP_NM
+         ,B.FRST_REG_DT
+         ,B.LAST_MDFR_DT
+         ,B.BOARD_ATCH_FILE_ID
+         ,B.DEPT_CD
+         ,B.PROJ_ID
+         ,B.IMPRTNT_YN
+         ,B.CMNT_USE_YN
+         ,B.VIEW_CNT
+      FROM tb_board B
+      LEFT JOIN TB_EMPLOYEE E ON B.FRST_RGTR_ID = E.EMP_ID
+      WHERE B.BOARD_ID = #{boardId}
    </select>
    
    
@@ -192,13 +197,14 @@
    </select>
 
 
-<select id="getProjList" resultMap="BoardMap">
+<select id="getProjList" resultType="com.mycrewsoft.domain.board.dto.response.BoardResponse">
 		SELECT
 		b.BOARD_ID,
 		b.BOARD_TYPE_CD,
 		b.BOARD_SJ,
 		b.BOARD_CN,
 		b.FRST_RGTR_ID,
+		e.EMP_NM AS empNm,
 		b.FRST_REG_DT,
 		b.LAST_MDFR_DT,
 		b.BOARD_ATCH_FILE_ID,
@@ -209,6 +215,7 @@
 		p.PROJ_ID,
 		p.PROJ_NM, p.PROJ_STAT_CD FROM TB_BOARD b
 		INNER JOIN TB_PROJECT p ON b.PROJ_ID = p.PROJ_ID
+		LEFT JOIN TB_EMPLOYEE e ON b.FRST_RGTR_ID = e.EMP_ID
 		WHERE p.PROJ_ID = #{projId}
 		ORDER BY b.FRST_REG_DT DESC
 		OFFSET #{getOffset} ROWS FETCH NEXT #{getPageSize} ROWS ONLY
@@ -244,13 +251,37 @@
 	        SYSDATE,
 	        #{boardAtchFileId},
 	        #{deptCd},
-	        #{projId},
+	       #{projId},
 	        #{imprtntYn},
 	        #{cmntUseYn},
 	        0                                          
 	     )
 	</insert>
-
-   
+	
+	<update id="updateBoardDetails" parameterType="com.mycrewsoft.domain.board.vo.BoardVO">
+	    /* 게시글 상세 수정 (Oracle) - updateBoardDetails */
+	    UPDATE TB_BOARD
+	    <set>
+	        <if test="boardSj != null and boardSj != ''">
+	            BOARD_SJ = #{boardSj},
+	        </if>
+	        
+	        <if test="boardCn != null and boardCn != ''">
+	            BOARD_CN = #{boardCn},
+	        </if>
+	        
+	        <if test="boardAtchFileId != null">
+	            BOARD_ATCH_FILE_ID = #{boardAtchFileId},
+	        </if>
+	        
+	        <if test="boardTypeCd != null and boardTypeCd != ''">
+	            BOARD_TYPE_CD = #{boardTypeCd},
+	        </if>
+	        
+	        LAST_MDFR_DT = SYSDATE
+	    </set>
+	    WHERE BOARD_ID = #{boardId}
+	</update>
+	 
    
 </mapper>

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute; // 💡 @ModelAttribute 명시 권장
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.board.dto.request.BoardCreateRequest;
 import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
+import com.mycrewsoft.domain.board.dto.request.BoardUpdateRequest;
 import com.mycrewsoft.domain.board.dto.response.BoardResponse;
 import com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse;
 import com.mycrewsoft.domain.board.service.BoardService;
@@ -122,10 +124,22 @@ public class BoardController {
 
 		Long boardId = service.createBoard(boardCreateRequest);
 
-		return ResponseEntity.ok(ApiResponse.success("부서 게시글 상세 조회 성공!", boardId));
+		return ResponseEntity.ok(ApiResponse.success("게시글 생성 성공!", boardId));
 	}
 	
 
+	@Operation(summary = "게시글 수정")
+	@PutMapping("/{boardId}")
+	public ResponseEntity<ApiResponse<Long>> updateBoardDetail(
+		@PathVariable Long boardId, 
+		@Valid @RequestBody BoardUpdateRequest boardUpdateDetail
+	) {
+		
+
+		Long updatedBoardId = service.updateBoardDetail(boardId,boardUpdateDetail);
+
+		return ResponseEntity.ok(ApiResponse.success("게시글 수정 성공!", updatedBoardId));
+	}
 	
 	
 }

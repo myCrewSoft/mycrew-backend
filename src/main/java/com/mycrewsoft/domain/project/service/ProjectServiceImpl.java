@@ -80,6 +80,9 @@ public class ProjectServiceImpl implements ProjectService{
 		if(memberResult == 0) throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
 	}
 
+	/**
+	 * 프로젝트 전체 목록 조회(본인 참여 프로젝트 목록)
+	 */
 	@Override
 	public List<ProjectListResponseDto> getProjectList() {
 		//권한 체크
