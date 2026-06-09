@@ -6,6 +6,7 @@ import java.util.Set;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param; // 💡 반드시 org.apache.ibatis.annotations.Param 이어야 합니다!
 
+import com.mycrewsoft.domain.board.dto.request.BoardCreateRequest;
 import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
 import com.mycrewsoft.domain.board.dto.response.BoardResponse;
 import com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse;
@@ -86,4 +87,10 @@ public interface BoardMapper {
 	 
 	 // 좋아요 수 
 	 int  readLikeCount(@Param("boardId") Long boardId);
+	 
+	 
+	 // 게시글 생성
+	 void createBoard(BoardVO boardVo);
+	 
+	 
 }
