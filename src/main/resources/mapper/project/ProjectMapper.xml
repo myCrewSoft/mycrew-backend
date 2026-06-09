@@ -14,7 +14,8 @@
 		PROJ_END_YMD,
 		PROJ_STAT_CD,
 		PROJ_CREAT_DT,
-		PROJ_LDR_EMP_ID
+		PROJ_LDR_EMP_ID,
+		PROJ_PRGRS_RT
 	) VALUES (
 		#{projId},
         #{chtrmId},
@@ -24,31 +25,53 @@
         #{projEndYmd},
         '01',
         SYSDATE,
-        #{projLdrEmpId}
+        #{projLdrEmpId},
+        0
 	)
 </insert>
 
 <select id="selectProjectList" resultType="com.mycrewsoft.domain.project.vo.ProjectVO">
 	SELECT
-        P.PROJ_ID,
-        P.PROJ_NM,
-        P.PROJ_BGNG_YMD,
-        P.PROJ_END_YMD,
-        CASE
-            WHEN P.PROJ_STAT_CD = '01'
-             AND P.PROJ_BGNG_YMD &lt;= TRUNC(SYSDATE)
-            THEN '02'
-            ELSE P.PROJ_STAT_CD
-        END AS PROJ_STAT_CD,
-        E.EMP_NM AS PROJ_LDR_NM
-    FROM TB_PROJECT P
-    JOIN TB_PROJ_MEMBER PM
-        ON PM.PROJ_ID   = P.PROJ_ID
-       AND PM.EMP_ID    = #{empId}
-       AND PM.LEAVE_DT IS NULL
-    JOIN TB_EMPLOYEE E
-        ON E.EMP_ID = P.PROJ_LDR_EMP_ID
-    ORDER BY P.PROJ_CREAT_DT DESC
+	    P.PROJ_ID,
+	    P.PROJ_NM,
+	    P.PROJ_BGNG_YMD,
+	    P.PROJ_END_YMD,
+	    CASE
+	        WHEN P.PROJ_STAT_CD = '01'
+	         AND P.PROJ_BGNG_YMD &lt;= TRUNC(SYSDATE)
+	        THEN '02'
+	        ELSE P.PROJ_STAT_CD
+	    END AS PROJ_STAT_CD,
+	    E.EMP_NM AS PROJ_LDR_NM,
+	    ROUND(
+		    NVL(
+		        (
+		            SELECT 
+		                SUM(T.TASK_PRGRS_SMRY * CASE T.TASK_IMPRTNC_CD
+		                                            WHEN '01' THEN 1
+		                                            WHEN '02' THEN 2
+		                                            WHEN '03' THEN 3
+		                                        END)
+		                /
+		                NULLIF(SUM(CASE T.TASK_IMPRTNC_CD
+		                               WHEN '01' THEN 1
+		                               WHEN '02' THEN 2
+		                               WHEN '03' THEN 3
+		                           END), 0) * 100
+		            FROM TB_TASK T
+		            WHERE T.PROJ_ID = P.PROJ_ID
+		              AND T.DEL_YN = 'N'
+		        ), 0
+		    )
+		) AS PROJ_PRGRS_RT
+	FROM TB_PROJECT P
+	JOIN TB_PROJ_MEMBER PM
+	    ON PM.PROJ_ID   = P.PROJ_ID
+	   AND PM.EMP_ID    = #{empId}
+	   AND PM.LEAVE_DT IS NULL
+	JOIN TB_EMPLOYEE E
+	    ON E.EMP_ID = P.PROJ_LDR_EMP_ID
+	ORDER BY P.PROJ_CREAT_DT DESC
 </select>
 
 <update id="updateProjStateToInProgress">
