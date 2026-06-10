@@ -1,6 +1,7 @@
 package com.mycrewsoft.domain.task.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -19,6 +20,9 @@ public class TaskListResponse {
 
     @Schema(description = "업무명", example = "결제 게이트웨이 UI 컴포넌트 개발")
     private String taskNm;
+    
+    @Schema(description = "업무 상세내용", example = "글로벌 결제 승인 화면에 사용할 공통 컴포넌트를 구현합니다.")
+    private String taskCn;
 
     @Schema(description = "업무유형코드", example = "01")
     private String taskTypeCd;
@@ -44,6 +48,9 @@ public class TaskListResponse {
     @Schema(description = "진척률 (0~100)", example = "65")
     private Integer taskPrgrsSmry;
 
+    @Schema(description = "업무 시작일시")
+    private LocalDateTime taskBgngDt;
+    
     @Schema(description = "업무 종료일시(마감일)")
     private LocalDateTime taskEndDt;
 }

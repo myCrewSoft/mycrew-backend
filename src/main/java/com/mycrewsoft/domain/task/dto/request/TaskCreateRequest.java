@@ -29,6 +29,10 @@ public class TaskCreateRequest {
     @NotBlank
     @Schema(description = "업무유형코드 (TaskType 코드 테이블 참조)", example = "01")
     private String taskTypeCd;
+    
+    @NotBlank
+    @Schema(description = "업무 상태 코드", example = "01")
+    private String taskStatCd;
 
     @NotNull
     @Schema(description = "업무담당자 사번", example = "1022")
