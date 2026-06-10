@@ -2,7 +2,6 @@ package com.mycrewsoft.domain.board.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -45,4 +44,7 @@ public class BoardUpdateRequest {
 	@Size(min = 1, max = 1, message = "댓글 허용 여부는 1자여야 합니다.") 
 	@Schema(description = "댓글 허용 여부 (Y / N)", example = "Y", defaultValue = "Y")
 	private String cmntUseYn = "Y";
+	
+	
+
 }

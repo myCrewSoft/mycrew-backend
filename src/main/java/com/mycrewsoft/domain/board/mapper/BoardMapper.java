@@ -6,7 +6,6 @@ import java.util.Set;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param; // 💡 반드시 org.apache.ibatis.annotations.Param 이어야 합니다!
 
-import com.mycrewsoft.domain.board.dto.request.BoardCreateRequest;
 import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
 import com.mycrewsoft.domain.board.dto.response.BoardResponse;
 import com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse;
@@ -77,6 +76,9 @@ public interface BoardMapper {
 	//게시판 댓글 조회
 	List<BoardCommentVO>  readCommentList(@Param("boardId") Long boardId);
 	
+	//게시판 댓글 작성자 아이디 조회
+	Long readCmWrterEmpId(@Param("commentId") Long commentId);
+	
 	//게시판 좋아요 읽기
 	BoardLikeVo readLikeStatus(
 			@Param("boardId") Long boardId,
@@ -95,4 +97,16 @@ public interface BoardMapper {
 	 // 게시글 수정
 	  int updateBoardDetails(BoardVO updateBoardDetails);
 	 
+	  //게시글 삭제
+	  int deleteBoardDetail(Long boardId);
+	  
+	  //게시글 댓글 생성
+	  void insertComment(BoardCommentVO commentVo);
+	  
+	  //게시글 댓글 수정
+	  int updateComment(BoardCommentVO updateComment);
+	  
+	  //게시글 댓글 삭제
+	  int deleteComment(@Param("commentId") Long commentId);
+	  
 }
