@@ -3,6 +3,7 @@ package com.mycrewsoft.domain.project.mapper;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import com.mycrewsoft.domain.project.vo.ProjectVO;
 
@@ -29,4 +30,12 @@ public interface ProjectMapper {
 	 * @return
 	 */
 	int updateProjStateToInProgress();
+	
+	/**
+	 * 프로젝트 담당자 ID 조회
+	 * @param projId
+	 * @return
+	 */
+	Long selectProjectLeaderId(@Param("projId") Long projId);
+	
 }

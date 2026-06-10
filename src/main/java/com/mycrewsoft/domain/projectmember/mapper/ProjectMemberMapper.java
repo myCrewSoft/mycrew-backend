@@ -15,4 +15,11 @@ public interface ProjectMemberMapper {
 	 * @return
 	 */
 	int insertProjectMemberList(@Param("memberList") List<ProjectMemberVO> memberList);
+	
+	/**
+	 * 프로젝트 참여자 조회 (검증용)
+	 * @param projId
+	 * @return
+	 */
+	List<ProjectMemberVO> selectProjectMemberList(Long projId);
 }

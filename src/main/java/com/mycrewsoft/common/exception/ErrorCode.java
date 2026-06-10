@@ -109,7 +109,9 @@ public enum ErrorCode {
 	
 	// PROEJCT
 	PROJECT_INVALID_DATE(HttpStatus.BAD_REQUEST, "PROJECT_001", "종료날짜는 시작날짜 이후여야 합니다."),
-	
+	PROJECT_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "PROJECT_002", "프로젝트 참여자가 아닙니다."),
+	PROJECT_NOT_OWNER(HttpStatus.FORBIDDEN, "PROJECT_003", "해당 업무에 대한 권한이 없습니다."),
+  
     // VIDEO
     VIDEO_CONF_NOT_FOUND(HttpStatus.NOT_FOUND,   "VIDEO_001", "존재하지 않는 화상회의입니다."),
     VIDEO_MOM_NOT_FOUND(HttpStatus.NOT_FOUND,    "VIDEO_002", "존재하지 않는 회의록입니다."),
@@ -117,7 +119,12 @@ public enum ErrorCode {
     VIDEO_ALREADY_ENDED(HttpStatus.BAD_REQUEST,  "VIDEO_004", "이미 종료된 화상회의입니다."),
     VIDEO_MOM_ALREADY_CONFIRMED(HttpStatus.BAD_REQUEST, "VIDEO_005", "이미 확정된 회의록입니다."),
     VIDEO_APRVL_ALREADY_DONE(HttpStatus.BAD_REQUEST,    "VIDEO_006", "이미 결재 처리된 항목입니다."),
-    STT_TRANSCRIBE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "VIDEO_007", "음성 텍스트 변환에 실패했습니다.");
+    STT_TRANSCRIBE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "VIDEO_007", "음성 텍스트 변환에 실패했습니다."),
+	
+	// TASK
+	TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "TASK_001", "존재하지 않는 업무입니다."),
+	TASK_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "TASK_002", "업무 참여자가 아닙니다."),
+	TASK_NOT_OWNER(HttpStatus.FORBIDDEN, "TASK_003", "해당 업무에 대한 권한이 없습니다.");
     // 팀원이 새 도메인 추가 시 아래 패턴으로 섹션 추가
     // BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지 않는 게시글입니다.")
 	
