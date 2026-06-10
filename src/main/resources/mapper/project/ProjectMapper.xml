@@ -88,5 +88,56 @@
 	    FROM TB_PROJECT
 	    WHERE PROJ_ID = #{projId}
 	</select>
-	
+
+<resultMap id="ProjectVOMap" type="com.mycrewsoft.domain.project.vo.ProjectVO">
+    <id     property="projId"       column="PROJ_ID"/>
+    <result property="projNm"       column="PROJ_NM"/>
+    <result property="projCn"       column="PROJ_CN"/>
+    <result property="projBgngYmd"  column="PROJ_BGNG_YMD"/>
+    <result property="projEndYmd"   column="PROJ_END_YMD"/>
+    <result property="projStatCd"   column="PROJ_STAT_CD"/>
+    <result property="projLdrEmpId" column="PROJ_LDR_EMP_ID"/>
+    <result property="projLdrNm"    column="PROJ_LDR_NM"/>
+    <result property="projPrgrsRt"  column="PROJ_PRGRS_RT"/>
+
+    <collection property="projMemberList" ofType="com.mycrewsoft.domain.projectmember.vo.ProjectMemberVO">
+        <result property="empId"  column="EMP_ID"/>
+        <result property="empNm"  column="EMP_NM"/>
+        <result property="deptNm" column="DEPT_NM"/>
+    </collection>
+</resultMap>
+
+<select id="selectProject" resultMap="ProjectVOMap">
+	SELECT 
+	   P.PROJ_ID,
+       P.PROJ_NM,
+       P.PROJ_CN,
+       P.PROJ_BGNG_YMD,
+       P.PROJ_END_YMD,
+       P.PROJ_STAT_CD,
+       CASE
+           WHEN P.PROJ_STAT_CD = '01'
+            AND P.PROJ_BGNG_YMD &lt;= TO_CHAR(SYSDATE, 'YYYYMMDD')
+           THEN '02'
+           ELSE P.PROJ_STAT_CD
+       END AS PROJ_STAT_CD,
+       P.PROJ_LDR_EMP_ID,
+       P.PROJ_PRGRS_RT,
+       LDR.EMP_NM    AS PROJ_LDR_NM,
+       PM.EMP_ID,
+       E.EMP_NM,
+       D.DEPT_NM
+	FROM   TB_PROJECT     P
+	JOIN   TB_EMPLOYEE    LDR ON LDR.EMP_ID  = P.PROJ_LDR_EMP_ID
+	JOIN   TB_PROJ_MEMBER PM  ON PM.PROJ_ID  = P.PROJ_ID AND PM.LEAVE_DT IS NULL
+	JOIN   TB_EMPLOYEE    E   ON E.EMP_ID    = PM.EMP_ID
+	JOIN   TB_DEPARTMENT  D   ON D.DEPT_CD   = E.DEPT_CD
+	WHERE  P.PROJ_ID = #{projId}
+	  AND  EXISTS (
+	           SELECT 1 FROM TB_PROJ_MEMBER
+	           WHERE  PROJ_ID  = #{projId}
+	             AND  EMP_ID   = #{empId}
+	             AND  LEAVE_DT IS NULL
+	       )
+</select>
 </mapper>

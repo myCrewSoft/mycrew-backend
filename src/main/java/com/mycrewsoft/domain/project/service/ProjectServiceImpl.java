@@ -13,9 +13,11 @@ import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DtoMapper;
 import com.mycrewsoft.domain.messenger.service.MsngrServiceImpl;
 import com.mycrewsoft.domain.project.dto.ProjectCreateRequestDto;
+import com.mycrewsoft.domain.project.dto.ProjectDetailResponseDto;
 import com.mycrewsoft.domain.project.dto.ProjectListResponseDto;
 import com.mycrewsoft.domain.project.mapper.ProjectMapper;
 import com.mycrewsoft.domain.project.vo.ProjectVO;
+import com.mycrewsoft.domain.projectmember.dto.ProjectMemberResponseDto;
 import com.mycrewsoft.domain.projectmember.mapper.ProjectMemberMapper;
 import com.mycrewsoft.domain.projectmember.vo.ProjectMemberVO;
 import com.mycrewsoft.security.authz.AuthorizationService;
@@ -114,5 +116,25 @@ public class ProjectServiceImpl implements ProjectService{
             // TODO: 슬랙 또는 메일 알림 추가
         }
 	}
-
+	
+	/**
+	 * 프로젝트 상세 조회
+	 */
+	@Override
+	@Transactional(readOnly = true)
+	public ProjectDetailResponseDto getProject(Long projId) {
+		
+		Long empId = SecurityUtil.getCurrentEmpId();
+		
+		//조회 및 참여자 검증 동시 처리
+		ProjectVO vo = projectMapper.selectProject(projId, empId);
+		if(vo == null) {
+			throw new CustomException(ErrorCode.PROJECT_NOT_FOUND);
+		}
+		
+		//vo -> dto 변환
+		ProjectDetailResponseDto dto = dtoMapper.toDto(vo, ProjectDetailResponseDto.class);
+		dto.setProjMemberList(dtoMapper.toDtoList(vo.getProjMemberList(), ProjectMemberResponseDto.class));
+		return dto;
+	}
 }

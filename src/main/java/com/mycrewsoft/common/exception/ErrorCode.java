@@ -119,6 +119,7 @@ public enum ErrorCode {
 	PROJECT_INVALID_DATE(HttpStatus.BAD_REQUEST, "PROJECT_001", "종료날짜는 시작날짜 이후여야 합니다."),
 	PROJECT_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "PROJECT_002", "프로젝트 참여자가 아닙니다."),
 	PROJECT_NOT_OWNER(HttpStatus.FORBIDDEN, "PROJECT_003", "해당 업무에 대한 권한이 없습니다."),
+	PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "PROJECT_004", "존재하지 않는 프로젝트입니다."),
   
     // VIDEO
     VIDEO_CONF_NOT_FOUND(HttpStatus.NOT_FOUND,   "VIDEO_001", "존재하지 않는 화상회의입니다."),
