@@ -47,6 +47,8 @@ import com.mycrewsoft.domain.task.event.TaskCancelledEvent;
 import com.mycrewsoft.domain.task.event.TaskCompletedEvent;
 import com.mycrewsoft.domain.task.event.TaskDeadlineChangedEvent;
 import com.mycrewsoft.domain.task.event.TaskDeadlineEvent;
+import com.mycrewsoft.domain.task.event.TaskManagerChangedEvent;
+import com.mycrewsoft.domain.task.event.TaskMemberRemovedEvent;
 import com.mycrewsoft.domain.task.event.TaskStatusChangedEvent;
 
 import lombok.RequiredArgsConstructor;
@@ -234,6 +236,17 @@ public class NotificationEventListener {
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleTaskMemberRemoved(TaskMemberRemovedEvent event) {
+        notificationService.sendAlrm(
+            "[" + event.getTaskNm() + "] 업무에서 제외되었습니다.",
+            "05",
+            null,
+            event.getRcvrEmpIds()
+        );
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTaskDeadline(TaskDeadlineEvent event) {
         notificationService.sendAlrm(
             "[" + event.getTaskNm() + "] 업무의 마감일이 하루 남았습니다.",
@@ -260,6 +273,17 @@ public class NotificationEventListener {
         notificationService.sendAlrm(
             "[" + event.getTaskNm() + "] 업무 상태가 변경되었습니다.",
             "05",
+            null,
+            event.getRcvrEmpIds()
+        );
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleProjectManagerChanged(TaskManagerChangedEvent event) {
+        notificationService.sendAlrm(
+            "[" + event.getTaskNm() + "] 업무의 담당자가 [" + event.getManagerNm() + "] 으로 변경되었습니다.",
+            "04",
             null,
             event.getRcvrEmpIds()
         );
