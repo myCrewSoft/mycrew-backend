@@ -221,4 +221,14 @@
         WHERE TASK_ID    = #{taskId}
     </update>
 
+    <select id="selectTasksDueTomorrow" resultType="TaskDeadlineVO">
+        SELECT
+            T.TASK_ID,
+            T.TASK_NM,
+            P.EMP_ID AS RCVR_EMP_IDS
+        FROM TB_TASK T
+        JOIN TB_TASK_PTCPT P ON T.TASK_ID = P.TASK_ID
+        WHERE TRUNC(T.TASK_END_DT) = TRUNC(SYSDATE + 1)
+        AND T.DEL_YN = 'N'
+    </select>
 </mapper>

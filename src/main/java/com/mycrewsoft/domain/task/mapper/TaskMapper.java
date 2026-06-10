@@ -5,6 +5,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import com.mycrewsoft.domain.task.vo.TaskDeadlineVO;
 import com.mycrewsoft.domain.task.vo.TaskDetailVO;
 import com.mycrewsoft.domain.task.vo.TaskListVO;
 import com.mycrewsoft.domain.task.vo.TaskPtcptVO;
@@ -43,4 +44,7 @@ public interface TaskMapper {
     /** 업무 논리 삭제 (DEL_YN = Y, 삭제자 ID · 삭제일시 기록) */
     int deleteTask(@Param("taskId") Long taskId,
                     @Param("deltrMbrId") Long deltrMbrId);
+
+    /** 마감 임박 업무 조회 */
+    List<TaskDeadlineVO> selectTasksDueTomorrow();
 }
