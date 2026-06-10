@@ -140,4 +140,20 @@
 	             AND  LEAVE_DT IS NULL
 	       )
 </select>
+
+<update id="updateProject">
+	UPDATE TB_PROJECT
+    <set>
+        PROJ_NM       = #{projNm},
+        PROJ_CN       = #{projCn},
+        PROJ_BGNG_YMD = #{projBgngYmd},
+        PROJ_END_YMD  = #{projEndYmd},
+        PROJ_STAT_CD  = #{projStatCd},
+        PROJ_MDFCN_DT = SYSDATE,
+        <if test="projStatCd != null">
+            PROJ_STAT_CHG_DT = SYSDATE,
+        </if>
+    </set>
+    WHERE PROJ_ID = #{projId}
+</update>
 </mapper>
