@@ -108,8 +108,14 @@ public enum ErrorCode {
 	RSRV_TIME_CONFLICT(HttpStatus.CONFLICT, "RSRV_003", "이미 예약된 시간대입니다."),
 	
 	// PROEJCT
-	PROJECT_INVALID_DATE(HttpStatus.BAD_REQUEST, "PROJECT_001", "종료날짜는 시작날짜 이후여야 합니다.");
+	PROJECT_INVALID_DATE(HttpStatus.BAD_REQUEST, "PROJECT_001", "종료날짜는 시작날짜 이후여야 합니다."),
+	PROJECT_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "PROJECT_002", "프로젝트 참여자가 아닙니다."),
+	PROJECT_NOT_OWNER(HttpStatus.FORBIDDEN, "PROJECT_003", "해당 업무에 대한 권한이 없습니다."),
 	
+	// TASK
+	TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "TASK_001", "존재하지 않는 업무입니다."),
+	TASK_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "TASK_002", "업무 참여자가 아닙니다."),
+	TASK_NOT_OWNER(HttpStatus.FORBIDDEN, "TASK_003", "해당 업무에 대한 권한이 없습니다.");
     // 팀원이 새 도메인 추가 시 아래 패턴으로 섹션 추가
     // BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지 않는 게시글입니다.")
 	

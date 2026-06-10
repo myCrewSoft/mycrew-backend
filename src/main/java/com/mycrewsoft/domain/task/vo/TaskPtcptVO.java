@@ -7,12 +7,13 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class TaskMemberVO {
+public class TaskPtcptVO {
 	 
-    private Long mbrId;          // 회원ID - PK
-    private Long taskId;         // 업무ID - PK, FK
-    private Long projId;         // 프로젝트ID - PK, FK
+	private Long taskPtcptId;	 // 업무 참여ID - PK 
+    private Long taskId;         // 업무ID - FK
 
+    private Long empId;          // 업무 참여자ID
+    
     private LocalDateTime joinDt;    // 참여일시
     private LocalDateTime leaveDt;   // 퇴장일시
 
