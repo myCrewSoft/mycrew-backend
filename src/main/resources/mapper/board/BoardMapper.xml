@@ -1,178 +1,287 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper
-	namespace="com.mycrewsoft.domain.board.mapper.BoardMapper">
-		<resultMap type="BoardVO" id="BoardMap" autoMapping="true">
-		    <id property="boardId" column="BOARD_ID"/>
-		</resultMap>
+   namespace="com.mycrewsoft.domain.board.mapper.BoardMapper">
+      <resultMap type="BoardVO" id="BoardMap" autoMapping="true">
+          <id property="boardId" column="BOARD_ID"/>
 
-	<!-- 게시판 개수 조회 -->
-	<select id="countBoard" resultType="long">
-	    SELECT COUNT(*)
-	    FROM tb_board B
-	    WHERE 1 = 1
-	    
-	    <if test="searchRequest != null and searchRequest.keyword != null and searchRequest.keyword != ''">
-	        AND (
-	            B.BOARD_SJ LIKE '%' || #{searchRequest.keyword} || '%'
-	            OR B.BOARD_CN LIKE '%' || #{searchRequest.keyword} || '%'
-	        )
-	    </if>
-	    
-	    <!--  부서게시판이면 부서코드를 비교 부서게시판이아니먄 부서유형타입을 비교 -->
-	    <if test="boardTypeCd != null and boardTypeCd != ''">
-	        <choose>
-	            <when test="boardTypeCd == 'DEPT'">
-	                AND B.DEPT_CD = #{deptCd}
-	            </when>
-	            <otherwise>
-	                AND B.BOARD_TYPE_CD = #{boardTypeCd}
-	            </otherwise>
-	        </choose>
-	    </if>
-	</select>
+<result property="projNm" column="PROJ_NM" />
+		<result property="projStatCd" column="PROJ_STAT_CD" />
+		<result property="empNm" column="EMP_NM" />
 
+      </resultMap>
 
-	<!-- 게시판 조회 -->
-	<select id="getBoardList" resultType="com.mycrewsoft.domain.board.dto.response.BoardResponse">
-		SELECT
-		BOARD_ID
-		,BOARD_TYPE_CD
-		,BOARD_SJ
-		,BOARD_CN
-		,FRST_RGTR_ID
-		,FRST_REG_DT
-		,LAST_MDFR_DT
-		,BOARD_ATCH_FILE_ID
-		,DEPT_CD
-		,PROJ_ID
-		,IMPRTNT_YN
-		,CMNT_USE_YN
-		,VIEW_CNT
-		FROM tb_board B
-		WHERE 1 = 1
-			<!-- 1. 기본 게시판 타입 조건 -->
-			 <if test="boardTypeCd != null and boardTypeCd != ''">
-	        <choose>
-	            <when test="boardTypeCd == 'DEPT'">
-	                AND B.DEPT_CD = #{deptCd}
-	            </when>
-	            <otherwise>
-	                AND B.BOARD_TYPE_CD = #{boardTypeCd}
-	            </otherwise>
-	        </choose>
-	    </if>
-
-			<!-- 2. 검색 조건 (searchRequest 내부 필드 접근) -->
-			<if test="searchRequest != null">
-				<!-- 제목 검색 예시 -->
-				<if
-					test="searchRequest.keyword != null and searchRequest.keyword != ''">
-					AND (B.BOARD_SJ LIKE '%'||  #{searchRequest.keyword} || '%'
-					OR B.BOARD_CN LIKE '%'||  #{searchRequest.keyword} || '%')
-				</if>
-				
-			</if>
-		ORDER BY B.BOARD_ID DESC <!-- 게시글 번호 내림차순 -->
-		<!-- 3. 페이징 처리 -->
-		  OFFSET #{getOffset} ROWS FETCH NEXT #{getPageSize} ROWS ONLY
-		
-
-	</select>
+   <!-- 게시판 개수 조회 -->
+   <select id="countBoard" resultType="int">
+       SELECT COUNT(*)
+       FROM tb_board B
+       WHERE 1 = 1
+       
+       <if test="searchRequest != null and searchRequest.keyword != null and searchRequest.keyword != ''">
+           AND (
+               B.BOARD_SJ LIKE '%' || #{searchRequest.keyword} || '%'
+               OR B.BOARD_CN LIKE '%' || #{searchRequest.keyword} || '%'
+           )
+       </if>
+       
+       <!--  부서게시판이면 부서코드를 비교 부서게시판이아니먄 부서유형타입을 비교 -->
+       <if test="boardTypeCd != null and boardTypeCd != ''">
+          <choose>
+               <when test="boardTypeCd == 'DEPT'">
+                   AND TRIM(B.DEPT_CD) = TRIM(#{deptCd})
+               </when>
+               <otherwise>
+                   AND B.BOARD_TYPE_CD = #{boardTypeCd}
+               </otherwise>
+           </choose>
+       </if>
+   </select>
 
 
-	<select id="getSideBar"
-		resultType="com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse">
-		SELECT DISTINCT
-		B.BOARD_TYPE_CD AS boardTypeCd,
-		B.DEPT_CD AS deptCd,  <!-- 게시판 유형에 따라 -->
-		CASE
-		WHEN B.BOARD_TYPE_CD = 'FREE' THEN '자유게시판'
-		WHEN B.BOARD_TYPE_CD = 'ANON' THEN '익명게시판'
-		WHEN B.BOARD_TYPE_CD = 'NOTICE' THEN '공지사항'
-		WHEN B.BOARD_TYPE_CD = 'DEPT' THEN D.DEPT_NM
+   <!-- 게시판 조회 -->
+   <select id="getBoardList" resultType="com.mycrewsoft.domain.board.dto.response.BoardResponse">
+      SELECT
+      B.BOARD_ID
+      ,B.BOARD_TYPE_CD
+      ,B.BOARD_SJ
+      ,B.BOARD_CN
+      ,B.FRST_RGTR_ID
+      ,E.EMP_NM AS empNm
+      ,B.FRST_REG_DT
+      ,B.LAST_MDFR_DT
+      ,B.BOARD_ATCH_FILE_ID
+      ,TRIM(B.DEPT_CD) AS DEPT_CD
+      ,B.PROJ_ID
+      ,B.IMPRTNT_YN
+      ,B.CMNT_USE_YN
+      ,B.VIEW_CNT
+      FROM tb_board B
+      LEFT JOIN TB_EMPLOYEE E ON B.FRST_RGTR_ID = E.EMP_ID
+      WHERE 1 = 1
+         <!-- 1. 기본 게시판 타입 조건 -->
+          <if test="boardTypeCd != null and boardTypeCd != ''">
+           <choose>
+               <when test="boardTypeCd == 'DEPT'">
+                   AND TRIM(B.DEPT_CD) = TRIM(#{deptCd})
+               </when>
+               <otherwise>
+                   AND B.BOARD_TYPE_CD = #{boardTypeCd}
+               </otherwise>
+           </choose>
+       </if>
 
-		ELSE B.BOARD_SJ END AS boardName FROM tb_board B
+         <!-- 2. 검색 조건 (searchRequest 내부 필드 접근) -->
+         <if test="searchRequest != null">
+            <!-- 제목 검색 예시 -->
+            <if
+               test="searchRequest.keyword != null and searchRequest.keyword != ''">
+               AND (B.BOARD_SJ LIKE '%'||  #{searchRequest.keyword} || '%'
+               OR B.BOARD_CN LIKE '%'||  #{searchRequest.keyword} || '%')
+            </if>
+            
+         </if>
+      ORDER BY B.BOARD_ID DESC <!-- 게시글 번호 내림차순 -->
+      <!-- 3. 페이징 처리 -->
+        OFFSET #{getOffset} ROWS FETCH NEXT #{getPageSize} ROWS ONLY
+      
 
-		<!-- 조인한 부서 테이블의 진짜 부서명인D.DEPT_NM 그 외의 예외 케이스가 있다면 ➡️ 기본적으로 적혀있는 게시판 제목(B.BOARD_SJ)을 
-			이름으로 씁니다. -->
-		LEFT JOIN tb_department D ON B.DEPT_CD = D.DEPT_CD
-		WHERE 1 = 1
-		AND (
-		<if test="hasGlobal == true">
-			1 = 1
-		</if>
-		<if test="hasGlobal == false">
-			1 = 0
-		</if>
+   </select>
 
-		OR B.BOARD_TYPE_CD IN ('FREE', 'ANON', 'NOTICE', 'DEPT')
-		OR B.FRST_RGTR_ID = #{empId}
-		OR B.DEPT_CD = #{myDeptCd}
 
-		<if
-			test="departmentScopeIds != null and departmentScopeIds.size() > 0">
-			OR B.DEPT_CD IN
-			<foreach collection="departmentScopeIds" item="scopeDeptCd"
-				open="(" separator="," close=")">
-				#{scopeDeptCd}
-			</foreach>
-		</if>
-		)
-	</select>
-	
-	
-	<select id="readBoard" resultMap="BoardMap">
-		SELECT 
-			BOARD_ID
-			,BOARD_TYPE_CD
-			,BOARD_SJ
-			,BOARD_CN
-			,FRST_RGTR_ID
-			,FRST_REG_DT
-			,LAST_MDFR_DT
-			,BOARD_ATCH_FILE_ID
-			,DEPT_CD
-			,PROJ_ID
-			,IMPRTNT_YN
-			,CMNT_USE_YN
-			,VIEW_CNT
-		FROM tb_board
-		WHERE BOARD_ID = #{boardId}
-	</select>
-	
-	
-	<select id="readCommentList" resultType="com.mycrewsoft.domain.board.vo.BoardCommentVO">
-		SELECT 
+   <select id="getSideBar"
+      resultType="com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse">
+      SELECT DISTINCT
+      B.BOARD_TYPE_CD AS boardTypeCd,
+      TRIM(B.DEPT_CD) AS deptCd,  <!-- 게시판 유형에 따라 -->
+      CASE
+      WHEN B.BOARD_TYPE_CD = 'FREE' THEN '자유게시판'
+      WHEN B.BOARD_TYPE_CD = 'ANON' THEN '익명게시판'
+      WHEN B.BOARD_TYPE_CD = 'NOTICE' THEN '공지사항'
+      WHEN B.BOARD_TYPE_CD = 'DEPT' THEN D.DEPT_NM
+
+      ELSE B.BOARD_SJ END AS boardName FROM tb_board B
+
+      <!-- 조인한 부서 테이블의 진짜 부서명인D.DEPT_NM 그 외의 예외 케이스가 있다면 ➡️ 기본적으로 적혀있는 게시판 제목(B.BOARD_SJ)을 
+         이름으로 씁니다. -->
+      LEFT JOIN tb_department D ON TRIM(B.DEPT_CD) = TRIM(D.DEPT_CD)
+      WHERE 1 = 1
+      AND (
+      <if test="hasGlobal == true">
+         1 = 1
+      </if>
+      <if test="hasGlobal == false">
+         1 = 0
+      </if>
+
+      OR B.BOARD_TYPE_CD IN ('FREE', 'ANON', 'NOTICE', 'DEPT')
+      OR B.FRST_RGTR_ID = #{empId}
+      OR TRIM(B.DEPT_CD) = TRIM(#{myDeptCd})
+
+      <if
+         test="departmentScopeIds != null and departmentScopeIds.size() > 0">
+         OR TRIM(B.DEPT_CD) IN
+         <foreach collection="departmentScopeIds" item="scopeDeptCd"
+            open="(" separator="," close=")">
+            #{scopeDeptCd}
+         </foreach>
+      </if>
+      )
+   </select>
+   
+   
+   <select id="readBoard" resultMap="BoardMap">
+      SELECT 
+         B.BOARD_ID
+         ,B.BOARD_TYPE_CD
+         ,B.BOARD_SJ
+         ,B.BOARD_CN
+         ,B.FRST_RGTR_ID
+         ,E.EMP_NM
+         ,B.FRST_REG_DT
+         ,B.LAST_MDFR_DT
+         ,B.BOARD_ATCH_FILE_ID
+         ,B.DEPT_CD
+         ,B.PROJ_ID
+         ,B.IMPRTNT_YN
+         ,B.CMNT_USE_YN
+         ,B.VIEW_CNT
+      FROM tb_board B
+      LEFT JOIN TB_EMPLOYEE E ON B.FRST_RGTR_ID = E.EMP_ID
+      WHERE B.BOARD_ID = #{boardId}
+   </select>
+   
+   
+   <select id="readCommentList" resultType="com.mycrewsoft.domain.board.vo.BoardCommentVO">
+      SELECT 
         COMMENT_ID, BOARD_ID, COMMENT_CN, WRTER_EMP_ID, WRTE_DT, 
         COMMENT_PRT_ID, COMMENT_DEPTH, COMMENT_ORDER
     FROM TB_BOARD_COMMENT
     WHERE BOARD_ID = #{boardId}
     ORDER BY COMMENT_ORDER ASC, WRTE_DT ASC
-	</select>
-	
-	
-	<select id="readLikeStatus" resultType="com.mycrewsoft.domain.board.vo.BoardLikeVo">
+   </select>
+   
+   
+   <select id="readLikeStatus" resultType="com.mycrewsoft.domain.board.vo.BoardLikeVo">
+      SELECT
+         BOARD_ID,EMP_ID,FRST_REG_DT
+      FROM tb_board_like
+      WHERE BOARD_ID = #{boardId} AND EMP_ID = #{empId}
+   </select>
+   
+   <update id="updateViewCount">
+      UPDATE tb_board
+      SET VIEW_CNT = VIEW_CNT +1
+      WHERE BOARD_ID =#{boardId}
+   
+   </update>
+   
+   <select id="readLikeCount" resultType="int">
+      SELECT COUNT(*)
+      FROM tb_board_like
+      WHERE BOARD_ID = #{boardId}
+   </select>
+   
+   
+   <select id="countProjBoard">
+   SELECT COUNT(*)
+   FROM tb_board
+   WHERE PROJ_ID = #{projId}
+     
+       <if test="searchRequest != null and searchRequest.keyword != null and searchRequest.keyword != ''">
+           AND (
+               BOARD_SJ LIKE '%' || #{searchRequest.keyword} || '%'
+               OR BOARD_CN LIKE '%' || #{searchRequest.keyword} || '%'
+           )
+       </if>
+       
+   </select>
+
+
+<select id="getProjList" resultType="com.mycrewsoft.domain.board.dto.response.BoardResponse">
 		SELECT
-			BOARD_ID,EMP_ID,FRST_REG_DT
-		FROM tb_board_like
-		WHERE BOARD_ID = #{boardId} AND EMP_ID = #{empId}
+		b.BOARD_ID,
+		b.BOARD_TYPE_CD,
+		b.BOARD_SJ,
+		b.BOARD_CN,
+		b.FRST_RGTR_ID,
+		e.EMP_NM AS empNm,
+		b.FRST_REG_DT,
+		b.LAST_MDFR_DT,
+		b.BOARD_ATCH_FILE_ID,
+		b.DEPT_CD,
+		b.IMPRTNT_YN,
+		b.CMNT_USE_YN,
+		b.VIEW_CNT,
+		p.PROJ_ID,
+		p.PROJ_NM, p.PROJ_STAT_CD FROM TB_BOARD b
+		INNER JOIN TB_PROJECT p ON b.PROJ_ID = p.PROJ_ID
+		LEFT JOIN TB_EMPLOYEE e ON b.FRST_RGTR_ID = e.EMP_ID
+		WHERE p.PROJ_ID = #{projId}
+		ORDER BY b.FRST_REG_DT DESC
+		OFFSET #{getOffset} ROWS FETCH NEXT #{getPageSize} ROWS ONLY
 	</select>
+
+
+	<insert id="createBoard">
+	<selectKey keyProperty="boardId" resultType="long" order="BEFORE">
+        SELECT SEQ_BOARD_ID.NEXTVAL FROM DUAL
+    </selectKey>
+		INSERT INTO TB_BOARD (
+	        BOARD_ID,              
+	        BOARD_TYPE_CD,
+	        BOARD_SJ,
+	        BOARD_CN,
+	        FRST_RGTR_ID,
+	        FRST_REG_DT,           
+	        LAST_MDFR_DT,
+	        BOARD_ATCH_FILE_ID,
+	        DEPT_CD,
+	        PROJ_ID,
+	        IMPRTNT_YN,
+	        CMNT_USE_YN,
+	        VIEW_CNT
+	        
+	    ) VALUES (
+	        #{boardId},            
+	        #{boardTypeCd},
+	        #{boardSj},
+	        #{boardCn},
+	        #{frstRgtrId},
+	        SYSDATE,               
+	        SYSDATE,
+	        #{boardAtchFileId},
+	        #{deptCd},
+	       #{projId},
+	        #{imprtntYn},
+	        #{cmntUseYn},
+	        0                                          
+	     )
+	</insert>
 	
-	<update id="updateViewCount">
-		UPDATE tb_board
-		SET VIEW_CNT = VIEW_CNT +1
-		WHERE BOARD_ID =#{boardId}
-	
+	<update id="updateBoardDetails" parameterType="com.mycrewsoft.domain.board.vo.BoardVO">
+	    /* 게시글 상세 수정 (Oracle) - updateBoardDetails */
+	    UPDATE TB_BOARD
+	    <set>
+	        <if test="boardSj != null and boardSj != ''">
+	            BOARD_SJ = #{boardSj},
+	        </if>
+	        
+	        <if test="boardCn != null and boardCn != ''">
+	            BOARD_CN = #{boardCn},
+	        </if>
+	        
+	        <if test="boardAtchFileId != null">
+	            BOARD_ATCH_FILE_ID = #{boardAtchFileId},
+	        </if>
+	        
+	        <if test="boardTypeCd != null and boardTypeCd != ''">
+	            BOARD_TYPE_CD = #{boardTypeCd},
+	        </if>
+	        
+	        LAST_MDFR_DT = SYSDATE
+	    </set>
+	    WHERE BOARD_ID = #{boardId}
 	</update>
-	
-	<select id="readLikeCount" resultType="int">
-		SELECT COUNT(*)
-		FROM tb_board_like
-		WHERE BOARD_ID = #{boardId}
-	</select>
-	
-	
-	
-	
+	 
+   
 </mapper>

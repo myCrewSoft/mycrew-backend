@@ -7,73 +7,106 @@
     </selectKey>
     
     INSERT INTO TB_DRIVE(
-    	DRIVE_ITEM_ID,
-		PRNT_DRIVE_ITEM_ID,
-		EMP_ID,
-		ITEM_TYPE_CD,
-		BOOKMARK_YN,
-		ITEM_NM,
-		FRST_REG_DT,
-		DEL_YN,
-		DRIVE_ATCH_FILE_ID
-    )VALUES(
-    	#{driveItemId}, 
-		#{prntDriveItemId}, 
-		#{empId}, 
-		#{itemTypeCd}, 
-		'N', 
-		#{itemNm}, 
-		SYSDATE, 
-		'N',
-		#{driveAtchFileId}
-    )
+	    DRIVE_ITEM_ID,
+	    PRNT_DRIVE_ITEM_ID,
+	    FRST_RGTR_ID,
+	    ITEM_TYPE_CD,
+	    BOOKMARK_YN,
+	    ITEM_NM,
+	    FRST_REG_DT,
+	    DEL_YN,
+	    DRIVE_ATCH_FILE_ID,
+	    DRIVE_SCOPE_CD,
+	    PROJ_ID
+	)
+	VALUES(
+	    #{driveItemId},
+	    #{prntDriveItemId},
+	    #{frstRgtrId},
+	    #{itemTypeCd},
+	    'N',
+	    #{itemNm},
+	    SYSDATE,
+	    'N',
+	    #{driveAtchFileId},
+	    #{driveScopeCd},
+	    #{projId}
+	)
 </insert>
 
 <select id="selectListByEmpId" resultType="com.mycrewsoft.domain.drive.vo.DriveVo">
-    SELECT
+    SELECT * FROM (
+        SELECT ROWNUM AS RN, A.* FROM (
+            SELECT
+                D.DRIVE_ITEM_ID,
+                D.PRNT_DRIVE_ITEM_ID,
+                D.FRST_RGTR_ID,
+                D.LAST_MDFR_ID,
+                D.ITEM_TYPE_CD,
+                D.BOOKMARK_YN,
+                D.ITEM_NM,
+                D.FRST_REG_DT,
+                D.LAST_MDFCN_DT,
+                D.DRIVE_SCOPE_CD,
+                D.PROJ_ID,
+                D.DRIVE_ATCH_FILE_ID,
+                DTL.FILE_SZ,
+                DTL.ORGNL_FILE_NM
+            FROM TB_DRIVE D
+            LEFT JOIN TB_CMMN_ATCH_FILE_DTL DTL
+                ON D.DRIVE_ATCH_FILE_ID = DTL.ATCH_FILE_DTL_ID
+            WHERE D.FRST_RGTR_ID = #{empId}
+              AND D.DRIVE_SCOPE_CD = '01'
+              AND D.DEL_YN = 'N'
+              AND (
+                    (#{prntDriveItemId} IS NULL AND D.PRNT_DRIVE_ITEM_ID IS NULL)
+                    OR D.PRNT_DRIVE_ITEM_ID = #{prntDriveItemId}
+              )
+            ORDER BY D.ITEM_TYPE_CD DESC, D.FRST_REG_DT DESC
+        ) A WHERE ROWNUM &lt;= #{offset} + #{size}
+    ) WHERE RN &gt; #{offset}
+</select>
+
+<select id="countDriveList" resultType="long">
+	SELECT COUNT(*)
+    FROM TB_DRIVE D
+    WHERE D.FRST_RGTR_ID = #{empId}
+      AND D.DRIVE_SCOPE_CD = '01'
+      AND D.DEL_YN = 'N'
+      AND (
+            (#{prntDriveItemId} IS NULL AND D.PRNT_DRIVE_ITEM_ID IS NULL)
+            OR D.PRNT_DRIVE_ITEM_ID = #{prntDriveItemId}
+      )
+</select>
+
+<select id="selectDriveItemById" resultType="com.mycrewsoft.domain.drive.vo.DriveVo">
+	SELECT
         D.DRIVE_ITEM_ID,
         D.PRNT_DRIVE_ITEM_ID,
-        D.EMP_ID,
+        D.FRST_RGTR_ID,
+        D.LAST_MDFR_ID,
         D.ITEM_TYPE_CD,
         D.BOOKMARK_YN,
         D.ITEM_NM,
         D.FRST_REG_DT,
         D.LAST_MDFCN_DT,
+        D.DRIVE_SCOPE_CD,
+        D.PROJ_ID,
+        D.DRIVE_ATCH_FILE_ID,
         DTL.FILE_SZ,
         DTL.ORGNL_FILE_NM
     FROM TB_DRIVE D
-        LEFT JOIN TB_CMMN_ATCH_FILE_DTL DTL ON D.DRIVE_ATCH_FILE_ID = DTL.ATCH_FILE_DTL_ID
-    WHERE D.EMP_ID = #{empId}
+    	LEFT JOIN TB_CMMN_ATCH_FILE_DTL DTL
+        	ON D.DRIVE_ATCH_FILE_ID = DTL.ATCH_FILE_DTL_ID
+    WHERE D.DRIVE_ITEM_ID = #{driveItemId}
       AND D.DEL_YN = 'N'
-      AND (
-        (#{prntDriveItemId} IS NULL AND D.PRNT_DRIVE_ITEM_ID IS NULL)
-        OR D.PRNT_DRIVE_ITEM_ID = #{prntDriveItemId}
-      )
-    ORDER BY D.ITEM_TYPE_CD ASC, D.FRST_REG_DT ASC
-</select>
-
-<select id="selectDriveItemById" resultType="com.mycrewsoft.domain.drive.vo.DriveVo">
-	SELECT DRIVE_ITEM_ID,
-           PRNT_DRIVE_ITEM_ID,
-           EMP_ID,
-           ITEM_TYPE_CD,
-           BOOKMARK_YN,
-           ITEM_NM,
-           FRST_REG_DT,
-           LAST_MDFCN_DT,
-           DEL_YN,
-           DEL_DT,
-           DELTR_MBR_ID,
-           DRIVE_ATCH_FILE_ID
-    FROM TB_DRIVE
-    WHERE DRIVE_ITEM_ID = #{driveItemId}
-      AND DEL_YN = 'N'
 </select>
 
 <update id="updateFolderName">
 	UPDATE TB_DRIVE
-    SET ITEM_NM = #{itemNm},
-        LAST_MDFCN_DT = SYSDATE
+	SET ITEM_NM = #{itemNm},
+	    LAST_MDFCN_DT = SYSDATE,
+	    LAST_MDFR_ID = #{lastMdfrId}
     WHERE DRIVE_ITEM_ID = #{driveItemId}
       AND DEL_YN = 'N'
 </update>
@@ -81,7 +114,8 @@
 <update id="updateBookmarkYn">
 	UPDATE TB_DRIVE
 	SET BOOKMARK_YN = #{newBookmarkYn},
-		LAST_MDFCN_DT = SYSDATE
+		LAST_MDFCN_DT = SYSDATE,
+		LAST_MDFR_ID = #{lastMdfrId}
 	WHERE DRIVE_ITEM_ID = #{driveItemId}
 	  AND DEL_YN = 'N'
 </update>
@@ -112,4 +146,103 @@
     CONNECT BY PRIOR D.DRIVE_ITEM_ID = D.PRNT_DRIVE_ITEM_ID
 </select>
 
+<select id="selectTrashList" resultType="com.mycrewsoft.domain.drive.vo.DriveVo">
+    SELECT
+        D.DRIVE_ITEM_ID,
+        D.PRNT_DRIVE_ITEM_ID,
+        D.FRST_RGTR_ID,
+        D.ITEM_TYPE_CD,
+        D.ITEM_NM,
+        D.DEL_DT,
+        D.DELTR_MBR_ID,
+        D.FRST_REG_DT,
+        D.DRIVE_SCOPE_CD,
+        D.PROJ_ID,
+        DTL.FILE_SZ,
+        DTL.ORGNL_FILE_NM,
+        E1.EMP_NM AS deltrMbrNm,
+        E2.EMP_NM AS frstRgtrNm,
+        E3.EMP_NM AS lastMdfrNm,
+        (
+            SELECT COUNT(*)
+            FROM TB_DRIVE C
+            WHERE C.PRNT_DRIVE_ITEM_ID = D.DRIVE_ITEM_ID
+              AND C.DEL_YN = 'Y'
+        ) AS CHILD_CNT
+    FROM TB_DRIVE D
+    LEFT JOIN TB_CMMN_ATCH_FILE_DTL DTL
+        ON D.DRIVE_ATCH_FILE_ID = DTL.ATCH_FILE_DTL_ID
+    LEFT JOIN TB_EMPLOYEE E1
+        ON D.DELTR_MBR_ID = E1.EMP_ID
+    LEFT JOIN TB_EMPLOYEE E2
+        ON D.FRST_RGTR_ID = E2.EMP_ID
+    LEFT JOIN TB_EMPLOYEE E3
+        ON D.LAST_MDFR_ID = E3.EMP_ID
+    WHERE D.FRST_RGTR_ID = #{empId}
+      AND D.DEL_YN = 'Y'
+      AND (
+          D.PRNT_DRIVE_ITEM_ID IS NULL
+          OR NOT EXISTS (
+              SELECT 1 FROM TB_DRIVE P
+              WHERE P.DRIVE_ITEM_ID = D.PRNT_DRIVE_ITEM_ID
+                AND P.DEL_YN = 'Y'
+          )
+      )
+    ORDER BY D.DEL_DT DESC
+</select>
+
+<select id="selectTrashItemById" resultType="com.mycrewsoft.domain.drive.vo.DriveVo">
+    SELECT
+        D.DRIVE_ITEM_ID,
+        D.PRNT_DRIVE_ITEM_ID,
+        D.FRST_RGTR_ID,
+        D.ITEM_TYPE_CD,
+        D.ITEM_NM,
+        D.DEL_YN,
+        D.DEL_DT,
+        D.DELTR_MBR_ID,
+        D.DRIVE_ATCH_FILE_ID,
+        D.DRIVE_SCOPE_CD,
+        D.PROJ_ID
+    FROM TB_DRIVE D
+    WHERE D.DRIVE_ITEM_ID = #{driveItemId}
+      AND D.DEL_YN = 'Y'
+</select>
+
+<select id="selectTrashFileChildrenByItemId" resultType="com.mycrewsoft.domain.drive.vo.DriveVo">
+	SELECT
+        D.DRIVE_ITEM_ID,
+        D.PRNT_DRIVE_ITEM_ID,
+        D.ITEM_TYPE_CD,
+        D.DRIVE_ATCH_FILE_ID
+    FROM TB_DRIVE D
+    WHERE D.DEL_YN = 'Y'
+    START WITH D.DRIVE_ITEM_ID = #{driveItemId}
+    CONNECT BY PRIOR D.DRIVE_ITEM_ID = D.PRNT_DRIVE_ITEM_ID
+</select>
+
+<update id="restoreItem">
+	UPDATE TB_DRIVE
+    SET DEL_YN       = 'N',
+        DEL_DT       = NULL,
+        DELTR_MBR_ID = NULL
+    WHERE DRIVE_ITEM_ID IN (
+        SELECT DRIVE_ITEM_ID
+        FROM TB_DRIVE
+        START WITH DRIVE_ITEM_ID = #{driveItemId}
+        CONNECT BY PRIOR DRIVE_ITEM_ID = PRNT_DRIVE_ITEM_ID
+    )
+    AND DEL_YN = 'Y'
+</update>
+
+<delete id="hardDeleteItem">
+	DELETE FROM TB_DRIVE
+    WHERE DRIVE_ITEM_ID IN (
+        SELECT DRIVE_ITEM_ID
+        FROM TB_DRIVE
+        START WITH DRIVE_ITEM_ID = #{driveItemId}
+        CONNECT BY PRIOR DRIVE_ITEM_ID = PRNT_DRIVE_ITEM_ID
+    )
+    AND DEL_YN = 'Y'
+</delete>
 </mapper>

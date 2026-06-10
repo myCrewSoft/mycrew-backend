@@ -128,3 +128,11 @@ springdoc:
 
 websocket:
   allowed-origins: http://localhost:5173
+
+livekit:
+  url: ${LIVEKIT_URL}
+  api-key: ${LIVEKIT_API_KEY}
+  api-secret: ${LIVEKIT_API_SECRET}
+
+openai:
+  api-key: ${OPENAI_API_KEY}

@@ -67,6 +67,7 @@ public enum ErrorCode {
 	DRIVE_INSERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "DRIVE_001", "폴더 생성에 실패했습니다."),
     DRIVE_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "DRIVE_002", "드라이브 아이템을 찾을 수 없습니다."),
     DRIVE_RENAME_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "DRIVE_003", "폴더만 이름 수정이 가능합니다."),
+    DRIVE_NOT_A_FILE(HttpStatus.BAD_REQUEST, "DRIVE_004", "파일 아이템이 아닙니다."),
 
     // BOARD
     BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지않는 게시판입니다."),
@@ -93,6 +94,8 @@ public enum ErrorCode {
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND,  "CHAT_001", "존재하지 않는 채팅방입니다."),
     CHAT_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "CHAT_002", "채팅방 참여자가 아닙니다."),
     CHAT_ROOM_ALREADY_EXISTS(HttpStatus.CONFLICT, "CHAT_003", "이미 존재하는 1:1 채팅방입니다."),
+    CHAT_DIRECT_ROOM_CANNOT_ADD_PARTICIPANT(HttpStatus.BAD_REQUEST, "CHAT_004", "1:1 채팅방에는 참여자를 추가할 수 없습니다."),
+    CHAT_OWNER_CANNOT_BE_REMOVED(HttpStatus.BAD_REQUEST, "CHAT_005", "채팅방 개설자는 제거할 수 없습니다."),
 
     // WEBSOCKET
     WS_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "WS_001", "WebSocket 연결 시 인증이 필요합니다."),
@@ -105,8 +108,31 @@ public enum ErrorCode {
 	// ROOM
 	CONF_RM_NOT_FOUND(HttpStatus.NOT_FOUND, "CONF_RM_001", "존재하지 않는 회의실입니다."),
 	CONF_RM_CREATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CONF_RM_002", "회의실 생성에 실패했습니다."),
-	CONF_RM_ALREADY_DISABLED(HttpStatus.BAD_REQUEST, "CONF_RM_003", "이미 비활성화된 회의실입니다.");
+	CONF_RM_ALREADY_DISABLED(HttpStatus.BAD_REQUEST, "CONF_RM_003", "이미 비활성화된 회의실입니다."),
 
+	// RESERVATION 
+	RSRV_NOT_FOUND(HttpStatus.NOT_FOUND, "RSRV_001", "존재하지 않는 예약입니다."),
+	RSRV_CREATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "RSRV_002", "예약 생성에 실패했습니다."),
+	RSRV_TIME_CONFLICT(HttpStatus.CONFLICT, "RSRV_003", "이미 예약된 시간대입니다."),
+	
+	// PROEJCT
+	PROJECT_INVALID_DATE(HttpStatus.BAD_REQUEST, "PROJECT_001", "종료날짜는 시작날짜 이후여야 합니다."),
+	PROJECT_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "PROJECT_002", "프로젝트 참여자가 아닙니다."),
+	PROJECT_NOT_OWNER(HttpStatus.FORBIDDEN, "PROJECT_003", "해당 업무에 대한 권한이 없습니다."),
+  
+    // VIDEO
+    VIDEO_CONF_NOT_FOUND(HttpStatus.NOT_FOUND,   "VIDEO_001", "존재하지 않는 화상회의입니다."),
+    VIDEO_MOM_NOT_FOUND(HttpStatus.NOT_FOUND,    "VIDEO_002", "존재하지 않는 회의록입니다."),
+    VIDEO_ACCESS_DENIED(HttpStatus.FORBIDDEN,    "VIDEO_003", "화상회의 참여자만 접근할 수 있습니다."),
+    VIDEO_ALREADY_ENDED(HttpStatus.BAD_REQUEST,  "VIDEO_004", "이미 종료된 화상회의입니다."),
+    VIDEO_MOM_ALREADY_CONFIRMED(HttpStatus.BAD_REQUEST, "VIDEO_005", "이미 확정된 회의록입니다."),
+    VIDEO_APRVL_ALREADY_DONE(HttpStatus.BAD_REQUEST,    "VIDEO_006", "이미 결재 처리된 항목입니다."),
+    STT_TRANSCRIBE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "VIDEO_007", "음성 텍스트 변환에 실패했습니다."),
+	
+	// TASK
+	TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "TASK_001", "존재하지 않는 업무입니다."),
+	TASK_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "TASK_002", "업무 참여자가 아닙니다."),
+	TASK_NOT_OWNER(HttpStatus.FORBIDDEN, "TASK_003", "해당 업무에 대한 권한이 없습니다.");
     // 팀원이 새 도메인 추가 시 아래 패턴으로 섹션 추가
     // BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지 않는 게시글입니다.")
 	

@@ -33,7 +33,10 @@ public class BoardResponse {
     private String boardCn;              
 	
 	@Schema(description = "최초 등록자 사원 ID" , example = "2")
-    private Long frstRgtrId;         
+    private Long frstRgtrId;       
+	
+	@Schema(description = "사원명" , example = "자바")
+	private String empNm;
 	
 	@Schema(description = "최초 등록 일시" , example = "2026-05-28T10:22:50")
     private LocalDateTime frstRegDt;      
@@ -48,7 +51,14 @@ public class BoardResponse {
     private String deptCd;                
     
 	@Schema(description = "프로젝트 ID", example = "15")
-    private Long projId;                 
+    private Long projId;
+	
+	
+	@Schema(description = "프로젝트명", example = "마이크루소프트 차세대 시스템 구축")
+	private String projNm;
+
+	@Schema(description = "프로젝트 상태코드", example = "01")
+	private String projStatCd;
     
 	@Schema(description = "중요 공지 여부 (Y / N)", example = "N")
     private String imprtntYn;         

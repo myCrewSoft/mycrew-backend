@@ -15,7 +15,9 @@ import com.mycrewsoft.common.constant.PermissionCode;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DtoMapper;
+import com.mycrewsoft.domain.board.dto.request.BoardCreateRequest;
 import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
+import com.mycrewsoft.domain.board.dto.request.BoardUpdateRequest;
 import com.mycrewsoft.domain.board.dto.response.BoardResponse;
 import com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse;
 import com.mycrewsoft.domain.board.mapper.BoardMapper;
@@ -36,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class BoardServiceImpl implements BoardService {
+
 	private final EmployeeMapper employeeMapper;
 	private final BoardMapper boardMapper;
 	private final AuthorizationService authorizationService;
@@ -60,20 +63,24 @@ public class BoardServiceImpl implements BoardService {
 			authorizationService.assertCurrentUserPermission(PermissionCode.BOARD_POST_READ, resource);
 		}
 
+		if (StringUtils.isBlank(boardTypeCd)) {
+			boardTypeCd = "DEPT";
+			searchRequest.setBoardTypeCd(boardTypeCd);
+		}
+
 		// 2. 권한 정보(부서코드, 글로벌 여부, 스코프 ID 세트 등) 조회
 		Long currentEmpId = SecurityUtil.getCurrentEmpId();
 		String myDeptCd = employeeMapper.selectEmpDeptCodeByEmpId(currentEmpId);
 		PermissionScopeSet scopes = authorizationService.getCurrentPermissionScopes(PermissionCode.BOARD_POST_READ);
 
 		// 3. 데이터베이스 조회 (전체 카운트 및 페이징된 리스트)
-		long total = boardMapper.countBoard(searchRequest, boardTypeCd, deptCd);
+		int total = boardMapper.countBoard(searchRequest, boardTypeCd, deptCd);
 
 		// 4. 한 페이지에 보여지는 게시물
 		List<BoardResponse> content = boardMapper.getBoardList(pageable.getOffset(), // pageNumber* pageSize
 				pageable.getPageSize(), // 한 페이지당 몇개 ?
 				searchRequest, // 검색기능
 				boardTypeCd, deptCd);
-
 		// 5. Spring Page 객체로 바인딩하여 반환
 		return new PageImpl<>(content, pageable, total);
 	}
@@ -155,8 +162,7 @@ public class BoardServiceImpl implements BoardService {
 		BoardLikeVo boardLikeVo = boardMapper.readLikeStatus(boardId, empId);
 
 		int boardLikeCount = boardMapper.readLikeCount(boardId);
-		
-		
+
 		// vo 를 dto로 바꾸는 작업
 		BoardResponse boardResponse = dtoMapper.toDto(boardVo, BoardResponse.class);
 
@@ -164,12 +170,90 @@ public class BoardServiceImpl implements BoardService {
 		boardResponse.setIsLiked(boardLikeVo != null);
 
 		boardResponse.setLikeCnt(boardLikeCount);
-		
+
 		try {
-            log.info("BoardResponse Data: {}", objectMapper.writeValueAsString(boardResponse));
-        } catch (Exception e) {
-            log.warn("BoardResponse 로그 변환 실패: {}", e.getMessage());
-        }
+			log.info("BoardResponse Data: {}", objectMapper.writeValueAsString(boardResponse));
+		} catch (Exception e) {
+			log.warn("BoardResponse 로그 변환 실패: {}", e.getMessage());
+		}
 		return boardResponse;
 	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Page<BoardResponse> getProjList(Long projId, BoardSearchRequest searchRequest, Pageable pageable) {
+
+		// 프로젝트가 없으면 프로젝트가 없다는 예외
+		if (projId == null) {
+			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+		}
+
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
+
+		// 프로젝트 하는 이들만 볼 수있는 권한 체크 -> 지금 목록을 보려고 하는 사람이 프로젝트 참여자인지
+		// currentEmpId == mapper.getempId(projId);
+
+		// 1. 해당 프로젝트 게시글의 전체 카운트 조회
+		int total = boardMapper.countProjBoard(searchRequest, projId);
+
+		// 2. 한 페이지에 보여지는 프로젝트 게시물 리스트 조회 (getBoardList와 동일 포맷)
+		List<BoardResponse> content = boardMapper.getProjList(pageable.getOffset(), pageable.getPageSize(),
+				searchRequest, projId);
+
+		// 3. Spring Page 객체로 바인딩하여 최종 반환
+		return new PageImpl<>(content, pageable, total);
+	}
+
+	// 게시글 생성 메서드
+	@Override
+	public Long createBoard(BoardCreateRequest boardCreateRequest) {
+
+		// 권한 체크
+		if ("notice".equals(boardCreateRequest.getBoardTypeCd())) {
+			// 공지사항 일때는 관리자만
+
+		} else if ("dept".equals(boardCreateRequest.getBoardTypeCd())) {
+			// 부서게시판은 소속된 부서사람들만
+
+		} else if ("proj".equals(boardCreateRequest.getBoardTypeCd())) {
+			// 프로젝트 게시판은 프로젝트하는 사람들만
+		} else {
+			// 자유와 익명은 직원들 전체 아무나
+		}
+		Long empId = SecurityUtil.getCurrentEmpId();
+		
+		// DTO -> VO로 변환
+		BoardVO boardVo = dtoMapper.toDto(boardCreateRequest, BoardVO.class);
+
+		boardVo.setFrstRgtrId(empId);
+		// 데이터베이스에서 생성
+		boardMapper.createBoard(boardVo);
+
+		return boardVo.getBoardId();
+	}
+
+	@Override
+	public Long updateBoardDetail(Long boardId, BoardUpdateRequest boardUpdateRequest) {
+		// 로그인한 사원 아이디 empId
+		Long empId = SecurityUtil.getCurrentEmpId();
+		
+		
+		// db에서 글을 조회
+		BoardVO writtenBoard  = boardMapper.readBoard(boardId);
+		Long writer	= writtenBoard.getFrstRgtrId();
+		
+		//내가 작성한 글만 권한
+		// 현재 접속한 사원 아이디 = 작성한 사람 아이디
+		if(!empId.equals(writer)) {
+			throw new CustomException(ErrorCode.ACCESS_DENIED);
+		}
+		
+		//DTO-VO로 변환
+		BoardVO boardDetail =dtoMapper.toDto(boardUpdateRequest,  BoardVO.class);
+		
+		//데이터베이스에서 생성
+		boardMapper.updateBoardDetails(boardDetail);
+		return boardDetail.getBoardId();
+	}
+
 }

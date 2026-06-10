@@ -16,10 +16,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
-import com.mycrewsoft.common.util.DateUtil;
 import com.mycrewsoft.common.util.DtoMapper;
 import com.mycrewsoft.common.util.FileUtil;
-import com.mycrewsoft.domain.file.dto.FileDtlResponseDto;
 import com.mycrewsoft.domain.file.dto.FileUploadRequestDto;
 import com.mycrewsoft.domain.file.mapper.FileMapper;
 import com.mycrewsoft.domain.file.vo.FileClsfVo;
@@ -134,4 +132,78 @@ public class FileServiceImpl implements FileService {
 		}
 	}
 
+	/**
+	 * 파일 복원
+	 */
+	@Override
+	public void restoreFile(Long atchFileDtlId) {
+		int result = mapper.restoreFile(atchFileDtlId);
+		if(result == 0) {
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}
+	}
+
+	/**
+	 * 파일 영구 삭제
+	 * @return 
+	 */
+	@Override
+	@Transactional
+	public void hardDeleteFile(Long atchFileDtlId) {
+		//파일 정보 조회 (실제 저장 경로 가져오기)
+		FileDtlVo fileDtlVo	= mapper.selectDtlById(atchFileDtlId);
+		if(fileDtlVo == null) {
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}
+		
+		//디스크에서 실제 파일 삭제
+		Path filePath = Paths.get(fileDtlVo.getSavePathNm(), fileDtlVo.getSaveFileNm());
+		try {
+			Files.deleteIfExists(filePath);
+		}catch(Exception e) {
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}
+		
+		//무결성 제약 조건으로 상세 삭제 후 -> 분류 삭제
+		int result1 = mapper.hardDeleteFileDtl(atchFileDtlId);
+		if(result1 == 0) {
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}else {
+			int result2 = mapper.hardDeleteFileClsf(fileDtlVo.getAtchFileId());
+			if(result2 == 0) {
+				throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+			}
+		}
+	}
+
+	/**
+	 * 이미지 서빙
+	 */
+	@Override
+	public Resource serveImage(Long atchFileDtlId) {
+		//파일 존재 여부 확인
+		FileDtlVo dtlVo = mapper.selectDtlById(atchFileDtlId);
+		if(dtlVo == null || "Y".equals(dtlVo.getDelYn())) {
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}
+		
+		//이미지 파일인지 확인 (첨부파일타입코드 "01" = IMAGE)
+		if(!"01".equals(dtlVo.getAtchFileTyCd())) {
+			throw new CustomException(ErrorCode.INVALID_FILE_TYPE);
+		}
+		
+		//저장 경로 확인
+		Path savePath = Paths.get(dtlVo.getSavePathNm(), dtlVo.getSaveFileNm());
+		if(!Files.exists(savePath)) {
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}
+		try {
+			return new UrlResource(savePath.toUri());
+		}catch(MalformedURLException e) {
+			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+		}
+	}
+	
+	
+	
 }
