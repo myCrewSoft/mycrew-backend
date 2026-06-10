@@ -41,8 +41,6 @@ public class DriveController {
 
     private final DriveService driveService;
     
-    private final FileService fileService;
-
     @Operation(summary = "폴더 생성")
     @PostMapping("/folders")
     public ResponseEntity<ApiResponse<DriveResponseDto>> createFolder(
