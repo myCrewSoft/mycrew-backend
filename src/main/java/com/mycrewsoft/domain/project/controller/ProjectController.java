@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,6 +16,7 @@ import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.project.dto.ProjectCreateRequestDto;
 import com.mycrewsoft.domain.project.dto.ProjectDetailResponseDto;
 import com.mycrewsoft.domain.project.dto.ProjectListResponseDto;
+import com.mycrewsoft.domain.project.dto.ProjectUpdateRequestDto;
 import com.mycrewsoft.domain.project.service.ProjectService;
 import com.mycrewsoft.validate.groups.InsertGroup;
 
@@ -48,5 +50,15 @@ public class ProjectController {
 	@GetMapping("/{projId}")
 	public ResponseEntity<ApiResponse<ProjectDetailResponseDto>> getProject(@PathVariable Long projId){
 		return ResponseEntity.ok(ApiResponse.success(projService.getProject(projId)));
+	}
+	
+	@Operation(summary = "프로젝트 수정")
+	@PatchMapping("/{projId}")
+	public ResponseEntity<ApiResponse<String>> updateProject( 
+			@PathVariable Long projId,
+			@RequestBody ProjectUpdateRequestDto updateReqDto){
+		
+		projService.modifyProject(projId, updateReqDto);
+		return ResponseEntity.ok(ApiResponse.success("수정되었습니다"));
 	}
 }

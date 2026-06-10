@@ -120,6 +120,8 @@ public enum ErrorCode {
 	PROJECT_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "PROJECT_002", "프로젝트 참여자가 아닙니다."),
 	PROJECT_NOT_OWNER(HttpStatus.FORBIDDEN, "PROJECT_003", "해당 업무에 대한 권한이 없습니다."),
 	PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "PROJECT_004", "존재하지 않는 프로젝트입니다."),
+	PROJECT_INVALID_STAT_TRANSITION(HttpStatus.BAD_REQUEST, "PROJECT_005", "해당 상태에서는 상태를 변경할 수 없습니다."),
+	PROJECT_CANNOT_MODIFY_DATE(HttpStatus.BAD_REQUEST, "PROJECT_006", "해당 상태에서는 날짜를 수정할 수 없습니다."),
   
     // VIDEO
     VIDEO_CONF_NOT_FOUND(HttpStatus.NOT_FOUND,   "VIDEO_001", "존재하지 않는 화상회의입니다."),

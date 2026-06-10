@@ -15,6 +15,7 @@ import com.mycrewsoft.domain.messenger.service.MsngrServiceImpl;
 import com.mycrewsoft.domain.project.dto.ProjectCreateRequestDto;
 import com.mycrewsoft.domain.project.dto.ProjectDetailResponseDto;
 import com.mycrewsoft.domain.project.dto.ProjectListResponseDto;
+import com.mycrewsoft.domain.project.dto.ProjectUpdateRequestDto;
 import com.mycrewsoft.domain.project.mapper.ProjectMapper;
 import com.mycrewsoft.domain.project.vo.ProjectVO;
 import com.mycrewsoft.domain.projectmember.dto.ProjectMemberResponseDto;
@@ -136,5 +137,93 @@ public class ProjectServiceImpl implements ProjectService{
 		ProjectDetailResponseDto dto = dtoMapper.toDto(vo, ProjectDetailResponseDto.class);
 		dto.setProjMemberList(dtoMapper.toDtoList(vo.getProjMemberList(), ProjectMemberResponseDto.class));
 		return dto;
+	}
+
+	/**
+	 * 프로젝트 수정
+	 */
+	@Override
+	public void modifyProject(Long projId, ProjectUpdateRequestDto updateReqDto) {
+		// 1. 권한 체크
+		authorizationService.assertCurrentUserPermission(
+		    PermissionCode.PROJECT_UPDATE,
+		    ResourceContext.builder()
+		        .resourceType(ResourceType.PROJECT)
+		        .resourceId(String.valueOf(projId))
+		        .build()
+		);
+		
+		Long empId = SecurityUtil.getCurrentEmpId();
+		
+		//프로젝트 존재 여부 확인
+		ProjectVO vo = projectMapper.selectProject(projId, empId);
+		if(vo == null) {
+			throw new CustomException(ErrorCode.PROJECT_NOT_FOUND);
+		}
+		
+		//프로젝트 장 검증
+		if(!vo.getProjLdrEmpId().equals(empId)) {
+			throw new CustomException(ErrorCode.PROJECT_NOT_OWNER);
+		}
+		
+		//상태코드 완료('03') 및 중단('04')면 날짜 수정 불가
+		String currentStat = vo.getProjStatCd();
+		if("03".equals(currentStat) || "04".equals(currentStat)) {
+			if(updateReqDto.getProjBgngYmd() != null || updateReqDto.getProjEndYmd() != null) {
+				throw new CustomException(ErrorCode.PROJECT_INVALID_STAT_TRANSITION);
+			}
+		}
+		
+		//진행 중 상태이면 시작일 수정 불가
+		if("02".equals(currentStat) && updateReqDto.getProjBgngYmd() != null) {
+			throw new CustomException(ErrorCode.PROJECT_INVALID_STAT_TRANSITION);
+		}
+		
+		//날짜 검증
+		if(updateReqDto.getProjBgngYmd() != null && updateReqDto.getProjEndYmd() != null) {
+			if(!updateReqDto.getProjBgngYmd().isBefore(updateReqDto.getProjEndYmd())) {
+				throw new CustomException(ErrorCode.PROJECT_INVALID_DATE);
+			}
+		}
+		
+		//상태 전이 규칙 검증
+		if(updateReqDto.getProjStatCd() != null) {
+			validateStatTransition(currentStat, updateReqDto.getProjStatCd());
+		}
+		
+		//dto -> vo로 변환
+		//예정 상태에서 시작일 변경 시 상태 자동 재계산
+		ProjectVO updateVo = dtoMapper.toDto(updateReqDto, ProjectVO.class);
+		updateVo.setProjId(projId);
+		
+		if("01".equals(currentStat) && updateReqDto.getProjBgngYmd() != null) {
+			if (!updateReqDto.getProjBgngYmd().isAfter(LocalDate.now())) {
+	            updateVo.setProjStatCd("02");  // 진행중으로 자동 전환
+	        } else {
+	            updateVo.setProjStatCd("01");  // 예정 유지
+	        }
+		}
+		
+		//수정
+	    int result = projectMapper.updateProject(updateVo);
+	    if (result == 0) throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+	}
+	
+	/**
+	 * 상태 전이 규칙 검증
+	 */
+	private void validateStatTransition(String currentStat, String newStat) {
+	    // 완료(03) → 변경 불가
+	    if ("03".equals(currentStat)) {
+	        throw new CustomException(ErrorCode.PROJECT_INVALID_STAT_TRANSITION);
+	    }
+	    // 중단(04) → 변경 불가
+	    if ("04".equals(currentStat)) {
+	        throw new CustomException(ErrorCode.PROJECT_INVALID_STAT_TRANSITION);
+	    }
+	    // 진행중(02) → 예정(01) 불가
+	    if ("02".equals(currentStat) && "01".equals(newStat)) {
+	        throw new CustomException(ErrorCode.PROJECT_INVALID_STAT_TRANSITION);
+	    }
 	}
 }

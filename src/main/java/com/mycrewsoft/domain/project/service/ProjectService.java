@@ -5,6 +5,7 @@ import java.util.List;
 import com.mycrewsoft.domain.project.dto.ProjectCreateRequestDto;
 import com.mycrewsoft.domain.project.dto.ProjectDetailResponseDto;
 import com.mycrewsoft.domain.project.dto.ProjectListResponseDto;
+import com.mycrewsoft.domain.project.dto.ProjectUpdateRequestDto;
 
 public interface ProjectService {
 	/**
@@ -30,4 +31,10 @@ public interface ProjectService {
 	 * @return
 	 */
 	ProjectDetailResponseDto getProject(Long projId);
+	
+	/**
+	 * 프로젝트 수정
+	 * @param reqDto
+	 */
+	void modifyProject(Long projId, ProjectUpdateRequestDto updateReqDto);
 }
