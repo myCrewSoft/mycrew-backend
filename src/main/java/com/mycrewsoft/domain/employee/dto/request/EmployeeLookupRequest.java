@@ -19,4 +19,7 @@ public class EmployeeLookupRequest {
 
     @Schema(description = "부서 코드 필터 (선택)", example = "DEPT01")
     private String deptCd;
+    
+    @Schema(description = "프로젝트 ID 필터 (선택)", example = "1")
+    private Long projId;
 }
