@@ -4,14 +4,14 @@
 
 <mapper namespace="com.mycrewsoft.domain.employee.mapper.EmployeeLookupMapper">
 
-    <select id="selectEmployeesForLookup" parameterType="EmployeeLookupRequest" resultType="EmployeeLookupVO">
+    <select id="selectEmployeesForLookup" parameterType="EmployeeLookupRequest" resultType="EmployeeLookupVo">
         SELECT
             E.EMP_ID,
             E.EMP_NM,
             D.DEPT_NM,
             JG.JOB_GRD_NM,
             JP.JOB_PSTN_NM,
-            F.SAVE_PATH_NM || '/' || F.SAVE_FILE_NM AS PROFILE_IMAGE_URL
+            '/api/files/images/' || F.ATCH_FILE_DTL_ID AS PROFILE_IMAGE_URL
         FROM TB_EMPLOYEE E
         LEFT JOIN TB_DEPARTMENT D
             ON D.DEPT_CD = E.DEPT_CD
@@ -25,17 +25,31 @@
             ON F.ATCH_FILE_ID = AC.ATCH_FILE_ID
             AND F.DEL_YN = 'N'
         WHERE E.ENABLED = 'Y'
+        <if test="excludeEmpId != null">
+		    AND E.EMP_ID <![CDATA[ <> ]]> #{excludeEmpId}
+		</if>
         <if test="keyword != null and keyword != ''">
             AND (
-                E.EMP_NM   LIKE '%' || #{keyword} || '%'
-                OR D.DEPT_NM  LIKE '%' || #{keyword} || '%'
+                E.EMP_NM LIKE '%' || #{keyword} || '%'
+                OR D.DEPT_NM LIKE '%' || #{keyword} || '%'
                 OR JG.JOB_GRD_NM LIKE '%' || #{keyword} || '%'
             )
         </if>
         <if test="deptCd != null and deptCd != ''">
             AND E.DEPT_CD = #{deptCd}
         </if>
-        ORDER BY D.DEPT_NM, E.EMP_NM ASC
+        <if test="fixedDeptCd != null and fixedDeptCd != ''">
+            AND E.DEPT_CD = #{fixedDeptCd}
+        </if>
+        <if test="projId != null">
+            AND E.EMP_ID IN (
+                SELECT EMP_ID
+                FROM TB_PROJ_MEMBER
+                WHERE PROJ_ID = #{projId}
+            )
+        </if>
+        ORDER BY D.DEPT_NM ASC, E.EMP_NM ASC
+        FETCH FIRST 50 ROWS ONLY
     </select>
 
 </mapper>
