@@ -13,7 +13,7 @@ public class VideoChatLogVO {
 	private Long vconfId;			// 화상방 ID - FK
 
 	private Long mbrId;				// 발언자ID(TB_MEMBER)
-	private Long spkngCn;			// 발언 내용
+	private String spkngCn;			// 발언 내용
 	
 	private LocalDateTime creatDt;	// 생성 일시
 	private LocalDateTime endDt;	// 종료 일시
