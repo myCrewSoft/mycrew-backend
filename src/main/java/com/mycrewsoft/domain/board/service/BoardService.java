@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import com.mycrewsoft.domain.board.dto.request.BoardCommentCreateRequest;
+import com.mycrewsoft.domain.board.dto.request.BoardCommentUpdateRequest;
 import com.mycrewsoft.domain.board.dto.request.BoardCreateRequest;
 import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
 import com.mycrewsoft.domain.board.dto.request.BoardUpdateRequest;
@@ -44,5 +46,19 @@ public interface BoardService {
 	// 게시글 수정
 	Long updateBoardDetail(Long boardId,BoardUpdateRequest boardUpdateRequest);
 	
+	//게시글 삭제
+	void deleteBoardDetail(Long boardId);
 	
+	
+	// 게시글 댓글 생성
+
+	Long createComment(BoardCommentCreateRequest createComment);
+	
+	
+	//게시글 댓글 수정
+	
+	Long updateComment(BoardCommentUpdateRequest updateComment);
+	
+	//게시글 댓글 삭제
+	void deleteComment(Long commentId);
 }
