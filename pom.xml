@@ -171,6 +171,12 @@
 			<artifactId>p6spy-spring-boot-starter</artifactId>
 			<version>1.10.0</version>
 		</dependency>
+		<!-- LiveKit -->
+		<dependency>
+			<groupId>io.livekit</groupId>
+			<artifactId>livekit-server</artifactId>
+			<version>0.13.0</version>
+		</dependency>
 		<!-- 환경 변수 -->
 		<dependency>
 		    <groupId>me.paulschwarz</groupId>

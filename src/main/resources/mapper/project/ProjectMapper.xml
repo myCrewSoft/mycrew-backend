@@ -82,4 +82,11 @@
 	WHERE PROJ_STAT_CD = '01'
 	  AND TRUNC(PROJ_BGNG_YMD) &lt;= TRUNC(SYSDATE)
 </update>
+
+	<select id="selectProjectLeaderId" resultType="long">
+	    SELECT PROJ_LDR_MBR_ID
+	    FROM TB_PROJECT
+	    WHERE PROJ_ID = #{projId}
+	</select>
+	
 </mapper>

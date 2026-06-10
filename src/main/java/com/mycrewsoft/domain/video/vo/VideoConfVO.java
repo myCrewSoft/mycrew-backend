@@ -13,6 +13,7 @@ public class VideoConfVO {
 	private Long vconfId;			// 화상방 ID - PK
 	
 	private String vconfNm;			// 화상방 이름
+	private String roomNm;
 	private Long crtrId;			// 생성자 ID(TB_MEMBER)
 	private String confSttusCd;		// 회의 상태 (01: 대기 / 02: 진행 중 / 03: 종료)
 	
