@@ -38,4 +38,10 @@ public interface ProjectMapper {
 	 */
 	Long selectProjectLeaderId(@Param("projId") Long projId);
 	
+	/**
+	 * 프로젝트 상세 조회
+	 * @param projId
+	 * @return
+	 */
+	ProjectVO selectProject(@Param("projId") Long projId, @Param("empId") Long empId);
 }
