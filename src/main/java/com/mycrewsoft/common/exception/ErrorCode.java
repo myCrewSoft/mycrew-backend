@@ -17,7 +17,15 @@ import org.springframework.http.HttpStatus;
  */
 @Getter
 public enum ErrorCode {
-
+	
+	// APPROVAL
+	TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND, "APR_001", "존재하지 않는 결재 양식입니다."),
+	APPROVAL_DOC_NOT_FOUND(HttpStatus.NOT_FOUND, "APR_002", "존재하지 않는 기안서입니다."),
+	APPROVAL_ALREADY_PROCESSED(HttpStatus.CONFLICT, "APR_003", "이미 처리된 결재가 있어 회수할 수 없습니다."),
+	APPROVAL_DOC_STATUS_INVALID(HttpStatus.BAD_REQUEST, "APR_004", "현재 상태에서 처리할 수 없는 결재 문서입니다."),
+	APPROVAL_LINE_INVALID(HttpStatus.BAD_REQUEST, "APR_005", "결재선 정보가 올바르지 않습니다."),
+	APPROVAL_REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "APR_006", "반려 사유는 필수입니다."),
+	
     // COMMON
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "COMMON_001", "입력값이 올바르지 않습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_002", "서버 내부 오류가 발생했습니다."),

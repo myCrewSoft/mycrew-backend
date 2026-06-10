@@ -1,0 +1,622 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.domain.approval.mapper.ApprovalDraftMapper">
+
+    <insert id="insertApprovalDoc"
+            parameterType="com.mycrewsoft.domain.approval.approvaldocVO.ApprovalDocVO">
+        <selectKey keyProperty="drftDocSn" resultType="long" order="BEFORE">
+            SELECT SEQ_APRVL_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_APRVL_DOC (
+            DRFT_DOC_SN, TMPLAT_CD, EMP_ID, APRVL_FULL_REC_CN, APRVL_FULL_CN,
+            DRFT_REQST_DT, APRVL_DOC_STTS_CD, DOC_TTL, APRVL_HOPE_DT,
+            APRVL_CMPTN_DT, RTRN_DT
+        ) VALUES (
+            #{drftDocSn}, #{tmplatCd}, #{empId}, #{aprvlFullRecCn}, #{aprvlFullCn},
+            #{drftReqstDt}, #{aprvlDocSttsCd}, #{docTtl}, #{aprvlHopeDt},
+            #{aprvlCmptnDt}, #{rtrnDt}
+        )
+    </insert>
+
+    <update id="updateApprovalDocTemporary"
+            parameterType="com.mycrewsoft.domain.approval.approvaldocVO.ApprovalDocVO">
+        UPDATE TB_APRVL_DOC
+        SET TMPLAT_CD = #{tmplatCd},
+            APRVL_FULL_CN = #{aprvlFullCn},
+            DOC_TTL = #{docTtl},
+            APRVL_HOPE_DT = #{aprvlHopeDt}
+        WHERE DRFT_DOC_SN = #{drftDocSn}
+    </update>
+
+    <insert id="insertApprovalFile"
+            parameterType="com.mycrewsoft.domain.approval.approvalfileVO.ApprovalFileVO">
+        INSERT INTO TB_APRVL_FILE (DRFT_DOC_SN, ATCH_FILE_ID)
+        VALUES (#{drftDocSn}, #{atchFileId})
+    </insert>
+
+    <delete id="deleteApprovalFileByDocSn">
+        DELETE FROM TB_APRVL_FILE
+        WHERE DRFT_DOC_SN = #{drftDocSn}
+    </delete>
+
+    <insert id="insertApprovalStep"
+            parameterType="com.mycrewsoft.domain.approval.approvalstepVO.ApprovalStepVO">
+        <selectKey keyProperty="aprvlStepSn" resultType="long" order="BEFORE">
+            SELECT SEQ_APRVL_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_APRVL_STEP (
+            APRVL_STEP_SN, DRFT_DOC_SN, EMP_ID, APRVL_MTHD_CD, REQ_APRVL_CNT,
+            STEP_PRGRS_CD, FRST_RGTR_ID, FRST_REG_DT, LAST_MDFR_ID,
+            LAST_MDFCN_DT, APRVL_ORD
+        ) VALUES (
+            #{aprvlStepSn}, #{drftDocSn}, #{empId}, #{aprvlMthdCd}, #{reqAprvlCnt},
+            #{stepPrgrsCd}, #{frstRgtrId}, #{frstRegDt}, #{lastMdfrId},
+            #{lastMdfcnDt}, #{aprvlOrd}
+        )
+    </insert>
+
+    <insert id="insertApprovalLine"
+            parameterType="com.mycrewsoft.domain.approval.approvallineVO.ApprovalLineVO">
+        <selectKey keyProperty="aprvlLineSn" resultType="long" order="BEFORE">
+            SELECT SEQ_APRVL_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_APRVL_LINE (
+            APRVL_LINE_SN, DRFT_DOC_SN, APRVR_EMP_ID, APRVL_DT, APRVL_PRGRS_CD,
+            APRVL_RSN, RTRN_RSN, APRVL_STEP_SN, EMP_ID
+        ) VALUES (
+            #{aprvlLineSn}, #{drftDocSn}, #{aprvrEmpId}, #{aprvlDt}, #{aprvlPrgrsCd},
+            #{aprvlRsn}, #{rtrnRsn}, #{aprvlStepSn}, #{empId}
+        )
+    </insert>
+
+    <delete id="deleteApprovalLinesByDocSn">
+        DELETE FROM TB_APRVL_LINE
+        WHERE DRFT_DOC_SN = #{drftDocSn}
+    </delete>
+
+    <delete id="deleteApprovalStepsByDocSn">
+        DELETE FROM TB_APRVL_STEP
+        WHERE DRFT_DOC_SN = #{drftDocSn}
+    </delete>
+
+    <select id="selectApprovalDocByDocSn"
+            resultType="com.mycrewsoft.domain.approval.approvaldocVO.ApprovalDocVO">
+        SELECT
+            DRFT_DOC_SN AS drftDocSn,
+            TMPLAT_CD AS tmplatCd,
+            EMP_ID AS empId,
+            APRVL_FULL_REC_CN AS aprvlFullRecCn,
+            APRVL_FULL_CN AS aprvlFullCn,
+            DRFT_REQST_DT AS drftReqstDt,
+            APRVL_DOC_STTS_CD AS aprvlDocSttsCd,
+            DOC_TTL AS docTtl,
+            APRVL_HOPE_DT AS aprvlHopeDt,
+            APRVL_CMPTN_DT AS aprvlCmptnDt,
+            RTRN_DT AS rtrnDt
+        FROM TB_APRVL_DOC
+        WHERE DRFT_DOC_SN = #{drftDocSn}
+    </select>
+
+    <select id="selectApprovalDocByDocSnForUpdate"
+            resultType="com.mycrewsoft.domain.approval.approvaldocVO.ApprovalDocVO">
+        SELECT
+            DRFT_DOC_SN AS drftDocSn,
+            TMPLAT_CD AS tmplatCd,
+            EMP_ID AS empId,
+            APRVL_FULL_REC_CN AS aprvlFullRecCn,
+            APRVL_FULL_CN AS aprvlFullCn,
+            DRFT_REQST_DT AS drftReqstDt,
+            APRVL_DOC_STTS_CD AS aprvlDocSttsCd,
+            DOC_TTL AS docTtl,
+            APRVL_HOPE_DT AS aprvlHopeDt,
+            APRVL_CMPTN_DT AS aprvlCmptnDt,
+            RTRN_DT AS rtrnDt
+        FROM TB_APRVL_DOC
+        WHERE DRFT_DOC_SN = #{drftDocSn}
+        FOR UPDATE
+    </select>
+
+    <select id="countApprovalSteps" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_APRVL_STEP
+        WHERE DRFT_DOC_SN = #{drftDocSn}
+    </select>
+
+    <select id="countApprovalLines" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_APRVL_LINE
+        WHERE DRFT_DOC_SN = #{drftDocSn}
+    </select>
+
+    <select id="selectFirstApprovalStep"
+            resultType="com.mycrewsoft.domain.approval.approvalstepVO.ApprovalStepVO">
+        SELECT *
+        FROM (
+            SELECT
+                APRVL_STEP_SN AS aprvlStepSn,
+                DRFT_DOC_SN AS drftDocSn,
+                EMP_ID AS empId,
+                APRVL_MTHD_CD AS aprvlMthdCd,
+                REQ_APRVL_CNT AS reqAprvlCnt,
+                STEP_PRGRS_CD AS stepPrgrsCd,
+                FRST_RGTR_ID AS frstRgtrId,
+                FRST_REG_DT AS frstRegDt,
+                LAST_MDFR_ID AS lastMdfrId,
+                LAST_MDFCN_DT AS lastMdfcnDt,
+                APRVL_ORD AS aprvlOrd
+            FROM TB_APRVL_STEP
+            WHERE DRFT_DOC_SN = #{drftDocSn}
+            ORDER BY APRVL_ORD ASC
+        )
+        WHERE ROWNUM = 1
+    </select>
+
+    <select id="selectCurrentApprovalStep"
+            resultType="com.mycrewsoft.domain.approval.approvalstepVO.ApprovalStepVO">
+        SELECT
+            APRVL_STEP_SN AS aprvlStepSn,
+            DRFT_DOC_SN AS drftDocSn,
+            EMP_ID AS empId,
+            APRVL_MTHD_CD AS aprvlMthdCd,
+            REQ_APRVL_CNT AS reqAprvlCnt,
+            STEP_PRGRS_CD AS stepPrgrsCd,
+            FRST_RGTR_ID AS frstRgtrId,
+            FRST_REG_DT AS frstRegDt,
+            LAST_MDFR_ID AS lastMdfrId,
+            LAST_MDFCN_DT AS lastMdfcnDt,
+            APRVL_ORD AS aprvlOrd
+        FROM TB_APRVL_STEP
+        WHERE DRFT_DOC_SN = #{drftDocSn}
+          AND STEP_PRGRS_CD = '02'
+        ORDER BY APRVL_ORD ASC
+        FETCH FIRST 1 ROWS ONLY
+    </select>
+
+    <select id="selectNextApprovalStep"
+            resultType="com.mycrewsoft.domain.approval.approvalstepVO.ApprovalStepVO">
+        SELECT
+            APRVL_STEP_SN AS aprvlStepSn,
+            DRFT_DOC_SN AS drftDocSn,
+            EMP_ID AS empId,
+            APRVL_MTHD_CD AS aprvlMthdCd,
+            REQ_APRVL_CNT AS reqAprvlCnt,
+            STEP_PRGRS_CD AS stepPrgrsCd,
+            FRST_RGTR_ID AS frstRgtrId,
+            FRST_REG_DT AS frstRegDt,
+            LAST_MDFR_ID AS lastMdfrId,
+            LAST_MDFCN_DT AS lastMdfcnDt,
+            APRVL_ORD AS aprvlOrd
+        FROM TB_APRVL_STEP
+        WHERE DRFT_DOC_SN = #{drftDocSn}
+          AND APRVL_ORD &gt; #{aprvlOrd}
+        ORDER BY APRVL_ORD ASC
+        FETCH FIRST 1 ROWS ONLY
+    </select>
+
+    <select id="selectApprovalLineInStep"
+            resultType="com.mycrewsoft.domain.approval.approvallineVO.ApprovalLineVO">
+        SELECT
+            APRVL_STEP_SN AS aprvlStepSn,
+            EMP_ID AS empId,
+            APRVL_LINE_SN AS aprvlLineSn,
+            DRFT_DOC_SN AS drftDocSn,
+            APRVR_EMP_ID AS aprvrEmpId,
+            APRVL_DT AS aprvlDt,
+            APRVL_PRGRS_CD AS aprvlPrgrsCd,
+            APRVL_RSN AS aprvlRsn,
+            RTRN_RSN AS rtrnRsn
+        FROM TB_APRVL_LINE
+        WHERE APRVL_STEP_SN = #{aprvlStepSn}
+          AND APRVR_EMP_ID = #{aprvrEmpId}
+    </select>
+
+    <select id="countApprovalLinesByStepAndStatus" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_APRVL_LINE
+        WHERE APRVL_STEP_SN = #{aprvlStepSn}
+          AND APRVL_PRGRS_CD = #{aprvlPrgrsCd}
+    </select>
+
+    <select id="countProcessedApprovalLines" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_APRVL_LINE
+        WHERE DRFT_DOC_SN = #{drftDocSn}
+          AND APRVL_PRGRS_CD IN ('02', '03')
+    </select>
+
+    <update id="updateAllStepsStatus">
+        UPDATE TB_APRVL_STEP
+        SET STEP_PRGRS_CD = #{stepPrgrsCd},
+            LAST_MDFR_ID = #{empId},
+            LAST_MDFCN_DT = #{now}
+        WHERE DRFT_DOC_SN = #{drftDocSn}
+    </update>
+
+    <update id="updateAllLinesWaiting">
+        UPDATE TB_APRVL_LINE
+        SET APRVL_PRGRS_CD = #{aprvlPrgrsCd},
+            APRVL_DT = NULL,
+            APRVL_RSN = NULL,
+            RTRN_RSN = NULL
+        WHERE DRFT_DOC_SN = #{drftDocSn}
+    </update>
+
+    <update id="updateStepStatus">
+        UPDATE TB_APRVL_STEP
+        SET STEP_PRGRS_CD = #{stepPrgrsCd},
+            LAST_MDFR_ID = #{empId},
+            LAST_MDFCN_DT = #{now}
+        WHERE APRVL_STEP_SN = #{aprvlStepSn}
+    </update>
+
+    <update id="updateApprovalLineApproved">
+        UPDATE TB_APRVL_LINE
+        SET APRVL_PRGRS_CD = '02',
+            APRVL_DT = #{now},
+            APRVL_RSN = #{aprvlRsn},
+            RTRN_RSN = NULL
+        WHERE APRVL_LINE_SN = #{aprvlLineSn}
+    </update>
+
+    <update id="updateApprovalLineRejected">
+        UPDATE TB_APRVL_LINE
+        SET APRVL_PRGRS_CD = '03',
+            APRVL_DT = #{now},
+            APRVL_RSN = NULL,
+            RTRN_RSN = #{rtrnRsn}
+        WHERE APRVL_LINE_SN = #{aprvlLineSn}
+    </update>
+
+    <update id="updateWaitingLinesInStepToSkipped">
+        UPDATE TB_APRVL_LINE
+        SET APRVL_PRGRS_CD = #{aprvlPrgrsCd}
+        WHERE APRVL_STEP_SN = #{aprvlStepSn}
+          AND APRVL_PRGRS_CD = '01'
+    </update>
+
+    <update id="updateLaterStepsToSkipped">
+        UPDATE TB_APRVL_STEP
+        SET STEP_PRGRS_CD = #{stepPrgrsCd},
+            LAST_MDFR_ID = #{empId},
+            LAST_MDFCN_DT = #{now}
+        WHERE DRFT_DOC_SN = #{drftDocSn}
+          AND APRVL_ORD &gt; #{aprvlOrd}
+    </update>
+
+    <update id="updateWaitingLinesAfterStepToSkipped">
+        UPDATE TB_APRVL_LINE
+        SET APRVL_PRGRS_CD = #{aprvlPrgrsCd}
+        WHERE APRVL_PRGRS_CD = '01'
+          AND APRVL_STEP_SN IN (
+              SELECT APRVL_STEP_SN
+              FROM TB_APRVL_STEP
+              WHERE DRFT_DOC_SN = #{drftDocSn}
+                AND APRVL_ORD &gt; #{aprvlOrd}
+          )
+    </update>
+
+    <update id="updateDocumentSubmitted">
+        UPDATE TB_APRVL_DOC
+        SET APRVL_DOC_STTS_CD = #{aprvlDocSttsCd},
+            DRFT_REQST_DT = #{now},
+            APRVL_CMPTN_DT = NULL,
+            RTRN_DT = NULL
+        WHERE DRFT_DOC_SN = #{drftDocSn}
+    </update>
+
+    <update id="updateDocumentStatus">
+        UPDATE TB_APRVL_DOC
+        SET APRVL_DOC_STTS_CD = #{aprvlDocSttsCd},
+            APRVL_CMPTN_DT = #{aprvlCmptnDt},
+            RTRN_DT = #{rtrnDt}
+        WHERE DRFT_DOC_SN = #{drftDocSn}
+    </update>
+
+    <sql id="draftListSelect">
+        SELECT
+            d.DRFT_DOC_SN AS drftDocSn,
+            d.DOC_TTL AS docTtl,
+            d.TMPLAT_CD AS tmplatCd,
+            d.EMP_ID AS empId,
+            drafter.EMP_NM AS drafterEmpNm,
+            (
+                SELECT LISTAGG(aprvr.EMP_NM, ', ') WITHIN GROUP (ORDER BY s.APRVL_ORD, l.APRVL_LINE_SN)
+                FROM TB_APRVL_STEP s
+                JOIN TB_APRVL_LINE l ON l.APRVL_STEP_SN = s.APRVL_STEP_SN
+                JOIN TB_EMPLOYEE aprvr ON aprvr.EMP_ID = l.APRVR_EMP_ID
+                WHERE s.DRFT_DOC_SN = d.DRFT_DOC_SN
+            ) AS approverNames,
+            d.DRFT_REQST_DT AS drftReqstDt,
+            d.APRVL_HOPE_DT AS aprvlHopeDt,
+            d.APRVL_DOC_STTS_CD AS aprvlDocSttsCd,
+            (
+                SELECT MAX(l2.RTRN_RSN)
+                FROM TB_APRVL_LINE l2
+                WHERE l2.DRFT_DOC_SN = d.DRFT_DOC_SN
+                  AND l2.APRVL_PRGRS_CD = '03'
+            ) AS rtrnRsn
+        FROM TB_APRVL_DOC d
+        JOIN TB_EMPLOYEE drafter ON drafter.EMP_ID = d.EMP_ID
+    </sql>
+
+    <sql id="myDraftsWhere">
+        WHERE d.EMP_ID = #{empId}
+        <if test="documentStatus != null and documentStatus != ''">
+          AND d.APRVL_DOC_STTS_CD = #{documentStatus}
+        </if>
+        <if test="keyword != null and keyword != ''">
+          AND (
+              d.DOC_TTL LIKE '%' || #{keyword} || '%'
+              OR EXISTS (
+                  SELECT 1
+                  FROM TB_APRVL_LINE lk
+                  JOIN TB_EMPLOYEE ek ON ek.EMP_ID = lk.APRVR_EMP_ID
+                  WHERE lk.DRFT_DOC_SN = d.DRFT_DOC_SN
+                    AND ek.EMP_NM LIKE '%' || #{keyword} || '%'
+              )
+          )
+        </if>
+    </sql>
+
+    <sql id="myApprovalRequestsWhere">
+        WHERE d.APRVL_DOC_STTS_CD = '01'
+          AND cl.APRVR_EMP_ID = #{empId}
+          AND cl.APRVL_PRGRS_CD = '01'
+        <if test="keyword != null and keyword != ''">
+          AND (d.DOC_TTL LIKE '%' || #{keyword} || '%' OR drafter.EMP_NM LIKE '%' || #{keyword} || '%')
+        </if>
+    </sql>
+
+    <sql id="myApprovalHistoryWhere">
+        WHERE EXISTS (
+            SELECT 1
+            FROM TB_APRVL_LINE mine
+            WHERE mine.DRFT_DOC_SN = d.DRFT_DOC_SN
+              AND mine.APRVR_EMP_ID = #{empId}
+              AND mine.APRVL_PRGRS_CD IN ('02', '03')
+        )
+        <if test="documentStatus != null and documentStatus != ''">
+          AND d.APRVL_DOC_STTS_CD = #{documentStatus}
+        </if>
+        <if test="keyword != null and keyword != ''">
+          AND (d.DOC_TTL LIKE '%' || #{keyword} || '%' OR drafter.EMP_NM LIKE '%' || #{keyword} || '%')
+        </if>
+    </sql>
+
+    <select id="selectMyDrafts"
+            resultType="com.mycrewsoft.domain.approval.dto.response.ApprovalDraftSummaryResponse">
+        <include refid="draftListSelect"/>
+        <include refid="myDraftsWhere"/>
+        ORDER BY NVL(d.APRVL_CMPTN_DT, NVL(d.RTRN_DT, d.DRFT_REQST_DT)) DESC, d.DRFT_DOC_SN DESC
+        OFFSET #{offset} ROWS FETCH NEXT #{size} ROWS ONLY
+    </select>
+
+    <select id="countMyDrafts" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_APRVL_DOC d
+        JOIN TB_EMPLOYEE drafter ON drafter.EMP_ID = d.EMP_ID
+        <include refid="myDraftsWhere"/>
+    </select>
+
+    <select id="selectMyApprovalRequests"
+            resultType="com.mycrewsoft.domain.approval.dto.response.ApprovalDraftSummaryResponse">
+        <include refid="draftListSelect"/>
+        JOIN TB_APRVL_STEP cs ON cs.DRFT_DOC_SN = d.DRFT_DOC_SN AND cs.STEP_PRGRS_CD = '02'
+        JOIN TB_APRVL_LINE cl ON cl.APRVL_STEP_SN = cs.APRVL_STEP_SN
+        <include refid="myApprovalRequestsWhere"/>
+        ORDER BY d.DRFT_REQST_DT DESC, d.DRFT_DOC_SN DESC
+        OFFSET #{offset} ROWS FETCH NEXT #{size} ROWS ONLY
+    </select>
+
+    <select id="countMyApprovalRequests" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_APRVL_DOC d
+        JOIN TB_EMPLOYEE drafter ON drafter.EMP_ID = d.EMP_ID
+        JOIN TB_APRVL_STEP cs ON cs.DRFT_DOC_SN = d.DRFT_DOC_SN AND cs.STEP_PRGRS_CD = '02'
+        JOIN TB_APRVL_LINE cl ON cl.APRVL_STEP_SN = cs.APRVL_STEP_SN
+        <include refid="myApprovalRequestsWhere"/>
+    </select>
+
+    <select id="selectMyApprovalHistory"
+            resultType="com.mycrewsoft.domain.approval.dto.response.ApprovalDraftSummaryResponse">
+        <include refid="draftListSelect"/>
+        <include refid="myApprovalHistoryWhere"/>
+        ORDER BY (
+            SELECT MAX(mine2.APRVL_DT)
+            FROM TB_APRVL_LINE mine2
+            WHERE mine2.DRFT_DOC_SN = d.DRFT_DOC_SN
+              AND mine2.APRVR_EMP_ID = #{empId}
+              AND mine2.APRVL_PRGRS_CD IN ('02', '03')
+        ) DESC, d.DRFT_DOC_SN DESC
+        OFFSET #{offset} ROWS FETCH NEXT #{size} ROWS ONLY
+    </select>
+
+    <select id="countMyApprovalHistory" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_APRVL_DOC d
+        JOIN TB_EMPLOYEE drafter ON drafter.EMP_ID = d.EMP_ID
+        <include refid="myApprovalHistoryWhere"/>
+    </select>
+
+    <sql id="myCompletedApprovalDocumentsWhere">
+        WHERE EXISTS (
+            SELECT 1
+            FROM TB_APRVL_LINE mine
+            WHERE mine.DRFT_DOC_SN = d.DRFT_DOC_SN
+              AND mine.APRVR_EMP_ID = #{empId}
+              AND mine.APRVL_PRGRS_CD = '02'
+        )
+        AND d.APRVL_DOC_STTS_CD = '02'
+        <if test="keyword != null and keyword != ''">
+          AND (d.DOC_TTL LIKE '%' || #{keyword} || '%' OR drafter.EMP_NM LIKE '%' || #{keyword} || '%')
+        </if>
+    </sql>
+
+    <select id="selectMyCompletedApprovalDocuments"
+            resultType="com.mycrewsoft.domain.approval.dto.response.ApprovalDraftSummaryResponse">
+        <include refid="draftListSelect"/>
+        <include refid="myCompletedApprovalDocumentsWhere"/>
+        ORDER BY d.APRVL_CMPTN_DT DESC, d.DRFT_DOC_SN DESC
+        OFFSET #{offset} ROWS FETCH NEXT #{size} ROWS ONLY
+    </select>
+
+    <select id="countMyCompletedApprovalDocuments" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_APRVL_DOC d
+        JOIN TB_EMPLOYEE drafter ON drafter.EMP_ID = d.EMP_ID
+        <include refid="myCompletedApprovalDocumentsWhere"/>
+    </select>
+
+    <select id="selectApprovalDocumentDetail"
+            resultType="com.mycrewsoft.domain.approval.dto.response.ApprovalDocumentDetailResponse">
+        SELECT
+            d.DRFT_DOC_SN AS drftDocSn,
+            d.DOC_TTL AS docTtl,
+            d.TMPLAT_CD AS tmplatCd,
+            d.EMP_ID AS empId,
+            e.EMP_NM AS drafterEmpNm,
+            dept.DEPT_NM AS drafterDeptNm,
+            grd.JOB_GRD_NM AS drafterJobGrdNm,
+            pstn.JOB_PSTN_NM AS drafterJobPstnNm,
+            e.PRFL_IMG_FILE_ID AS prflImgFileId,
+            d.APRVL_FULL_CN AS aprvlFullCn,
+            d.DRFT_REQST_DT AS drftReqstDt,
+            d.APRVL_HOPE_DT AS aprvlHopeDt,
+            d.APRVL_CMPTN_DT AS aprvlCmptnDt,
+            d.RTRN_DT AS rtrnDt,
+            d.APRVL_DOC_STTS_CD AS aprvlDocSttsCd,
+            f.ATCH_FILE_ID AS atchFileId
+        FROM TB_APRVL_DOC d
+        JOIN TB_EMPLOYEE e ON e.EMP_ID = d.EMP_ID
+        LEFT JOIN TB_DEPARTMENT dept ON dept.DEPT_CD = e.DEPT_CD
+        LEFT JOIN TB_JOB_GRADE grd ON grd.JOB_GRD_CD = e.JOB_GRD_CD
+        LEFT JOIN TB_JOB_POSITION pstn ON pstn.JOB_PSTN_CD = e.JOB_PSTN_CD
+        LEFT JOIN TB_APRVL_FILE f ON f.DRFT_DOC_SN = d.DRFT_DOC_SN
+        WHERE d.DRFT_DOC_SN = #{drftDocSn}
+    </select>
+
+    <select id="selectApprovalStepStatuses"
+            resultType="com.mycrewsoft.domain.approval.dto.response.ApprovalStepStatusResponse">
+        SELECT
+            s.APRVL_STEP_SN AS aprvlStepSn,
+            s.APRVL_ORD AS aprvlOrd,
+            s.STEP_PRGRS_CD AS stepPrgrsCd,
+            l.APRVR_EMP_ID AS aprvrEmpId,
+            e.EMP_NM AS aprvrEmpNm,
+            l.APRVL_PRGRS_CD AS aprvlPrgrsCd,
+            l.APRVL_DT AS aprvlDt,
+            l.APRVL_RSN AS aprvlRsn,
+            l.RTRN_RSN AS rtrnRsn
+        FROM TB_APRVL_STEP s
+        JOIN TB_APRVL_LINE l ON l.APRVL_STEP_SN = s.APRVL_STEP_SN
+        JOIN TB_EMPLOYEE e ON e.EMP_ID = l.APRVR_EMP_ID
+        WHERE s.DRFT_DOC_SN = #{drftDocSn}
+        ORDER BY s.APRVL_ORD ASC, l.APRVL_LINE_SN ASC
+    </select>
+
+    <select id="existsApprovalParticipant" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_APRVL_DOC d
+        WHERE d.DRFT_DOC_SN = #{drftDocSn}
+          AND (
+              d.EMP_ID = #{empId}
+              OR EXISTS (
+                  SELECT 1
+                  FROM TB_APRVL_LINE l
+                  WHERE l.DRFT_DOC_SN = d.DRFT_DOC_SN
+                    AND l.APRVR_EMP_ID = #{empId}
+              )
+          )
+    </select>
+
+    <select id="selectUsableTemplate"
+            resultType="com.mycrewsoft.domain.approval.dto.response.ApprovalTemplateResponse">
+        SELECT
+            t.TMPLAT_CD AS tmplatCd,
+            t.TMPLAT_NM AS tmplatNm,
+            t.TMPLAT_CN AS tmplatCn,
+            t.USE_YN AS useYn,
+            t.ATCH_FILE_ID AS atchFileId,
+            CASE WHEN f.EMP_ID IS NULL THEN 'N' ELSE 'Y' END AS favoriteYn
+        FROM TB_APRVL_TMPLAT t
+        LEFT JOIN TB_APRVL_TMPLAT_FAV f
+          ON f.TMPLAT_CD = t.TMPLAT_CD
+         AND f.EMP_ID = #{empId}
+        WHERE t.TMPLAT_CD = #{tmplatCd}
+          AND t.USE_YN = 'Y'
+    </select>
+
+    <select id="existsUsableTemplate" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_APRVL_TMPLAT
+        WHERE TMPLAT_CD = #{tmplatCd}
+          AND USE_YN = 'Y'
+    </select>
+
+    <select id="existsTemplateFavorite" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_APRVL_TMPLAT_FAV
+        WHERE EMP_ID = #{empId}
+          AND TMPLAT_CD = #{tmplatCd}
+    </select>
+
+    <insert id="insertTemplateFavorite">
+        INSERT INTO TB_APRVL_TMPLAT_FAV (EMP_ID, TMPLAT_CD, FRST_REG_DT)
+        VALUES (#{empId}, #{tmplatCd}, #{now})
+    </insert>
+
+    <delete id="deleteTemplateFavorite">
+        DELETE FROM TB_APRVL_TMPLAT_FAV
+        WHERE EMP_ID = #{empId}
+          AND TMPLAT_CD = #{tmplatCd}
+    </delete>
+
+    <insert id="insertApprovalTemplate"
+            parameterType="com.mycrewsoft.domain.approval.approvaltemplateVO.ApprovalTemplateVO">
+        INSERT INTO TB_APRVL_TMPLAT (
+            TMPLAT_CD, TMPLAT_NM, TMPLAT_CN, USE_YN, FRST_RGTR_ID, FRST_REG_DT,
+            LAST_MDFR_ID, LAST_MDFCN_DT, ATCH_FILE_ID
+        ) VALUES (
+            #{tmplatCd}, #{tmplatNm}, #{tmplatCn}, #{useYn}, #{frstRgtrId}, #{frstRegDt},
+            #{lastMdfrId}, #{lastMdfcnDt}, #{atchFileId}
+        )
+    </insert>
+
+    <select id="selectAllUsableTemplates"
+            resultType="com.mycrewsoft.domain.approval.dto.response.ApprovalTemplateResponse">
+        SELECT
+            t.TMPLAT_CD AS tmplatCd,
+            t.TMPLAT_NM AS tmplatNm,
+            t.TMPLAT_CN AS tmplatCn,
+            t.USE_YN AS useYn,
+            t.ATCH_FILE_ID AS atchFileId,
+            CASE WHEN f.EMP_ID IS NULL THEN 'N' ELSE 'Y' END AS favoriteYn
+        FROM TB_APRVL_TMPLAT t
+        LEFT JOIN TB_APRVL_TMPLAT_FAV f
+          ON f.TMPLAT_CD = t.TMPLAT_CD
+         AND f.EMP_ID = #{empId}
+        WHERE t.USE_YN = 'Y'
+        ORDER BY t.FRST_REG_DT DESC
+    </select>
+    
+    <select id="selectTemplateOwnerByTemplateCode" resultType="Long">
+    	SELECT FRST_RGTR_ID
+    	FROM TB_APRVL_TMPLAT
+    	WHERE TMPLAT_CD = #{tmplatCd}
+    </select>
+    
+    <update id="updateTemplate" parameterType="com.mycrewsoft.domain.approval.approvaltemplateVO.ApprovalTemplateVO">
+    	UPDATE TB_APRVL_TMPLAT
+    	SET 
+			TMPLAT_NM=#{tmplatNm},
+			TMPLAT_CN=#{tmplatCn},
+			USE_YN=#{useYn},
+			LAST_MDFR_ID=#{lastMdfrId},
+			LAST_MDFCN_DT=#{lastMdfcnDt},
+			ATCH_FILE_ID=#{atchFileId}
+		WHERE TMPLAT_CD=#{tmplatCd}
+    </update>
+</mapper>
