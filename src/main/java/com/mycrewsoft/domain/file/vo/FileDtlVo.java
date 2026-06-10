@@ -11,7 +11,7 @@ public class FileDtlVo {
 	private Long atchFileDtlId;			//첨부파일상세ID(PK)
     private Long atchFileId;			//첨부파일ID
     private String orgnlFileNm;			//원본파일명
-    private String atchFileTyCd;   		//첨부파일타입코드 (01:IMAGE / 02:DOCUMENT)
+    private String atchFileTyCd;   		//첨부파일타입코드 (01:IMAGE / 02:DOCUMENT / 03:AUDIO)
     private String savePathNm;     		//저장경로
     private String saveFileNm;     		//저장파일명 (UUID 기반)
     private String fileExtsn;      		//파일확장자

@@ -22,4 +22,7 @@ public interface FileService {
 	
 	//파일 영구 삭제
 	void hardDeleteFile(Long atchFileDtlId);
+	
+	//이미지 서빙
+	Resource serveImage(Long atchFileDtlId);
 }
