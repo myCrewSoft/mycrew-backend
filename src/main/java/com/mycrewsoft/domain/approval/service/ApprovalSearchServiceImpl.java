@@ -2,9 +2,15 @@ package com.mycrewsoft.domain.approval.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.mycrewsoft.common.exception.CustomException;
+import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.approval.dto.response.ApprovalDocumentDetailResponse;
 import com.mycrewsoft.domain.approval.dto.response.ApprovalDraftSummaryResponse;
 import com.mycrewsoft.domain.approval.mapper.ApprovalDraftMapper;
@@ -23,7 +29,7 @@ public class ApprovalSearchServiceImpl implements ApprovalSearchService {
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
         ApprovalDocumentDetailResponse detail = support.requireDetail(drftDocSn);
         if (!support.canReadApprovalDocument(detail, empId)) {
-            throw new com.mycrewsoft.common.exception.CustomException(com.mycrewsoft.common.exception.ErrorCode.ACCESS_DENIED);
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
         support.populateStatus(detail);
         return detail;
@@ -34,51 +40,81 @@ public class ApprovalSearchServiceImpl implements ApprovalSearchService {
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
         ApprovalDocumentDetailResponse detail = support.requireDetail(drftDocSn);
         if (!detail.getEmpId().equals(empId)) {
-            throw new com.mycrewsoft.common.exception.CustomException(com.mycrewsoft.common.exception.ErrorCode.ACCESS_DENIED);
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
         support.populateStatus(detail);
         return detail;
     }
 
     @Transactional(readOnly = true)
-    public List<ApprovalDraftSummaryResponse> readMyDrafts(String documentStatus, String keyword) {
+    public Page<ApprovalDraftSummaryResponse> readMyDrafts(String documentStatus, String keyword, int page, int size) {
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
-        return approvalDraftMapper.selectMyDrafts(empId, documentStatus, keyword);
+        int offset = page * size;
+        List<ApprovalDraftSummaryResponse> content =
+                approvalDraftMapper.selectMyDrafts(empId, documentStatus, keyword, offset, size);
+        long totalCount = approvalDraftMapper.countMyDrafts(empId, documentStatus, keyword);
+        Pageable pageable = PageRequest.of(page, size);
+        return new PageImpl<>(content, pageable, totalCount);
     }
 
     @Transactional(readOnly = true)
-    public List<ApprovalDraftSummaryResponse> readMyApprovalRequests(String keyword) {
+    public Page<ApprovalDraftSummaryResponse> readMyApprovalRequests(String keyword, int page, int size) {
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
-        return approvalDraftMapper.selectMyApprovalRequests(empId, keyword);
+        int offset = page * size;
+        List<ApprovalDraftSummaryResponse> content =
+                approvalDraftMapper.selectMyApprovalRequests(empId, keyword, offset, size);
+        long totalCount = approvalDraftMapper.countMyApprovalRequests(empId, keyword);
+        Pageable pageable = PageRequest.of(page, size);
+        return new PageImpl<>(content, pageable, totalCount);
     }
 
     @Transactional(readOnly = true)
-    public List<ApprovalDraftSummaryResponse> readMyApprovalHistory(String keyword) {
+    public Page<ApprovalDraftSummaryResponse> readMyApprovalHistory(String keyword, int page, int size) {
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
-        return approvalDraftMapper.selectMyApprovalHistory(empId, keyword, null);
+        int offset = page * size;
+        List<ApprovalDraftSummaryResponse> content =
+                approvalDraftMapper.selectMyApprovalHistory(empId, keyword, null, offset, size);
+        long totalCount = approvalDraftMapper.countMyApprovalHistory(empId, keyword, null);
+        Pageable pageable = PageRequest.of(page, size);
+        return new PageImpl<>(content, pageable, totalCount);
     }
 
     @Transactional(readOnly = true)
-    public List<ApprovalDraftSummaryResponse> readMyCompletedApprovalDocuments(String keyword) {
+    public Page<ApprovalDraftSummaryResponse> readMyCompletedApprovalDocuments(String keyword, int page, int size) {
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
-        return approvalDraftMapper.selectMyApprovalHistory(
-                empId,
-                keyword,
-                ApprovalConstants.DOC_STATUS_COMPLETED
-        );
+        int offset = page * size;
+        List<ApprovalDraftSummaryResponse> content =
+                approvalDraftMapper.selectMyCompletedApprovalDocuments(empId, keyword, offset, size);
+        long totalCount = approvalDraftMapper.countMyCompletedApprovalDocuments(empId, keyword);
+        Pageable pageable = PageRequest.of(page, size);
+        return new PageImpl<>(content, pageable, totalCount);
     }
 
     @Transactional(readOnly = true)
-    public List<ApprovalDraftSummaryResponse> searchApprovalDocumentsForApprover(String listType, String keyword) {
-        if ("request".equalsIgnoreCase(listType)) {
-            return readMyApprovalRequests(keyword);
+    public Page<ApprovalDraftSummaryResponse> searchApprovalDocumentsForApprover(String listType, String keyword, int page, int size) {
+        Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
+        int offset = page * size;
+        List<ApprovalDraftSummaryResponse> content;
+        long totalCount;
+
+        switch (listType) {
+            case "request":
+                content = approvalDraftMapper.selectMyApprovalRequests(empId, keyword, offset, size);
+                totalCount = approvalDraftMapper.countMyApprovalRequests(empId, keyword);
+                break;
+            case "history":
+                content = approvalDraftMapper.selectMyApprovalHistory(empId, keyword, null, offset, size);
+                totalCount = approvalDraftMapper.countMyApprovalHistory(empId, keyword, null);
+                break;
+            case "completed":
+                content = approvalDraftMapper.selectMyCompletedApprovalDocuments(empId, keyword, offset, size);
+                totalCount = approvalDraftMapper.countMyCompletedApprovalDocuments(empId, keyword);
+                break;
+            default:
+                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
-        if ("history".equalsIgnoreCase(listType)) {
-            return readMyApprovalHistory(keyword);
-        }
-        if ("completed".equalsIgnoreCase(listType)) {
-            return readMyCompletedApprovalDocuments(keyword);
-        }
-        throw new com.mycrewsoft.common.exception.CustomException(com.mycrewsoft.common.exception.ErrorCode.INVALID_INPUT_VALUE);
+
+        Pageable pageable = PageRequest.of(page, size);
+        return new PageImpl<>(content, pageable, totalCount);
     }
 }

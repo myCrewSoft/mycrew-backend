@@ -41,7 +41,7 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
 
         ApprovalStepVO firstStep = approvalDraftMapper.selectFirstApprovalStep(drftDocSn);
         if (firstStep == null) {
-            throw new com.mycrewsoft.common.exception.CustomException(com.mycrewsoft.common.exception.ErrorCode.INVALID_INPUT_VALUE);
+            throw new com.mycrewsoft.common.exception.CustomException(com.mycrewsoft.common.exception.ErrorCode.APPROVAL_LINE_INVALID);
         }
         approvalDraftMapper.updateStepStatus(
                 firstStep.getAprvlStepSn(),
@@ -70,7 +70,7 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
         support.assertDrafter(savedDoc, empId);
         support.assertDocStatus(savedDoc, ApprovalConstants.DOC_STATUS_IN_PROGRESS);
         if (approvalDraftMapper.countProcessedApprovalLines(drftDocSn) > 0) {
-            throw new com.mycrewsoft.common.exception.CustomException(com.mycrewsoft.common.exception.ErrorCode.INVALID_INPUT_VALUE);
+            throw new com.mycrewsoft.common.exception.CustomException(com.mycrewsoft.common.exception.ErrorCode.APPROVAL_ALREADY_PROCESSED);
         }
 
         approvalDraftMapper.updateDocumentStatus(
@@ -159,7 +159,7 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
     @Transactional
     public ApprovalMutationResponse rejectApproval(Long drftDocSn, ApprovalActionRequestDTO request) {
         if (request == null || !org.springframework.util.StringUtils.hasText(request.getReason())) {
-            throw new com.mycrewsoft.common.exception.CustomException(com.mycrewsoft.common.exception.ErrorCode.INVALID_INPUT_VALUE);
+            throw new com.mycrewsoft.common.exception.CustomException(com.mycrewsoft.common.exception.ErrorCode.APPROVAL_REJECT_REASON_REQUIRED);
         }
 
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();

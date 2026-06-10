@@ -1,6 +1,6 @@
 package com.mycrewsoft.domain.approval.service;
 
-import java.util.List;
+import org.springframework.data.domain.Page;
 
 import com.mycrewsoft.domain.approval.dto.response.ApprovalDocumentDetailResponse;
 import com.mycrewsoft.domain.approval.dto.response.ApprovalDraftSummaryResponse;
@@ -10,13 +10,13 @@ public interface ApprovalSearchService {
 
     ApprovalDocumentDetailResponse readDraftApprovalStatus(Long drftDocSn);
 
-    List<ApprovalDraftSummaryResponse> readMyDrafts(String documentStatus, String keyword);
+    Page<ApprovalDraftSummaryResponse> readMyDrafts(String documentStatus, String keyword, int page, int size);
 
-    List<ApprovalDraftSummaryResponse> readMyApprovalRequests(String keyword);
+    Page<ApprovalDraftSummaryResponse> readMyApprovalRequests(String keyword, int page, int size);
 
-    List<ApprovalDraftSummaryResponse> readMyApprovalHistory(String keyword);
+    Page<ApprovalDraftSummaryResponse> readMyApprovalHistory(String keyword, int page, int size);
 
-    List<ApprovalDraftSummaryResponse> readMyCompletedApprovalDocuments(String keyword);
+    Page<ApprovalDraftSummaryResponse> readMyCompletedApprovalDocuments(String keyword, int page, int size);
 
-    List<ApprovalDraftSummaryResponse> searchApprovalDocumentsForApprover(String listType, String keyword);
+    Page<ApprovalDraftSummaryResponse> searchApprovalDocumentsForApprover(String listType, String keyword, int page, int size);
 }

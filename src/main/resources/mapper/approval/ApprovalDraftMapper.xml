@@ -342,9 +342,7 @@
         JOIN TB_EMPLOYEE drafter ON drafter.EMP_ID = d.EMP_ID
     </sql>
 
-    <select id="selectMyDrafts"
-            resultType="com.mycrewsoft.domain.approval.dto.response.ApprovalDraftSummaryResponse">
-        <include refid="draftListSelect"/>
+    <sql id="myDraftsWhere">
         WHERE d.EMP_ID = #{empId}
         <if test="documentStatus != null and documentStatus != ''">
           AND d.APRVL_DOC_STTS_CD = #{documentStatus}
@@ -361,26 +359,18 @@
               )
           )
         </if>
-        ORDER BY NVL(d.APRVL_CMPTN_DT, NVL(d.RTRN_DT, d.DRFT_REQST_DT)) DESC, d.DRFT_DOC_SN DESC
-    </select>
+    </sql>
 
-    <select id="selectMyApprovalRequests"
-            resultType="com.mycrewsoft.domain.approval.dto.response.ApprovalDraftSummaryResponse">
-        <include refid="draftListSelect"/>
-        JOIN TB_APRVL_STEP cs ON cs.DRFT_DOC_SN = d.DRFT_DOC_SN AND cs.STEP_PRGRS_CD = '02'
-        JOIN TB_APRVL_LINE cl ON cl.APRVL_STEP_SN = cs.APRVL_STEP_SN
+    <sql id="myApprovalRequestsWhere">
         WHERE d.APRVL_DOC_STTS_CD = '01'
           AND cl.APRVR_EMP_ID = #{empId}
           AND cl.APRVL_PRGRS_CD = '01'
         <if test="keyword != null and keyword != ''">
           AND (d.DOC_TTL LIKE '%' || #{keyword} || '%' OR drafter.EMP_NM LIKE '%' || #{keyword} || '%')
         </if>
-        ORDER BY d.DRFT_REQST_DT DESC, d.DRFT_DOC_SN DESC
-    </select>
+    </sql>
 
-    <select id="selectMyApprovalHistory"
-            resultType="com.mycrewsoft.domain.approval.dto.response.ApprovalDraftSummaryResponse">
-        <include refid="draftListSelect"/>
+    <sql id="myApprovalHistoryWhere">
         WHERE EXISTS (
             SELECT 1
             FROM TB_APRVL_LINE mine
@@ -394,6 +384,46 @@
         <if test="keyword != null and keyword != ''">
           AND (d.DOC_TTL LIKE '%' || #{keyword} || '%' OR drafter.EMP_NM LIKE '%' || #{keyword} || '%')
         </if>
+    </sql>
+
+    <select id="selectMyDrafts"
+            resultType="com.mycrewsoft.domain.approval.dto.response.ApprovalDraftSummaryResponse">
+        <include refid="draftListSelect"/>
+        <include refid="myDraftsWhere"/>
+        ORDER BY NVL(d.APRVL_CMPTN_DT, NVL(d.RTRN_DT, d.DRFT_REQST_DT)) DESC, d.DRFT_DOC_SN DESC
+        OFFSET #{offset} ROWS FETCH NEXT #{size} ROWS ONLY
+    </select>
+
+    <select id="countMyDrafts" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_APRVL_DOC d
+        JOIN TB_EMPLOYEE drafter ON drafter.EMP_ID = d.EMP_ID
+        <include refid="myDraftsWhere"/>
+    </select>
+
+    <select id="selectMyApprovalRequests"
+            resultType="com.mycrewsoft.domain.approval.dto.response.ApprovalDraftSummaryResponse">
+        <include refid="draftListSelect"/>
+        JOIN TB_APRVL_STEP cs ON cs.DRFT_DOC_SN = d.DRFT_DOC_SN AND cs.STEP_PRGRS_CD = '02'
+        JOIN TB_APRVL_LINE cl ON cl.APRVL_STEP_SN = cs.APRVL_STEP_SN
+        <include refid="myApprovalRequestsWhere"/>
+        ORDER BY d.DRFT_REQST_DT DESC, d.DRFT_DOC_SN DESC
+        OFFSET #{offset} ROWS FETCH NEXT #{size} ROWS ONLY
+    </select>
+
+    <select id="countMyApprovalRequests" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_APRVL_DOC d
+        JOIN TB_EMPLOYEE drafter ON drafter.EMP_ID = d.EMP_ID
+        JOIN TB_APRVL_STEP cs ON cs.DRFT_DOC_SN = d.DRFT_DOC_SN AND cs.STEP_PRGRS_CD = '02'
+        JOIN TB_APRVL_LINE cl ON cl.APRVL_STEP_SN = cs.APRVL_STEP_SN
+        <include refid="myApprovalRequestsWhere"/>
+    </select>
+
+    <select id="selectMyApprovalHistory"
+            resultType="com.mycrewsoft.domain.approval.dto.response.ApprovalDraftSummaryResponse">
+        <include refid="draftListSelect"/>
+        <include refid="myApprovalHistoryWhere"/>
         ORDER BY (
             SELECT MAX(mine2.APRVL_DT)
             FROM TB_APRVL_LINE mine2
@@ -401,6 +431,43 @@
               AND mine2.APRVR_EMP_ID = #{empId}
               AND mine2.APRVL_PRGRS_CD IN ('02', '03')
         ) DESC, d.DRFT_DOC_SN DESC
+        OFFSET #{offset} ROWS FETCH NEXT #{size} ROWS ONLY
+    </select>
+
+    <select id="countMyApprovalHistory" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_APRVL_DOC d
+        JOIN TB_EMPLOYEE drafter ON drafter.EMP_ID = d.EMP_ID
+        <include refid="myApprovalHistoryWhere"/>
+    </select>
+
+    <sql id="myCompletedApprovalDocumentsWhere">
+        WHERE EXISTS (
+            SELECT 1
+            FROM TB_APRVL_LINE mine
+            WHERE mine.DRFT_DOC_SN = d.DRFT_DOC_SN
+              AND mine.APRVR_EMP_ID = #{empId}
+              AND mine.APRVL_PRGRS_CD = '02'
+        )
+        AND d.APRVL_DOC_STTS_CD = '02'
+        <if test="keyword != null and keyword != ''">
+          AND (d.DOC_TTL LIKE '%' || #{keyword} || '%' OR drafter.EMP_NM LIKE '%' || #{keyword} || '%')
+        </if>
+    </sql>
+
+    <select id="selectMyCompletedApprovalDocuments"
+            resultType="com.mycrewsoft.domain.approval.dto.response.ApprovalDraftSummaryResponse">
+        <include refid="draftListSelect"/>
+        <include refid="myCompletedApprovalDocumentsWhere"/>
+        ORDER BY d.APRVL_CMPTN_DT DESC, d.DRFT_DOC_SN DESC
+        OFFSET #{offset} ROWS FETCH NEXT #{size} ROWS ONLY
+    </select>
+
+    <select id="countMyCompletedApprovalDocuments" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_APRVL_DOC d
+        JOIN TB_EMPLOYEE drafter ON drafter.EMP_ID = d.EMP_ID
+        <include refid="myCompletedApprovalDocumentsWhere"/>
     </select>
 
     <select id="selectApprovalDocumentDetail"

@@ -104,24 +104,24 @@ public class ApprovalServiceSupport {
 
     public List<ApprovalStepRequestDTO> validateApprovalLine(List<ApprovalStepRequestDTO> approvalSteps) {
         if (approvalSteps == null || approvalSteps.isEmpty()) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.APPROVAL_LINE_INVALID);
         }
         Set<Long> approvalOrders = new HashSet<>();
         for (ApprovalStepRequestDTO approvalStep : approvalSteps) {
             if (approvalStep.getAprvlOrd() == null || approvalStep.getAprvlOrd() < 1) {
-                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+                throw new CustomException(ErrorCode.APPROVAL_LINE_INVALID);
             }
             if (!approvalOrders.add(approvalStep.getAprvlOrd())) {
-                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+                throw new CustomException(ErrorCode.APPROVAL_LINE_INVALID);
             }
             if (approvalStep.getAprvrEmpIds() == null || approvalStep.getAprvrEmpIds().isEmpty()) {
-                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+                throw new CustomException(ErrorCode.APPROVAL_LINE_INVALID);
             }
             if (approvalStep.getAprvrEmpIds().stream().anyMatch(approverEmpId -> approverEmpId == null)) {
-                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+                throw new CustomException(ErrorCode.APPROVAL_LINE_INVALID);
             }
             if (new HashSet<>(approvalStep.getAprvrEmpIds()).size() != approvalStep.getAprvrEmpIds().size()) {
-                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+                throw new CustomException(ErrorCode.APPROVAL_LINE_INVALID);
             }
         }
         List<ApprovalStepRequestDTO> sortedSteps = new ArrayList<>(approvalSteps);
@@ -138,14 +138,14 @@ public class ApprovalServiceSupport {
         }
         if (approvalDraftMapper.countApprovalSteps(savedDoc.getDrftDocSn()) == 0
                 || approvalDraftMapper.countApprovalLines(savedDoc.getDrftDocSn()) == 0) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.APPROVAL_LINE_INVALID);
         }
     }
 
     public ApprovalDocVO requireDocForUpdate(Long drftDocSn) {
         ApprovalDocVO savedDoc = approvalDraftMapper.selectApprovalDocByDocSnForUpdate(drftDocSn);
         if (savedDoc == null) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.APPROVAL_DOC_NOT_FOUND);
         }
         return savedDoc;
     }
@@ -153,7 +153,7 @@ public class ApprovalServiceSupport {
     public ApprovalDocumentDetailResponse requireDetail(Long drftDocSn) {
         ApprovalDocumentDetailResponse detail = approvalDraftMapper.selectApprovalDocumentDetail(drftDocSn);
         if (detail == null) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.APPROVAL_DOC_NOT_FOUND);
         }
         return detail;
     }
@@ -161,7 +161,7 @@ public class ApprovalServiceSupport {
     public ApprovalStepVO requireCurrentStep(Long drftDocSn) {
         ApprovalStepVO currentStep = approvalDraftMapper.selectCurrentApprovalStep(drftDocSn);
         if (currentStep == null) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.APPROVAL_DOC_STATUS_INVALID);
         }
         return currentStep;
     }
@@ -210,7 +210,7 @@ public class ApprovalServiceSupport {
 
     public void assertDocStatus(ApprovalDocVO savedDoc, String expectedStatus) {
         if (!expectedStatus.equals(savedDoc.getAprvlDocSttsCd())) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.APPROVAL_DOC_STATUS_INVALID);
         }
     }
 

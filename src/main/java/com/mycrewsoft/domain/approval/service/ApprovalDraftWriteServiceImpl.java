@@ -7,11 +7,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mycrewsoft.domain.approval.approvaldocVO.ApprovalDocVO;
-import com.mycrewsoft.domain.approval.approvalstepVO.ApprovalStepVO;
 import com.mycrewsoft.domain.approval.dto.request.ApprovalDraftRequestDTO;
 import com.mycrewsoft.domain.approval.dto.request.ApprovalStepRequestDTO;
 import com.mycrewsoft.domain.approval.mapper.ApprovalDraftMapper;
 import com.mycrewsoft.domain.approval.mapper.DTOtoVOMapper;
+import com.mycrewsoft.security.util.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,7 +27,7 @@ public class ApprovalDraftWriteServiceImpl implements ApprovalDraftWriteService 
     public Long saveTemporaryDraft(ApprovalDraftRequestDTO request) {
         support.assertCreatePermission();
 
-        Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
+        Long empId = SecurityUtil.getCurrentEmpId();
         LocalDateTime now = LocalDateTime.now();
         ApprovalDocVO approvalDoc = dtoToVOMapper.toApprovalDocVO(
                 request,
@@ -57,9 +57,10 @@ public class ApprovalDraftWriteServiceImpl implements ApprovalDraftWriteService 
 
     @Transactional
     public void saveApprovalLine(Long drftDocSn, List<ApprovalStepRequestDTO> approvalSteps) {
-        Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
+        Long empId = SecurityUtil.getCurrentEmpId();
         ApprovalDocVO savedDoc = support.requireDocForUpdate(drftDocSn);
         support.assertDrafter(savedDoc, empId);
+        support.assertUpdatePermission(empId);
         support.assertDocStatus(savedDoc, ApprovalConstants.DOC_STATUS_TEMPORARY);
         support.replaceApprovalLine(empId, drftDocSn, approvalSteps, LocalDateTime.now());
     }

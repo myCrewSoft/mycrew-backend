@@ -117,16 +117,46 @@ public interface ApprovalDraftMapper {
     List<ApprovalDraftSummaryResponse> selectMyDrafts(
             @Param("empId") Long empId,
             @Param("documentStatus") String documentStatus,
+            @Param("keyword") String keyword,
+            @Param("offset") int offset,
+            @Param("size") int size);
+
+    long countMyDrafts(
+            @Param("empId") Long empId,
+            @Param("documentStatus") String documentStatus,
             @Param("keyword") String keyword);
 
     List<ApprovalDraftSummaryResponse> selectMyApprovalRequests(
+            @Param("empId") Long empId,
+            @Param("keyword") String keyword,
+            @Param("offset") int offset,
+            @Param("size") int size);
+
+    long countMyApprovalRequests(
             @Param("empId") Long empId,
             @Param("keyword") String keyword);
 
     List<ApprovalDraftSummaryResponse> selectMyApprovalHistory(
             @Param("empId") Long empId,
             @Param("keyword") String keyword,
+            @Param("documentStatus") String documentStatus,
+            @Param("offset") int offset,
+            @Param("size") int size);
+
+    long countMyApprovalHistory(
+            @Param("empId") Long empId,
+            @Param("keyword") String keyword,
             @Param("documentStatus") String documentStatus);
+
+    List<ApprovalDraftSummaryResponse> selectMyCompletedApprovalDocuments(
+            @Param("empId") Long empId,
+            @Param("keyword") String keyword,
+            @Param("offset") int offset,
+            @Param("size") int size);
+
+    long countMyCompletedApprovalDocuments(
+            @Param("empId") Long empId,
+            @Param("keyword") String keyword);
 
     ApprovalDocumentDetailResponse selectApprovalDocumentDetail(@Param("drftDocSn") Long drftDocSn);
 
