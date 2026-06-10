@@ -17,7 +17,10 @@ import org.springframework.http.HttpStatus;
  */
 @Getter
 public enum ErrorCode {
-
+	
+	//APPROVAL
+	TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND, "TMP_001", "존재하지 않는 양식입니다."),
+	
     // COMMON
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "COMMON_001", "입력값이 올바르지 않습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_002", "서버 내부 오류가 발생했습니다."),

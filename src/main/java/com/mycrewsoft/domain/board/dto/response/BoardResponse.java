@@ -33,7 +33,8 @@ public class BoardResponse {
     private String boardCn;              
 	
 	@Schema(description = "최초 등록자 사원 ID" , example = "2")
-    private Long frstRgtrId;             
+    private Long frstRgtrId;         
+	
 	@Schema(description = "최초 등록 일시" , example = "2026-05-28T10:22:50")
     private LocalDateTime frstRegDt;      
     
