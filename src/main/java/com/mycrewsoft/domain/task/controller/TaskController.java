@@ -17,8 +17,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.task.dto.request.TaskCreateRequest;
 import com.mycrewsoft.domain.task.dto.request.TaskUpdateRequest;
+import com.mycrewsoft.domain.task.dto.response.TaskDashboardResponse;
 import com.mycrewsoft.domain.task.dto.response.TaskDetailResponse;
 import com.mycrewsoft.domain.task.dto.response.TaskListResponse;
+import com.mycrewsoft.domain.task.service.TaskDashboardService;
 import com.mycrewsoft.domain.task.service.TaskService;
 import com.mycrewsoft.validate.groups.InsertGroup;
 import com.mycrewsoft.validate.groups.UpdateGroup;
@@ -35,6 +37,7 @@ import lombok.RequiredArgsConstructor;
 public class TaskController {
 
     private final TaskService taskService;
+    private final TaskDashboardService dashboardService;
 
     @Operation(summary = "업무 목록 조회", description = "프로젝트 ID로 해당 프로젝트의 업무 목록을 조회합니다.")
     @GetMapping
@@ -118,4 +121,13 @@ public class TaskController {
         taskService.deleteTask(projId, taskId);
         return ResponseEntity.ok(ApiResponse.success("업무가 삭제되었습니다."));
     }
+    
+    @Operation(summary = "업무 대시보드", description = "업무 관련 대시보드 데이터를 제공합니다.")
+    @GetMapping("/dashboard")
+    public ResponseEntity<ApiResponse<TaskDashboardResponse>> getTaskDashboard(
+    	@Parameter(description = "프로젝트 ID") @PathVariable Long projId
+    ) {
+    	return ResponseEntity.ok(ApiResponse.success(dashboardService.getTaskDashboard(projId)));
+    }
+
 }

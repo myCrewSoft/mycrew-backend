@@ -138,4 +138,17 @@ public final class DateUtil {
 
         return format(dateTime.toLocalDate());
     }
+    
+    /**
+     * D-day 계산
+     * @param targetDate
+     * @return
+     */
+    public static String dDay(LocalDate targetDate) {
+        if (targetDate == null) return StringUtils.EMPTY;
+        long days = ChronoUnit.DAYS.between(LocalDate.now(), targetDate);
+        if (days == 0) return "D-Day";
+        if (days > 0) return "D-" + days;
+        return "D+" + Math.abs(days);
+    }
 }
