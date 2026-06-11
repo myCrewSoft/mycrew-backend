@@ -16,13 +16,16 @@ import org.springframework.web.multipart.MultipartFile;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.FileUtil;
+import com.mycrewsoft.domain.file.constant.FileConstants;
 import com.mycrewsoft.domain.file.vo.FileClsfVo;
 import com.mycrewsoft.domain.file.vo.FileDtlVo;
 import com.mycrewsoft.domain.video.mapper.VideoRcrdgFileMapper;
 import com.mycrewsoft.security.util.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -68,9 +71,9 @@ public class VideoRcrdgFileServiceImpl implements VideoRcrdgFileService {
             throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
         }
 
-        // 분류 테이블 INSERT (RC: 녹취록 비즈코드)
+        // 분류 테이블 INSERT (04: 녹취록 비즈코드)
         FileClsfVo clsfVO = new FileClsfVo();
-        clsfVO.setAtchFileBizCd("RC");
+        clsfVO.setAtchFileBizCd(FileConstants.VOICE);
         videoRcrdgFileMapper.insertClsf(clsfVO);
 
         // 상세 테이블 INSERT
@@ -85,13 +88,13 @@ public class VideoRcrdgFileServiceImpl implements VideoRcrdgFileService {
         dtlVO.setFrstRgstrId(SecurityUtil.getCurrentEmpId());
         videoRcrdgFileMapper.insertDtl(dtlVO);
 
-        // TB_VIDEO_RCRDG에서 참조할 ATCH_FILE_ID 반환
-        return clsfVO.getAtchFileId();
+        // TB_VIDEO_RCRDG에서 참조할 ATCH_FILE_DTL_ID 반환
+        return dtlVO.getAtchFileDtlId();
     }
 
     @Override
-    public Resource stream(Long atchFileId) {
-        // 파일 정보 조회
+    public Resource getResource(Long atchFileId) {
+        // 파일 정보 조회 및 삭제 여부 확인
         FileDtlVo dtlVO = videoRcrdgFileMapper.selectDtlByAtchFileId(atchFileId);
         if (dtlVO == null || "Y".equals(dtlVO.getDelYn())) {
             throw new CustomException(ErrorCode.FILE_NOT_FOUND);
@@ -103,10 +106,22 @@ public class VideoRcrdgFileServiceImpl implements VideoRcrdgFileService {
             throw new CustomException(ErrorCode.FILE_NOT_FOUND);
         }
 
+        // 생성 실패시 예외
         try {
             return new UrlResource(filePath.toUri());
-        } catch (MalformedURLException e) {
+        } catch (Exception e) {
+            log.error("[녹취록] 파일 리소스 생성 실패 - atchFileId: {}", atchFileId, e);
             throw new CustomException(ErrorCode.FILE_NOT_FOUND);
         }
+    }
+
+    @Override
+    public String getOriginalFileName(Long atchFileId) {
+        // 파일 정보 조회 및 삭제 여부 확인
+        FileDtlVo dtlVO = videoRcrdgFileMapper.selectDtlByAtchFileId(atchFileId);
+        if (dtlVO == null || "Y".equals(dtlVO.getDelYn())) {
+            throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+        }
+        return dtlVO.getOrgnlFileNm();
     }
 }

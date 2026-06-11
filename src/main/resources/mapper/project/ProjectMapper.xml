@@ -143,4 +143,31 @@
 	   AND EMP_ID = #{empId}
 	   AND LEAVE_DT IS NULL
 </update>
+	
+	
+	<!-- 프로젝트 진척률 = sum(업무진척률 * 업무중요도 가중치) / sum(가중치) -->
+	<update id="updateProjectPrgrsRt">
+	    UPDATE TB_PROJECT
+	    SET PROJ_PRGRS_RT = (
+	        SELECT ROUND(
+	            NVL(
+	                SUM(T.TASK_PRGRS_SMRY * CASE T.TASK_IMPRTNC_CD
+	                                            WHEN '01' THEN 1
+	                                            WHEN '02' THEN 2
+	                                            WHEN '03' THEN 3
+	                                        END)
+	                /
+	                NULLIF(SUM(CASE T.TASK_IMPRTNC_CD
+	                               WHEN '01' THEN 1
+	                               WHEN '02' THEN 2
+	                               WHEN '03' THEN 3
+	                           END), 0) * 100
+	            , 0)
+	        )
+	        FROM TB_TASK T
+	        WHERE T.PROJ_ID = #{projId}
+	          AND T.DEL_YN  = 'N'
+	    )
+	    WHERE PROJ_ID = #{projId}
+	</update>
 </mapper>

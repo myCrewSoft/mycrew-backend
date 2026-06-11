@@ -1,7 +1,9 @@
 package com.mycrewsoft.domain.employee.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +18,7 @@ import com.mycrewsoft.domain.employee.dto.request.ChangeSignatureRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeMyPageResponseDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeProfileDTO;
 import com.mycrewsoft.domain.employee.service.MyPageService;
+import com.mycrewsoft.domain.file.dto.FileUploadRequestDto;
 import com.mycrewsoft.domain.mail.dto.response.GoogleOAuthAuthorizeResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -77,8 +80,9 @@ public class EmployeeMyPageController {
     @Operation(summary = "프로필 이미지 변경", description = "로그인한 사용자의 프로필 이미지 파일 ID를 변경합니다.")
     @PatchMapping("/profile-image")
     public ResponseEntity<ApiResponse<String>> changeProfileImage(
+    		@Validated @ModelAttribute FileUploadRequestDto file,
             @Valid @RequestBody ChangeProfileImageRequestDTO request) {
-        myPageService.changeProfileImage(request);
+        myPageService.changeProfileImage(file, request);
         return ResponseEntity.ok(ApiResponse.success("프로필 이미지 변경 성공"));
     }
 

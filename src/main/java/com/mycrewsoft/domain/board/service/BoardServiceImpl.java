@@ -1,7 +1,9 @@
 package com.mycrewsoft.domain.board.service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
@@ -248,25 +250,50 @@ public class BoardServiceImpl implements BoardService {
 		if (writtenBoard == null) {
 			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
 		}
-
-		Long writer	= writtenBoard.getFrstRgtrId();
 		
-		//내가 작성한 글만 권한
-		// 현재 접속한 사원 아이디 = 작성한 사람 아이디
-		if(!empId.equals(writer)) {
-			throw new CustomException(ErrorCode.ACCESS_DENIED);
+		//내가 갖고 있는 BOARD_POST_UPDATE 권한이 Global 인지 판단(Global == 타인, 모든 부서, 모든 프로젝트의 게시글 범위)
+		if(!authorizationService.hasGlobalScope(PermissionCode.BOARD_POST_UPDATE)) {
+			//내 BOARD_POST_UPDATE 권한이 Global이 아니라면, 세부 검증으로 이동.
+			
+			//db에서 게시글을 조회하여 실제 데이터로 검증
+			Long writer	= writtenBoard.getFrstRgtrId();
+			String deptCd = writtenBoard.getDeptCd();
+			Long prodId = writtenBoard.getProjId();
+			
+			ResourceContext context = ResourceContext.builder()
+										//내가 쓴 글인가?
+										.ownerEmpId(writer)
+										//내 BOARD_POST_UPDATE 권한이 부서 범위인가?
+										.deptCd(deptCd)
+										//내 BOARD_POST_UPDATE 권한이 프로젝트 범위인가? 
+										.projId(prodId.toString())
+										.build();
+			
+			//위에서 나열된 3가지 조건 중 하나라도 충족하면 권한 통과.
+			authorizationService.assertCurrentUserPermission(PermissionCode.BOARD_POST_UPDATE, context);
+			
+			//DTO-VO로 변환
+			BoardVO boardDetail = dtoMapper.toDto(boardUpdateRequest, BoardVO.class);
+			boardDetail.setBoardId(boardId);
+			
+			//데이터베이스에서 생성
+			int result= boardMapper.updateBoardDetails(boardDetail);
+			if(result==0) {
+				throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+			}
+			return boardId; // 게시물 수정하면 그 게시물로 이동하기 때문에 
+		} else {
+			//DTO-VO로 변환
+			BoardVO boardDetail =dtoMapper.toDto(boardUpdateRequest,  BoardVO.class);
+			boardDetail.setBoardId(boardId);
+			
+			//데이터베이스에서 생성
+			int result= boardMapper.updateBoardDetails(boardDetail);
+			if(result==0) {
+				throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+			}
+			return boardId; // 게시물 수정하면 그 게시물로 이동하기 때문에 
 		}
-		
-		//DTO-VO로 변환
-		BoardVO boardDetail =dtoMapper.toDto(boardUpdateRequest,  BoardVO.class);
-		boardDetail.setBoardId(boardId);
-		
-		//데이터베이스에서 생성
-		int result= boardMapper.updateBoardDetails(boardDetail);
-		if(result==0) {
-			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
-		}
-		return boardId; // 게시물 수정하면 그 게시물로 이동하기 때문에 
 	}
 	
 	@Override
@@ -364,6 +391,45 @@ public class BoardServiceImpl implements BoardService {
 		if(result ==0) {
 			throw new CustomException(ErrorCode.ACCESS_DENIED);
 		}
+	}
+
+	@Override
+	public boolean toggelLike(Long boardId, Long empId) {
+	
+		// DB에서 이 글에 이 사람이 좋아요를 누른 데이터가 있는지 조회
+		BoardLikeVo likeStatus = boardMapper.readLikeStatus(boardId, empId);
+		// 만약 결과가 NULL 이라면? (즉, 하트를 처음 누르는 상황)
+		if(likeStatus ==null) {
+			// 글 번호와 직원사번 를 채워 넣음
+			BoardLikeVo newLike = new BoardLikeVo();
+			newLike.setBoardId(boardId);
+			newLike.setEmpId(empId);
+			
+			//DB 에 이사람 이 글 좋아요 눌렀음 하고 저장함
+			boardMapper.insertLike(newLike);
+			return true;
+		}else {
+			//DB 에 이제 좋아요가 취소되었습니다 false 를 리턴함
+			boardMapper.deleteLike(boardId, empId);
+			return false;
+		}
+		
+		
+	}
+
+	@Override
+	public Map<String, Object> getLike(Long boardId, Long empId) {
+	
+		// map 을 사용하는 이유는 타입이 다른 int 와 boolean을 사용하기 때문에  
+		Map<String, Object> result = new HashMap<>();
+		
+		int likeCount = boardMapper.readLikeCount(boardId);
+		
+		boolean isLiked = boardMapper.readLikeStatus(boardId, empId)!=null;
+		
+		result.put("likeCount", likeCount);
+		result.put("isLiked", isLiked);
+		return result;
 	}
 
 }

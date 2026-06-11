@@ -1,6 +1,7 @@
 package com.mycrewsoft.domain.board.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Page; // 💡 Page 임포트 추가
 import org.springframework.data.domain.Pageable;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mycrewsoft.common.response.ApiResponse;
@@ -183,16 +185,39 @@ public class BoardController {
 	
 	
 	
-	@Operation(summary = "게시글 삭제")
-	@DeleteMapping("/{comments}")
+	@Operation(summary = "게시글 댓글 삭제")
+	@DeleteMapping("/comments/{commentId}")
 	public ResponseEntity<ApiResponse<String>> deleteComment(
-			@PathVariable Long commentId
+			@PathVariable("commentId") Long commentId
+			
 			) {
 
 
 		 service.deleteComment(commentId);
 
-		return ResponseEntity.ok(ApiResponse.success("게시글 삭제 성공!"));
+		return ResponseEntity.ok(ApiResponse.success("게시글 댓글 삭제 성공!"));
+	}
+	
+	@Operation(summary = "게시글 좋아요 상태 및 개수 조회")
+	@GetMapping("/{boardId}/like")
+	public ResponseEntity<ApiResponse<Map<String, Object>>> getLike(
+			@PathVariable("boardId") Long boardId,
+			@RequestParam("empId") Long empId){
+		
+		Map<String, Object> likeInfo =	service.getLike(boardId, empId);
+		
+		return ResponseEntity.ok(ApiResponse.success("좋아요 정보 조회 성공!", likeInfo));
+			}
+		
+	@Operation(summary = "게시글 좋아요 토글(등록/취소)")
+	@PostMapping("/{boardId}/like")
+	public ResponseEntity<ApiResponse<Boolean>> toggleLike(
+			@PathVariable("boardId") Long boardId,
+			@RequestParam("empId") Long empId){
+		boolean isLiked =service.toggelLike(boardId, empId);
+		
+		String message =isLiked ? "게시글 좋아요 등록 성공!" :"게시글 좋아요 취소 성공";
+		return ResponseEntity.ok(ApiResponse.success(message,isLiked));	
 	}
 	
 }

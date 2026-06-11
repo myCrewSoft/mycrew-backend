@@ -61,4 +61,6 @@ public interface ProjectMapper {
 	 */
 	int updateLeaveDt(Long projId, Long empId);
 	
+	// 프로젝트 진척률 계산
+	int updateProjectPrgrsRtd(@Param("projId") Long projId);
 }
