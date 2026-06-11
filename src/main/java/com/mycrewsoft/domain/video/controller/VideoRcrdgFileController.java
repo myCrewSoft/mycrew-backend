@@ -42,34 +42,23 @@ public class VideoRcrdgFileController {
     @Operation(summary = "녹취록 스트리밍", description = "저장된 녹취록 파일을 스트리밍합니다.")
     @GetMapping("/recordings/{atchFileId}/stream")
     public ResponseEntity<Resource> streamRcrdg(@PathVariable Long atchFileId) {
-        FileDtlVo dtlVO = videoRcrdgFileService.getFileDtl(atchFileId);
-        try {
-            Resource resource = new UrlResource(
-                Paths.get(dtlVO.getSavePathNm(), dtlVO.getSaveFileNm()).toUri());
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
-                    .contentType(MediaType.parseMediaType("audio/webm"))
-                    .body(resource);
-        } catch (MalformedURLException e) {
-            throw new CustomException(ErrorCode.FILE_NOT_FOUND);
-        }
+        Resource resource = videoRcrdgFileService.getResource(atchFileId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
+                .contentType(MediaType.parseMediaType("audio/webm"))
+                .body(resource);
     }
 
     // 다운로드
     @Operation(summary = "녹취록 다운로드", description = "저장된 녹취록 파일을 다운로드합니다.")
     @GetMapping("/recordings/{atchFileId}/download")
     public ResponseEntity<Resource> downloadRcrdg(@PathVariable Long atchFileId) {
-        FileDtlVo dtlVO = videoRcrdgFileService.getFileDtl(atchFileId);
-        try {
-            Resource resource = new UrlResource(
-                Paths.get(dtlVO.getSavePathNm(), dtlVO.getSaveFileNm()).toUri());
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename=\"" + dtlVO.getOrgnlFileNm() + "\"")
-                    .contentType(MediaType.parseMediaType("audio/webm"))
-                    .body(resource);
-        } catch (MalformedURLException e) {
-            throw new CustomException(ErrorCode.FILE_NOT_FOUND);
-        }
+        Resource resource = videoRcrdgFileService.getResource(atchFileId);
+        String fileName = videoRcrdgFileService.getOriginalFileName(atchFileId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + fileName + "\"")
+                .contentType(MediaType.parseMediaType("audio/webm"))
+                .body(resource);
     }
 }

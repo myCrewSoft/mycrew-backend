@@ -23,7 +23,9 @@ import com.mycrewsoft.domain.video.mapper.VideoRcrdgFileMapper;
 import com.mycrewsoft.security.util.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -91,16 +93,35 @@ public class VideoRcrdgFileServiceImpl implements VideoRcrdgFileService {
     }
 
     @Override
-    public FileDtlVo getFileDtl(Long atchFileId) {
+    public Resource getResource(Long atchFileId) {
+        // 파일 정보 조회 및 삭제 여부 확인
         FileDtlVo dtlVO = videoRcrdgFileMapper.selectDtlByAtchFileId(atchFileId);
         if (dtlVO == null || "Y".equals(dtlVO.getDelYn())) {
             throw new CustomException(ErrorCode.FILE_NOT_FOUND);
         }
 
+        // 실제 파일 존재 여부 확인
         Path filePath = Paths.get(dtlVO.getSavePathNm(), dtlVO.getSaveFileNm());
         if (!Files.exists(filePath)) {
             throw new CustomException(ErrorCode.FILE_NOT_FOUND);
         }
-        return dtlVO;
+
+        // 생성 실패시 예외
+        try {
+            return new UrlResource(filePath.toUri());
+        } catch (Exception e) {
+            log.error("[녹취록] 파일 리소스 생성 실패 - atchFileId: {}", atchFileId, e);
+            throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+        }
+    }
+
+    @Override
+    public String getOriginalFileName(Long atchFileId) {
+        // 파일 정보 조회 및 삭제 여부 확인
+        FileDtlVo dtlVO = videoRcrdgFileMapper.selectDtlByAtchFileId(atchFileId);
+        if (dtlVO == null || "Y".equals(dtlVO.getDelYn())) {
+            throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+        }
+        return dtlVO.getOrgnlFileNm();
     }
 }
