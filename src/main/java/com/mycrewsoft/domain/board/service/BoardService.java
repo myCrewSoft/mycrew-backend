@@ -1,6 +1,7 @@
 package com.mycrewsoft.domain.board.service;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -51,7 +52,6 @@ public interface BoardService {
 	
 	
 	// 게시글 댓글 생성
-
 	Long createComment(BoardCommentCreateRequest createComment);
 	
 	
@@ -61,4 +61,12 @@ public interface BoardService {
 	
 	//게시글 댓글 삭제
 	void deleteComment(Long commentId);
+	
+	
+	//게시글 좋아요 토글 (등록 취소)
+	boolean toggelLike(Long  boardId,Long empId);
+	
+	//게시글 상세 좋아요 정보(총개수 +본인 좋아요 여부)
+	
+	Map<String, Object> getLike(Long boardId,Long empId);
 }
