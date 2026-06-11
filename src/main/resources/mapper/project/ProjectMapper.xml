@@ -43,27 +43,7 @@
 	        ELSE P.PROJ_STAT_CD
 	    END AS PROJ_STAT_CD,
 	    E.EMP_NM AS PROJ_LDR_NM,
-	    ROUND(
-		    NVL(
-		        (
-		            SELECT 
-		                SUM(T.TASK_PRGRS_SMRY * CASE T.TASK_IMPRTNC_CD
-		                                            WHEN '01' THEN 1
-		                                            WHEN '02' THEN 2
-		                                            WHEN '03' THEN 3
-		                                        END)
-		                /
-		                NULLIF(SUM(CASE T.TASK_IMPRTNC_CD
-		                               WHEN '01' THEN 1
-		                               WHEN '02' THEN 2
-		                               WHEN '03' THEN 3
-		                           END), 0) * 100
-		            FROM TB_TASK T
-		            WHERE T.PROJ_ID = P.PROJ_ID
-		              AND T.DEL_YN = 'N'
-		        ), 0
-		    )
-		) AS PROJ_PRGRS_RT
+	    P.PROJ_PRGRS_RT
 	FROM TB_PROJECT P
 	JOIN TB_PROJ_MEMBER PM
 	    ON PM.PROJ_ID   = P.PROJ_ID
@@ -114,13 +94,12 @@
        P.PROJ_CN,
        P.PROJ_BGNG_YMD,
        P.PROJ_END_YMD,
-       P.PROJ_STAT_CD,
        CASE
-           WHEN P.PROJ_STAT_CD = '01'
-            AND P.PROJ_BGNG_YMD &lt;= TO_CHAR(SYSDATE, 'YYYYMMDD')
-           THEN '02'
-           ELSE P.PROJ_STAT_CD
-       END AS PROJ_STAT_CD,
+	        WHEN P.PROJ_STAT_CD = '01'
+	         AND P.PROJ_BGNG_YMD &lt;= TRUNC(SYSDATE)
+	        THEN '02'
+	        ELSE P.PROJ_STAT_CD
+	    END AS PROJ_STAT_CD,
        P.PROJ_LDR_EMP_ID,
        P.PROJ_PRGRS_RT,
        LDR.EMP_NM    AS PROJ_LDR_NM,
@@ -155,6 +134,14 @@
         </if>
     </set>
     WHERE PROJ_ID = #{projId}
+</update>
+
+<update id="updateLeaveDt">
+	UPDATE TB_PROJ_MEMBER
+	SET LEAVE_DT = SYSDATE
+	WHERE PROJ_ID = #{projId}
+	   AND EMP_ID = #{empId}
+	   AND LEAVE_DT IS NULL
 </update>
 	
 	

@@ -1,8 +1,12 @@
 package com.mycrewsoft.domain.project.service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,7 +19,11 @@ import com.mycrewsoft.domain.messenger.service.MsngrServiceImpl;
 import com.mycrewsoft.domain.project.dto.ProjectCreateRequestDto;
 import com.mycrewsoft.domain.project.dto.ProjectDetailResponseDto;
 import com.mycrewsoft.domain.project.dto.ProjectListResponseDto;
+import com.mycrewsoft.domain.project.dto.ProjectMemberAddRequest;
 import com.mycrewsoft.domain.project.dto.ProjectUpdateRequestDto;
+import com.mycrewsoft.domain.project.event.ProjectCompletedEvent;
+import com.mycrewsoft.domain.project.event.ProjectCreatedEvent;
+import com.mycrewsoft.domain.project.event.ProjectStoppedEvent;
 import com.mycrewsoft.domain.project.mapper.ProjectMapper;
 import com.mycrewsoft.domain.project.vo.ProjectVO;
 import com.mycrewsoft.domain.projectmember.dto.ProjectMemberResponseDto;
@@ -38,7 +46,7 @@ public class ProjectServiceImpl implements ProjectService{
 	private final ProjectMemberMapper projectMemberMapper;
 	private final DtoMapper dtoMapper;
 	private final MsngrServiceImpl msngrService;
-	
+	private final ApplicationEventPublisher eventPublisher;
 	/**
 	 * 프로젝트 등록
 	 */
@@ -69,18 +77,39 @@ public class ProjectServiceImpl implements ProjectService{
 		int result = projectMapper.insertProject(projVo);
 		if(result == 0) throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
 		
-		//참여자 vo 리스트 생성 (projId 세팅)
-		List<ProjectMemberVO> memberList = reqDto.getProjMemberList().stream()
-                .map(m -> {
-                    ProjectMemberVO memberVO = dtoMapper.toDto(m, ProjectMemberVO.class);
-                    memberVO.setProjId(projVo.getProjId());
-                    return memberVO;
-                })
-                .toList();
+		//프로젝트 장 VO 생성
+		ProjectMemberVO ldr = new ProjectMemberVO();
+		ldr.setProjId(projVo.getProjId());
+		ldr.setEmpId(SecurityUtil.getCurrentEmpId());
 		
-		//참여자 일괄 등록
-		int memberResult = projectMemberMapper.insertProjectMemberList(memberList);
-		if(memberResult == 0) throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+		//참여자 vo 리스트 생성
+		List<ProjectMemberVO> memberList = new ArrayList<ProjectMemberVO>();
+		memberList.add(ldr); //프로젝트 등록 시 참여자에 프로젝트 장 추가
+		
+		//dto -> vo 변환
+		List<ProjectMemberVO> addMembers = reqDto.getProjMemberList().stream()
+				.filter(m -> !m.getEmpId().equals(SecurityUtil.getCurrentEmpId())) //참여자 목록에 프로젝트 장이 중복되는 것을 방지
+	            .map(m -> {
+	                ProjectMemberVO memberVO = dtoMapper.toDto(m, ProjectMemberVO.class);
+	                memberVO.setProjId(projVo.getProjId()); //projId 세팅
+	                return memberVO;
+	            })
+	            .toList();
+		
+		memberList.addAll(addMembers); //참여자 리스트를 합침
+		
+		//참여자 등록
+		for (ProjectMemberVO vo : memberList) {
+			projectMemberMapper.mergeMember(vo);
+		}
+    
+    // 프로젝트 배정 알림
+		List<Long> memberEmpIds = memberList.stream()
+		        .map(ProjectMemberVO::getEmpId)
+		        .toList();
+        eventPublisher.publishEvent(
+            new ProjectCreatedEvent(projVo.getProjNm(), memberEmpIds)
+        );
 	}
 
 	/**
@@ -107,7 +136,7 @@ public class ProjectServiceImpl implements ProjectService{
 	 * 매일 자정 예정 → 진행 중 상태 자동 전환 (배치용)
 	 */
 	@Override
-	@Scheduled(cron = "0 0 0 * * *")
+	@Scheduled(cron = "0 0 * * * *")
 	public void updateProjStateToInProgress() {
 		try {
             int count = projectMapper.updateProjStateToInProgress();
@@ -207,6 +236,23 @@ public class ProjectServiceImpl implements ProjectService{
 		//수정
 	    int result = projectMapper.updateProject(updateVo);
 	    if (result == 0) throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+	    
+	    // 상태 변경 시 알림
+	    if (updateReqDto.getProjStatCd() != null &&
+	        !updateReqDto.getProjStatCd().equals(currentStat)) {
+
+	        List<Long> memberEmpIds = projectMemberMapper
+	                .selectProjectMemberList(projId).stream()
+	                .map(ProjectMemberVO::getEmpId)
+	                .toList();
+
+	        switch (updateReqDto.getProjStatCd()) {
+	            case "03" -> eventPublisher.publishEvent(
+	                new ProjectCompletedEvent(vo.getProjNm(), memberEmpIds));
+	            case "04" -> eventPublisher.publishEvent(
+	                new ProjectStoppedEvent(vo.getProjNm(), memberEmpIds));
+	        }
+	    }
 	}
 	
 	/**
@@ -225,5 +271,64 @@ public class ProjectServiceImpl implements ProjectService{
 	    if ("02".equals(currentStat) && "01".equals(newStat)) {
 	        throw new CustomException(ErrorCode.PROJECT_INVALID_STAT_TRANSITION);
 	    }
+	}
+
+	/**
+	 * 프로젝트 참여자 추가
+	 */
+	@Override
+	public void addProjMember(Long projId, ProjectMemberAddRequest reqDto) {
+		//현재 로그인한 사용자 조회
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
+		
+		//프로젝트 존재 여부 및 참여자인지 확인
+		ProjectVO project = projectMapper.selectProject(projId, currentEmpId);
+		if(project == null) throw new CustomException(ErrorCode.PROJECT_NOT_FOUND);
+		
+		//프로젝트 장인지 확인
+		if(!project.getProjLdrEmpId().equals(currentEmpId)) {
+			throw new CustomException(ErrorCode.PROJECT_NOT_OWNER);
+		}
+		
+		//dto -> vo 변환
+		List<ProjectMemberVO> addList = reqDto.getAddMemberList().stream()
+				.map(m -> {
+					ProjectMemberVO vo = new ProjectMemberVO();
+					vo.setProjId(projId);
+					vo.setEmpId(m.getEmpId());
+					return vo;
+				})
+				.toList();
+		
+		for(ProjectMemberVO vo : addList) {
+			projectMemberMapper.mergeMember(vo);
+		}
+	}
+
+	/**
+	 * 프로젝트 참여자 단건 퇴출
+	 */
+	@Override
+	public void removeProjMember(Long projId, Long empId) {
+		//현재 로그인한 사용자 조회
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
+		
+		//프로젝트 존재 여부 및 참여자인지 확인
+		ProjectVO project = projectMapper.selectProject(projId, currentEmpId);
+		if(project == null) throw new CustomException(ErrorCode.PROJECT_NOT_FOUND);
+		
+		//현재 사용자가 프로젝트 장인지 검증
+		if(!project.getProjLdrEmpId().equals(currentEmpId)) {
+			throw new CustomException(ErrorCode.PROJECT_NOT_OWNER);
+		}
+		
+		//프로젝트 장은 퇴출 불가
+		if(empId.equals(currentEmpId)) {
+			throw new CustomException(ErrorCode.PROJECT_LEADER_CANNOT_LEAVE);
+		}
+		
+		//퇴출 (퇴출일시 업데이트)
+		int result = projectMapper.updateLeaveDt(projId, empId);
+		if(result == 0) throw new CustomException(ErrorCode.PROJECT_NOT_PARTICIPANT);
 	}
 }

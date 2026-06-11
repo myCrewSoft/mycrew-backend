@@ -5,6 +5,7 @@ import java.util.List;
 import com.mycrewsoft.domain.project.dto.ProjectCreateRequestDto;
 import com.mycrewsoft.domain.project.dto.ProjectDetailResponseDto;
 import com.mycrewsoft.domain.project.dto.ProjectListResponseDto;
+import com.mycrewsoft.domain.project.dto.ProjectMemberAddRequest;
 import com.mycrewsoft.domain.project.dto.ProjectUpdateRequestDto;
 
 public interface ProjectService {
@@ -37,4 +38,18 @@ public interface ProjectService {
 	 * @param reqDto
 	 */
 	void modifyProject(Long projId, ProjectUpdateRequestDto updateReqDto);
+
+	/**
+	 * 프로젝트 참여자 추가
+	 * @param projId
+	 * @param reqDto
+	 */
+	void addProjMember(Long projId, ProjectMemberAddRequest reqDto);
+	
+	/**
+	 * 프로젝트 참여자 단건 퇴출 
+	 * @param projId
+	 * @param empId
+	 */
+	void removeProjMember(Long projId, Long empId);
 }

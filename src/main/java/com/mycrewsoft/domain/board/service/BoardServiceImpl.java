@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -24,10 +25,13 @@ import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
 import com.mycrewsoft.domain.board.dto.request.BoardUpdateRequest;
 import com.mycrewsoft.domain.board.dto.response.BoardResponse;
 import com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse;
+import com.mycrewsoft.domain.board.event.CommentCreatedEvent;
+import com.mycrewsoft.domain.board.event.NoticeCreatedEvent;
 import com.mycrewsoft.domain.board.mapper.BoardMapper;
 import com.mycrewsoft.domain.board.vo.BoardCommentVO;
 import com.mycrewsoft.domain.board.vo.BoardLikeVo;
 import com.mycrewsoft.domain.board.vo.BoardVO;
+import com.mycrewsoft.domain.employee.mapper.EmployeeLookupMapper;
 import com.mycrewsoft.domain.employee.mapper.EmployeeMapper;
 import com.mycrewsoft.security.authz.AuthorizationService;
 import com.mycrewsoft.security.authz.PermissionScopeSet;
@@ -44,11 +48,13 @@ import lombok.extern.slf4j.Slf4j;
 public class BoardServiceImpl implements BoardService {
 
 	private final EmployeeMapper employeeMapper;
+	private final EmployeeLookupMapper employeeLookupMapper;
 	private final BoardMapper boardMapper;
 	private final AuthorizationService authorizationService;
 	private final ObjectMapper objectMapper;
 	private final DtoMapper dtoMapper;
-
+	private final ApplicationEventPublisher eventPublisher;
+	
 	// 데이터를 몇 페이지에 몇개씩 보여줄지
 	@Override
 	@Transactional(readOnly = true)
@@ -278,7 +284,15 @@ public class BoardServiceImpl implements BoardService {
 	    boardVo.setFrstRgtrId(empId);
 	    
 	    boardMapper.createBoard(boardVo);
+      
+      // 공지사항이면 전 사원에게 알림
+      if("notice".equals(boardVo.getBoardTypeCd())) {
+        List<Long> allEmpIds = employeeLookupMapper.selectAllEmpIds();
+        eventPublisher.publishEvent(
+          new NoticeCreatedEvent(boardVo.getBoardSj(), allEmpIds)
+        );
 
+      }
 	    return boardVo.getBoardId();
 	}
 	@Override
@@ -393,6 +407,14 @@ public class BoardServiceImpl implements BoardService {
 		// 데이터베이스에서 생성
 		boardMapper.insertComment(boardCommentVO);
 
+		// 글 작성자에게 댓글 등록 알림
+		BoardVO boardVo = boardMapper.readBoard(boardCommentVO.getBoardId());
+		String boardSj = boardVo.getBoardSj();
+		Long boardWriter = boardVo.getFrstRgtrId();
+		eventPublisher.publishEvent(
+			new CommentCreatedEvent(boardSj, boardWriter)
+		);
+		
 		return boardCommentVO.getCommentId();
 	}
 
