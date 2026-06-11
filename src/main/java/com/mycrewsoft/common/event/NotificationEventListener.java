@@ -526,7 +526,7 @@ public class NotificationEventListener {
             "사용 권한이 변경되었습니다.",
             "09",
             null,
-            List.of(event.getEmpId())
+            event.getEmpIds()
         );
     }
 }
