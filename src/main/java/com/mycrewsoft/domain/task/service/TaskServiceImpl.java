@@ -104,7 +104,10 @@ public class TaskServiceImpl implements TaskService {
                 new TaskAssignedEvent(task.getTaskNm(), request.getEmpIdList())
             );
         }
-
+        
+        // 프로젝트 진척률 최신화
+        recalculateProjectProgress(projId);
+        
         return task.getTaskId();
     }
 
@@ -127,7 +130,10 @@ public class TaskServiceImpl implements TaskService {
 
         // DB에 저장
         taskMapper.updateTask(taskId, task);
-
+        
+        // 프로젝트 진척률 최신화
+        recalculateProjectProgress(projId);
+        
         // 참여자 수정 요청이 있을 때만 DELETE → INSERT
         if (request.getEmpIdList() != null) {
             taskMapper.deleteTaskPtcpts(taskId);
@@ -246,6 +252,10 @@ public class TaskServiceImpl implements TaskService {
         // 참여자 먼저 삭제 후 업무 논리 삭제
         taskMapper.deleteTaskPtcpts(taskId);
         taskMapper.deleteTask(taskId, currentEmpId);
+        
+        // 프로젝트 진척률 최신화
+        recalculateProjectProgress(projId);
+        
     }
 
     // ── private 헬퍼 ──────────────────────────────────────────────
@@ -272,13 +282,23 @@ public class TaskServiceImpl implements TaskService {
     }
 
     // 담당자 또는 프로젝트장 가능
-    private void validateTaskManagerOrProjectLeader(Long currentEmpId, Long projId, TaskDetailVO task) {
+    private void validateTaskManagerOrProjectLeader(
+		Long currentEmpId,
+		Long projId,
+		TaskDetailVO task
+    ) {
         boolean isTaskManager = Objects.equals(task.getTaskMngrId(), currentEmpId);
         Long projectLeaderId = projectMapper.selectProjectLeaderId(projId);
         boolean isProjectLeader = Objects.equals(projectLeaderId, currentEmpId);
 
-        if (!isTaskManager && !isProjectLeader) {
-            throw new CustomException(ErrorCode.ACCESS_DENIED);
-        }
+        if (!isTaskManager && !isProjectLeader) throw new CustomException(ErrorCode.ACCESS_DENIED);
+        
     }
+    
+    // 프로젝트 진척률 최신화
+    private void recalculateProjectProgress(Long projId) {
+    	int projResult = projectMapper.updateProjectPrgrsRtd(projId);
+    	if(projResult == 0) throw new CustomException(ErrorCode.PROJECT_NOT_FOUND);
+    }
+    
 }
