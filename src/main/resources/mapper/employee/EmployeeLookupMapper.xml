@@ -48,6 +48,13 @@
                 WHERE PROJ_ID = #{projId}
             )
         </if>
+        <if test="excludeProjId != null">
+            AND E.EMP_ID NOT IN (
+                SELECT EMP_ID
+                FROM TB_PROJ_MEMBER
+                WHERE PROJ_ID = #{excludeProjId}
+            )
+        </if>
         ORDER BY D.DEPT_NM ASC, E.EMP_NM ASC
         FETCH FIRST 50 ROWS ONLY
     </select>
