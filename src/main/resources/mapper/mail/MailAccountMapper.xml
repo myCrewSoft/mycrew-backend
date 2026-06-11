@@ -68,6 +68,17 @@
             )
     </insert>
 
+    <update id="releaseGoogleSubFromOtherEmployees">
+        UPDATE TB_MAIL_ACCOUNT
+        SET GOOGLE_SUB_ID = NULL,
+            TOKEN_STATUS_CD = 'REVOKED',
+            USE_YN = 'N',
+            REVOKED_DT = SYSDATE,
+            LAST_MDFCN_DT = SYSDATE
+        WHERE GOOGLE_SUB_ID = #{googleSubId}
+          AND EMP_ID <![CDATA[ <> ]]> #{empId}
+    </update>
+
     <select id="existsActiveMailAccount" parameterType="long" resultType="int">
         SELECT COUNT(1)
         FROM TB_MAIL_ACCOUNT
