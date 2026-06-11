@@ -2,7 +2,6 @@ package com.mycrewsoft.common.event;
 
 import java.util.List;
 
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -34,9 +33,7 @@ import com.mycrewsoft.domain.project.event.ProjectClosedEvent;
 import com.mycrewsoft.domain.project.event.ProjectCompletedEvent;
 import com.mycrewsoft.domain.project.event.ProjectCreatedEvent;
 import com.mycrewsoft.domain.project.event.ProjectDeadlineEvent;
-import com.mycrewsoft.domain.project.event.ProjectDeletedEvent;
 import com.mycrewsoft.domain.project.event.ProjectManagerChangedEvent;
-import com.mycrewsoft.domain.project.event.ProjectPausedEvent;
 import com.mycrewsoft.domain.project.event.ProjectStoppedEvent;
 import com.mycrewsoft.domain.schedule.event.ScheduleCancelledEvent;
 import com.mycrewsoft.domain.schedule.event.ScheduleChangedEvent;
@@ -168,31 +165,9 @@ public class NotificationEventListener {
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleProjectCancelled(ProjectPausedEvent event) {
-        notificationService.sendAlrm(
-            "[" + event.getProjNm() + "] 프로젝트가 일시 중지되었습니다.",
-            "04",
-            null,
-            event.getEmpIds()
-        );
-    }
-
-    @Async
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleProjectCancelled(ProjectStoppedEvent event) {
         notificationService.sendAlrm(
             "[" + event.getProjNm() + "] 프로젝트가 중지되었습니다.",
-            "04",
-            null,
-            event.getEmpIds()
-        );
-    }
-
-    @Async
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleProjectCancelled(ProjectDeletedEvent event) {
-        notificationService.sendAlrm(
-            "[" + event.getProjNm() + "] 프로젝트가 삭제되었습니다.",
             "04",
             null,
             event.getEmpIds()

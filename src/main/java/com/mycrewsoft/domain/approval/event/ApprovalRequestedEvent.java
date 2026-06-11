@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public class ApprovalRequestedEvent {
-    private final Long ApplicantNm;
+    private final String ApplicantNm;
     private final String ApprovalNm;
     private final List<Long> ApproverIds;
 
