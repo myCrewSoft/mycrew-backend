@@ -17,6 +17,9 @@ public class AdminDepartmentMemberResponseDTO {
     @Schema(description = "사원명", example = "홍길동")
     private String empNm;
 
+    @Schema(description = "프로필 이미지 파일 ID", example = "12")
+    private Long prflImgFileId;
+
     @Schema(description = "부서 코드", example = "DEPT_001")
     private String deptCd;
 
