@@ -60,7 +60,7 @@
             FILE_SZ,
             DEL_YN
         FROM TB_CMMN_ATCH_FILE_DTL
-        WHERE ATCH_FILE_ID = #{atchFileId}
+        WHERE ATCH_FILE_DTL_ID = #{atchFileId}
         AND DEL_YN = 'N'
     </select>
 

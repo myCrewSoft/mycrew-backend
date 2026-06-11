@@ -250,25 +250,50 @@ public class BoardServiceImpl implements BoardService {
 		if (writtenBoard == null) {
 			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
 		}
-
-		Long writer	= writtenBoard.getFrstRgtrId();
 		
-		//내가 작성한 글만 권한
-		// 현재 접속한 사원 아이디 = 작성한 사람 아이디
-		if(!empId.equals(writer)) {
-			throw new CustomException(ErrorCode.ACCESS_DENIED);
+		//내가 갖고 있는 BOARD_POST_UPDATE 권한이 Global 인지 판단(Global == 타인, 모든 부서, 모든 프로젝트의 게시글 범위)
+		if(!authorizationService.hasGlobalScope(PermissionCode.BOARD_POST_UPDATE)) {
+			//내 BOARD_POST_UPDATE 권한이 Global이 아니라면, 세부 검증으로 이동.
+			
+			//db에서 게시글을 조회하여 실제 데이터로 검증
+			Long writer	= writtenBoard.getFrstRgtrId();
+			String deptCd = writtenBoard.getDeptCd();
+			Long prodId = writtenBoard.getProjId();
+			
+			ResourceContext context = ResourceContext.builder()
+										//내가 쓴 글인가?
+										.ownerEmpId(writer)
+										//내 BOARD_POST_UPDATE 권한이 부서 범위인가?
+										.deptCd(deptCd)
+										//내 BOARD_POST_UPDATE 권한이 프로젝트 범위인가? 
+										.projId(prodId.toString())
+										.build();
+			
+			//위에서 나열된 3가지 조건 중 하나라도 충족하면 권한 통과.
+			authorizationService.assertCurrentUserPermission(PermissionCode.BOARD_POST_UPDATE, context);
+			
+			//DTO-VO로 변환
+			BoardVO boardDetail = dtoMapper.toDto(boardUpdateRequest, BoardVO.class);
+			boardDetail.setBoardId(boardId);
+			
+			//데이터베이스에서 생성
+			int result= boardMapper.updateBoardDetails(boardDetail);
+			if(result==0) {
+				throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+			}
+			return boardId; // 게시물 수정하면 그 게시물로 이동하기 때문에 
+		} else {
+			//DTO-VO로 변환
+			BoardVO boardDetail =dtoMapper.toDto(boardUpdateRequest,  BoardVO.class);
+			boardDetail.setBoardId(boardId);
+			
+			//데이터베이스에서 생성
+			int result= boardMapper.updateBoardDetails(boardDetail);
+			if(result==0) {
+				throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+			}
+			return boardId; // 게시물 수정하면 그 게시물로 이동하기 때문에 
 		}
-		
-		//DTO-VO로 변환
-		BoardVO boardDetail =dtoMapper.toDto(boardUpdateRequest,  BoardVO.class);
-		boardDetail.setBoardId(boardId);
-		
-		//데이터베이스에서 생성
-		int result= boardMapper.updateBoardDetails(boardDetail);
-		if(result==0) {
-			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
-		}
-		return boardId; // 게시물 수정하면 그 게시물로 이동하기 때문에 
 	}
 	
 	@Override
