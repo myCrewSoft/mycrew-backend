@@ -36,4 +36,13 @@ public class TaskDetailVO {
     private LocalDateTime lastMdfcnDt;
 
     private List<TaskPtcptDetailVO> ptcptList;  // 참여자 목록
+
+    public List<Long> getRcvrEmpIds() {
+        if (ptcptList == null || ptcptList.isEmpty()) {
+            return List.of();
+        }
+        return ptcptList.stream()
+                .map(TaskPtcptDetailVO::getEmpId)
+                .toList();
+    }
 }
