@@ -11,4 +11,6 @@ import java.util.List;
 public interface EmployeeLookupMapper {
 
     List<EmployeeLookupVO> selectEmployeesForLookup(EmployeeLookupRequest request);
+    
+    List<Long> selectAllEmpIds();
 }

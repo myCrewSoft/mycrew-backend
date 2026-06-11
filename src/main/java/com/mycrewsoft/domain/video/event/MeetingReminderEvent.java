@@ -1,14 +1,14 @@
-package com.mycrewsoft.domain.messenger.event;
+package com.mycrewsoft.domain.video.event;
 
 import java.util.List;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-// 회의 초대 알림
+// 회의 시작 10분 전 알림
 @Getter
 @RequiredArgsConstructor
-public class MeetingInvitedEvent {
+public class MeetingReminderEvent {
     private final String meetingNm;
-    private final List<Long> empIds;
+    private final List<Long> empIds;    
 }
