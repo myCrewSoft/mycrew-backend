@@ -3,6 +3,7 @@ package com.mycrewsoft.domain.project.service;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,9 @@ import com.mycrewsoft.domain.project.dto.ProjectCreateRequestDto;
 import com.mycrewsoft.domain.project.dto.ProjectDetailResponseDto;
 import com.mycrewsoft.domain.project.dto.ProjectListResponseDto;
 import com.mycrewsoft.domain.project.dto.ProjectUpdateRequestDto;
+import com.mycrewsoft.domain.project.event.ProjectCompletedEvent;
+import com.mycrewsoft.domain.project.event.ProjectCreatedEvent;
+import com.mycrewsoft.domain.project.event.ProjectStoppedEvent;
 import com.mycrewsoft.domain.project.mapper.ProjectMapper;
 import com.mycrewsoft.domain.project.vo.ProjectVO;
 import com.mycrewsoft.domain.projectmember.dto.ProjectMemberResponseDto;
@@ -38,7 +42,7 @@ public class ProjectServiceImpl implements ProjectService{
 	private final ProjectMemberMapper projectMemberMapper;
 	private final DtoMapper dtoMapper;
 	private final MsngrServiceImpl msngrService;
-	
+	private final ApplicationEventPublisher eventPublisher;
 	/**
 	 * 프로젝트 등록
 	 */
@@ -81,6 +85,14 @@ public class ProjectServiceImpl implements ProjectService{
 		//참여자 일괄 등록
 		int memberResult = projectMemberMapper.insertProjectMemberList(memberList);
 		if(memberResult == 0) throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+		
+		// 프로젝트 배정 알림
+		List<Long> memberEmpIds = memberList.stream()
+		        .map(ProjectMemberVO::getEmpId)
+		        .toList();
+        eventPublisher.publishEvent(
+            new ProjectCreatedEvent(projVo.getProjNm(), memberEmpIds)
+        );
 	}
 
 	/**
@@ -207,6 +219,23 @@ public class ProjectServiceImpl implements ProjectService{
 		//수정
 	    int result = projectMapper.updateProject(updateVo);
 	    if (result == 0) throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+	    
+	    // 상태 변경 시 알림
+	    if (updateReqDto.getProjStatCd() != null &&
+	        !updateReqDto.getProjStatCd().equals(currentStat)) {
+
+	        List<Long> memberEmpIds = projectMemberMapper
+	                .selectProjectMemberList(projId).stream()
+	                .map(ProjectMemberVO::getEmpId)
+	                .toList();
+
+	        switch (updateReqDto.getProjStatCd()) {
+	            case "03" -> eventPublisher.publishEvent(
+	                new ProjectCompletedEvent(vo.getProjNm(), memberEmpIds));
+	            case "04" -> eventPublisher.publishEvent(
+	                new ProjectStoppedEvent(vo.getProjNm(), memberEmpIds));
+	        }
+	    }
 	}
 	
 	/**
