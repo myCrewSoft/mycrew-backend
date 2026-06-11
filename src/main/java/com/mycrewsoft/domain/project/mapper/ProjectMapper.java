@@ -51,4 +51,7 @@ public interface ProjectMapper {
 	 * @return
 	 */
 	int updateProject(ProjectVO vo);
+	
+	// 프로젝트 진척률 계산
+	int updateProjectPrgrsRtd(@Param("projId") Long projId);
 }
