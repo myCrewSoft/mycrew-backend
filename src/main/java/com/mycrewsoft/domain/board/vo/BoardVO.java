@@ -29,6 +29,7 @@ public class BoardVO {
 	private String imprtntYn; //중요여부
 	private String cmntUseYn; //댓글 허용
 	private Integer viewCnt; // 조회수
+	private String delYn; //삭제여부
 	
 	private String empNm; // 작성자 사원명
 	

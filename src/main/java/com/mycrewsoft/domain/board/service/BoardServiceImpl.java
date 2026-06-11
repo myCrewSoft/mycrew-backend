@@ -15,6 +15,8 @@ import com.mycrewsoft.common.constant.PermissionCode;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DtoMapper;
+import com.mycrewsoft.domain.board.dto.request.BoardCommentCreateRequest;
+import com.mycrewsoft.domain.board.dto.request.BoardCommentUpdateRequest;
 import com.mycrewsoft.domain.board.dto.request.BoardCreateRequest;
 import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
 import com.mycrewsoft.domain.board.dto.request.BoardUpdateRequest;
@@ -86,6 +88,7 @@ public class BoardServiceImpl implements BoardService {
 	}
 
 	@Override
+	@Transactional
 	public List<BoardSideBarResponse> getSideBar() {
 		// 1. 권한 검증 및 자원 설정
 		ResourceContext resource = ResourceContext.builder().resourceType(ResourceType.BOARD).build();
@@ -206,6 +209,7 @@ public class BoardServiceImpl implements BoardService {
 
 	// 게시글 생성 메서드
 	@Override
+	@Transactional
 	public Long createBoard(BoardCreateRequest boardCreateRequest) {
 
 		// 권한 체크
@@ -233,6 +237,7 @@ public class BoardServiceImpl implements BoardService {
 	}
 
 	@Override
+	@Transactional
 	public Long updateBoardDetail(Long boardId, BoardUpdateRequest boardUpdateRequest) {
 		// 로그인한 사원 아이디 empId
 		Long empId = SecurityUtil.getCurrentEmpId();
@@ -240,6 +245,10 @@ public class BoardServiceImpl implements BoardService {
 		
 		// db에서 글을 조회
 		BoardVO writtenBoard  = boardMapper.readBoard(boardId);
+		if (writtenBoard == null) {
+			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+		}
+
 		Long writer	= writtenBoard.getFrstRgtrId();
 		
 		//내가 작성한 글만 권한
@@ -250,10 +259,111 @@ public class BoardServiceImpl implements BoardService {
 		
 		//DTO-VO로 변환
 		BoardVO boardDetail =dtoMapper.toDto(boardUpdateRequest,  BoardVO.class);
+		boardDetail.setBoardId(boardId);
 		
 		//데이터베이스에서 생성
-		boardMapper.updateBoardDetails(boardDetail);
-		return boardDetail.getBoardId();
+		int result= boardMapper.updateBoardDetails(boardDetail);
+		if(result==0) {
+			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+		}
+		return boardId; // 게시물 수정하면 그 게시물로 이동하기 때문에 
+	}
+	
+	@Override
+	@Transactional
+	public void deleteBoardDetail(Long boardId) {
+		// 로그인한 사원 아이디 empId
+		Long empId = SecurityUtil.getCurrentEmpId();
+		
+		// db에서 글을 조회
+		BoardVO readedBoard  = boardMapper.readBoard(boardId);
+		if (readedBoard == null) {
+			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+		}
+
+		Long written = readedBoard.getFrstRgtrId();
+		
+		//내가 작성한 글만 권한
+		// 현재 접속한 사원 아이디 = 작성한 사람 아이디
+		if(!empId.equals(written)) {
+			throw new CustomException(ErrorCode.ACCESS_DENIED);
+		}
+
+		//데이터베이스에서 논리 삭제
+		int result = boardMapper.deleteBoardDetail(boardId);
+		if(result ==0) {
+			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+		}
+		
+		
+	}
+
+	@Transactional
+	@Override
+	public Long createComment(BoardCommentCreateRequest createComment) {
+		
+		// 권한 체크
+		Long empId = SecurityUtil.getCurrentEmpId();
+		
+		// DTO -> VO로 변환
+		BoardCommentVO boardCommentVO = dtoMapper.toDto(createComment, BoardCommentVO.class);
+
+		boardCommentVO.setWrterEmpId(empId);
+	
+		// 데이터베이스에서 생성
+		boardMapper.insertComment(boardCommentVO);
+
+		return boardCommentVO.getCommentId();
+	}
+
+	@Override
+	@Transactional
+	public Long updateComment(BoardCommentUpdateRequest updateComment) {
+
+		// 권한 체크
+		Long empId = SecurityUtil.getCurrentEmpId();
+		
+		// DTO -> VO로 변환
+		BoardCommentVO updateVo = dtoMapper.toDto(updateComment , BoardCommentVO.class);
+		
+		updateVo.setWrterEmpId(empId);
+		
+				
+		//데이터베이스에서 생성
+		int result= boardMapper.updateComment(updateVo);
+		
+		if(result==0) {
+		throw new CustomException(ErrorCode.ACCESS_DENIED);
+			}
+		return updateVo.getCommentId(); 
+			
+	}
+
+	@Override
+	@Transactional
+	public void deleteComment(Long commentId) {
+		
+		// 권한 체크
+		Long empId = SecurityUtil.getCurrentEmpId();
+		
+		// db에서 글을 조회
+		 Long readCommentEmpId = boardMapper.readCmWrterEmpId(commentId); 
+		
+		 //댓글 못 찾음
+		if(readCommentEmpId == null) {
+			throw new CustomException(ErrorCode.COMMENT_NOT_FOUND); 
+		}
+		
+		// 로그인한 사람과 게시판 댓글 작성자 아이디  동일하지않으면 
+		if(!empId.equals(readCommentEmpId)){
+			throw new CustomException(ErrorCode.ACCESS_DENIED);
+
+		}
+		//데이터 베이스에서 논리삭제 
+		int result =	boardMapper.deleteComment(commentId);
+		if(result ==0) {
+			throw new CustomException(ErrorCode.ACCESS_DENIED);
+		}
 	}
 
 }

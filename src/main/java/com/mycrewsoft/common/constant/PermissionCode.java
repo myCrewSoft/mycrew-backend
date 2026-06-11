@@ -25,7 +25,15 @@ public enum PermissionCode {
 	ADMIN_DEPT_UPDATE("ADMIN 부서 수정", "부서 정보를 수정할 수 있는 권한입니다."),
 	ADMIN_DEPT_DELETE("ADMIN 부서 삭제", "부서를 삭제할 수 있는 권한입니다."),
 	ADMIN_DEPT_MEMBER_MANAGE("ADMIN 부서 구성원 관리", "부서 구성원을 배정, 이동 및 관리할 수 있는 권한입니다."),
-
+	
+	//APPROVAL
+	APPROVAL_DRAFT_CREATE("결재 기안 생성", "결재 기안을 생성할 수 있는 권한입니다."),
+	APPROVAL_DRAFT_UPDATE("결재 기안 수정", "결재 기안을 수정할 수 있는 권한입니다."),
+	APPROVAL_DRAFT_DELETE("결재 기안 삭제", "결재 기안을 삭제할 수 있는 권한입니다."),
+	APPROVAL_TEMPLATE_CREATE("결재 양식 생성", "결재 양식을 생성할 수 있는 권한입니다."),
+	APPROVAL_TEMPLATE_UPDATE("결재 양식 수정", "결재 양식을 수정할 수 있는 권한입니다."),
+	APPROVAL_TEMPLATE_DELETE("결재 양식 수정", "결재 양식을 삭제할 수 있는 권한입니다."),
+	
 	// Department
 	DEPT_CREATE("부서 생성", "부서를 생성할 수 있는 권한입니다."),
 	DEPT_READ("부서 조회", "부서 정보를 조회할 수 있는 권한입니다."),

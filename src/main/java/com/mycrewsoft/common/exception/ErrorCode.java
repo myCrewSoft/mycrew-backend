@@ -17,7 +17,15 @@ import org.springframework.http.HttpStatus;
  */
 @Getter
 public enum ErrorCode {
-
+	
+	// APPROVAL
+	TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND, "APR_001", "존재하지 않는 결재 양식입니다."),
+	APPROVAL_DOC_NOT_FOUND(HttpStatus.NOT_FOUND, "APR_002", "존재하지 않는 기안서입니다."),
+	APPROVAL_ALREADY_PROCESSED(HttpStatus.CONFLICT, "APR_003", "이미 처리된 결재가 있어 회수할 수 없습니다."),
+	APPROVAL_DOC_STATUS_INVALID(HttpStatus.BAD_REQUEST, "APR_004", "현재 상태에서 처리할 수 없는 결재 문서입니다."),
+	APPROVAL_LINE_INVALID(HttpStatus.BAD_REQUEST, "APR_005", "결재선 정보가 올바르지 않습니다."),
+	APPROVAL_REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "APR_006", "반려 사유는 필수입니다."),
+	
     // COMMON
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "COMMON_001", "입력값이 올바르지 않습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_002", "서버 내부 오류가 발생했습니다."),
@@ -63,7 +71,7 @@ public enum ErrorCode {
 
     // BOARD
     BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지않는 게시판입니다."),
-
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_002", "존재하지않는 댓글입니다."),
     // JOB
     RANK_NOT_FOUND(HttpStatus.NOT_FOUND, "JOB_001", "존재하지 않는 직급입니다."),
     DUPLICATE_RANK_ID(HttpStatus.CONFLICT, "JOB_002", "이미 존재하는 직급 ID입니다."),
@@ -111,6 +119,9 @@ public enum ErrorCode {
 	PROJECT_INVALID_DATE(HttpStatus.BAD_REQUEST, "PROJECT_001", "종료날짜는 시작날짜 이후여야 합니다."),
 	PROJECT_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "PROJECT_002", "프로젝트 참여자가 아닙니다."),
 	PROJECT_NOT_OWNER(HttpStatus.FORBIDDEN, "PROJECT_003", "해당 업무에 대한 권한이 없습니다."),
+	PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "PROJECT_004", "존재하지 않는 프로젝트입니다."),
+	PROJECT_INVALID_STAT_TRANSITION(HttpStatus.BAD_REQUEST, "PROJECT_005", "해당 상태에서는 상태를 변경할 수 없습니다."),
+	PROJECT_CANNOT_MODIFY_DATE(HttpStatus.BAD_REQUEST, "PROJECT_006", "해당 상태에서는 날짜를 수정할 수 없습니다."),
   
     // VIDEO
     VIDEO_CONF_NOT_FOUND(HttpStatus.NOT_FOUND,   "VIDEO_001", "존재하지 않는 화상회의입니다."),

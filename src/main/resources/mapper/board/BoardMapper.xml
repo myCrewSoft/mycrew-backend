@@ -16,6 +16,7 @@
        SELECT COUNT(*)
        FROM tb_board B
        WHERE 1 = 1
+       AND B.DEL_YN = 'n'
        
        <if test="searchRequest != null and searchRequest.keyword != null and searchRequest.keyword != ''">
            AND (
@@ -58,8 +59,8 @@
       FROM tb_board B
       LEFT JOIN TB_EMPLOYEE E ON B.FRST_RGTR_ID = E.EMP_ID
       WHERE 1 = 1
-         <!-- 1. 기본 게시판 타입 조건 -->
-          <if test="boardTypeCd != null and boardTypeCd != ''">
+      AND B.DEL_YN = 'n'
+         <if test="boardTypeCd != null and boardTypeCd != ''">
            <choose>
                <when test="boardTypeCd == 'DEPT'">
                    AND TRIM(B.DEPT_CD) = TRIM(#{deptCd})
@@ -69,24 +70,19 @@
                </otherwise>
            </choose>
        </if>
-
-         <!-- 2. 검색 조건 (searchRequest 내부 필드 접근) -->
+       
          <if test="searchRequest != null">
-            <!-- 제목 검색 예시 -->
             <if
                test="searchRequest.keyword != null and searchRequest.keyword != ''">
                AND (B.BOARD_SJ LIKE '%'||  #{searchRequest.keyword} || '%'
                OR B.BOARD_CN LIKE '%'||  #{searchRequest.keyword} || '%')
             </if>
-            
          </if>
-      ORDER BY B.BOARD_ID DESC <!-- 게시글 번호 내림차순 -->
-      <!-- 3. 페이징 처리 -->
-        OFFSET #{getOffset} ROWS FETCH NEXT #{getPageSize} ROWS ONLY
-      
 
+         AND B.DEL_YN = 'n'
+
+      ORDER BY B.BOARD_ID DESC OFFSET #{getOffset} ROWS FETCH NEXT #{getPageSize} ROWS ONLY
    </select>
-
 
    <select id="getSideBar"
       resultType="com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse">
@@ -148,19 +144,29 @@
       FROM tb_board B
       LEFT JOIN TB_EMPLOYEE E ON B.FRST_RGTR_ID = E.EMP_ID
       WHERE B.BOARD_ID = #{boardId}
+      AND B.DEL_YN = 'n'
    </select>
    
    
-   <select id="readCommentList" resultType="com.mycrewsoft.domain.board.vo.BoardCommentVO">
-      SELECT 
-        COMMENT_ID, BOARD_ID, COMMENT_CN, WRTER_EMP_ID, WRTE_DT, 
-        COMMENT_PRT_ID, COMMENT_DEPTH, COMMENT_ORDER
-    FROM TB_BOARD_COMMENT
-    WHERE BOARD_ID = #{boardId}
-    ORDER BY COMMENT_ORDER ASC, WRTE_DT ASC
-   </select>
-   
-   
+	 <select id="readCommentList" resultType="com.mycrewsoft.domain.board.vo.BoardCommentVO">
+        SELECT 
+              COMMENT_ID
+            , BOARD_ID
+            , CASE WHEN DEL_YN = 'y' THEN '삭제된 댓글입니다.' 
+                   ELSE COMMENT_CN 
+              END AS COMMENT_CN
+            , WRTER_EMP_ID
+            , WRTE_DT
+            , COMMENT_PRT_ID
+            , COMMENT_DEPTH
+            , COMMENT_ORDER
+            , DEL_YN  FROM TB_BOARD_COMMENT
+        WHERE BOARD_ID = #{boardId}
+        START WITH COMMENT_PRT_ID IS NULL
+        CONNECT BY PRIOR COMMENT_ID = COMMENT_PRT_ID
+        ORDER SIBLINGS BY COMMENT_ORDER ASC, COMMENT_ID ASC
+    </select>
+	   
    <select id="readLikeStatus" resultType="com.mycrewsoft.domain.board.vo.BoardLikeVo">
       SELECT
          BOARD_ID,EMP_ID,FRST_REG_DT
@@ -186,7 +192,7 @@
    SELECT COUNT(*)
    FROM tb_board
    WHERE PROJ_ID = #{projId}
-     
+     AND DEL_YN = 'n'
        <if test="searchRequest != null and searchRequest.keyword != null and searchRequest.keyword != ''">
            AND (
                BOARD_SJ LIKE '%' || #{searchRequest.keyword} || '%'
@@ -197,29 +203,30 @@
    </select>
 
 
-<select id="getProjList" resultType="com.mycrewsoft.domain.board.dto.response.BoardResponse">
-		SELECT
-		b.BOARD_ID,
-		b.BOARD_TYPE_CD,
-		b.BOARD_SJ,
-		b.BOARD_CN,
-		b.FRST_RGTR_ID,
-		e.EMP_NM AS empNm,
-		b.FRST_REG_DT,
-		b.LAST_MDFR_DT,
-		b.BOARD_ATCH_FILE_ID,
-		b.DEPT_CD,
-		b.IMPRTNT_YN,
-		b.CMNT_USE_YN,
-		b.VIEW_CNT,
-		p.PROJ_ID,
-		p.PROJ_NM, p.PROJ_STAT_CD FROM TB_BOARD b
-		INNER JOIN TB_PROJECT p ON b.PROJ_ID = p.PROJ_ID
-		LEFT JOIN TB_EMPLOYEE e ON b.FRST_RGTR_ID = e.EMP_ID
-		WHERE p.PROJ_ID = #{projId}
-		ORDER BY b.FRST_REG_DT DESC
-		OFFSET #{getOffset} ROWS FETCH NEXT #{getPageSize} ROWS ONLY
-	</select>
+	<select id="getProjList" resultType="com.mycrewsoft.domain.board.dto.response.BoardResponse">
+			SELECT
+			b.BOARD_ID,
+			b.BOARD_TYPE_CD,
+			b.BOARD_SJ,
+			b.BOARD_CN,
+			b.FRST_RGTR_ID,
+			e.EMP_NM AS empNm,
+			b.FRST_REG_DT,
+			b.LAST_MDFR_DT,
+			b.BOARD_ATCH_FILE_ID,
+			b.DEPT_CD,
+			b.IMPRTNT_YN,
+			b.CMNT_USE_YN,
+			b.VIEW_CNT,
+			p.PROJ_ID,
+			p.PROJ_NM, p.PROJ_STAT_CD FROM TB_BOARD b
+			INNER JOIN TB_PROJECT p ON b.PROJ_ID = p.PROJ_ID
+			LEFT JOIN TB_EMPLOYEE e ON b.FRST_RGTR_ID = e.EMP_ID
+			WHERE p.PROJ_ID = #{projId}
+			AND b.DEL_YN = 'n'
+			ORDER BY b.FRST_REG_DT DESC
+			OFFSET #{getOffset} ROWS FETCH NEXT #{getPageSize} ROWS ONLY
+		</select>
 
 
 	<insert id="createBoard">
@@ -239,7 +246,8 @@
 	        PROJ_ID,
 	        IMPRTNT_YN,
 	        CMNT_USE_YN,
-	        VIEW_CNT
+	        VIEW_CNT,
+	        DEL_YN
 	        
 	    ) VALUES (
 	        #{boardId},            
@@ -254,7 +262,8 @@
 	       #{projId},
 	        #{imprtntYn},
 	        #{cmntUseYn},
-	        0                                          
+	        0,
+	       'n'                                          
 	     )
 	</insert>
 	
@@ -282,6 +291,61 @@
 	    </set>
 	    WHERE BOARD_ID = #{boardId}
 	</update>
+	
+	<update id="deleteBoardDetail" >
+		UPDATE	TB_BOARD
+		SET DEL_YN ='y'
+		, LAST_MDFR_DT =SYSDATE
+		WHERE BOARD_ID =#{boardId}		
+	</update>
+	
 	 
+	<insert id="insertComment" parameterType="com.mycrewsoft.domain.board.vo.BoardCommentVO">
+	<selectKey keyProperty="commentId" resultType="long" order="BEFORE">
+		SELECT SEQ_BOARD_COMMENT_ID.NEXTVAL FROM DUAL
+	</selectKey>
+	INSERT INTO TB_BOARD_COMMENT (
+              COMMENT_ID
+            , BOARD_ID
+            , COMMENT_CN
+            , WRTER_EMP_ID
+            , WRTE_DT
+            , COMMENT_PRT_ID
+            , COMMENT_DEPTH
+            , COMMENT_ORDER
+            ,	DEL_YN
+        ) VALUES (
+              #{commentId}
+            , #{boardId}
+            , #{commentCn}
+            , #{wrterEmpId}
+            , SYSDATE
+            , #{commentPrtId, jdbcType=NUMERIC} 
+            , #{commentDepth}
+            , #{commentOrder}
+            ,'n'
+        )
+    </insert>
+	 
+   <update id="updateComment" parameterType="com.mycrewsoft.domain.board.vo.BoardCommentVO">
+   UPDATE TB_BOARD_COMMENT
+   	SET COMMENT_CN = #{commentCn}
+   		, WRTE_DT = SYSDATE
+   	WHERE COMMENT_ID = #{commentId}
+   	AND WRTER_EMP_ID = #{wrterEmpId}
+   </update>
+   
+   	<update id="deleteComment">
+		UPDATE TB_BOARD_COMMENT
+		SET DEL_YN ='y'
+		, WRTE_DT =SYSDATE
+		WHERE COMMENT_ID =#{commentId}	
+	</update>
+   
+   <select id="readCmWrterEmpId" resultType="long">
+        SELECT WRTER_EMP_ID
+          FROM TB_BOARD_COMMENT
+         WHERE COMMENT_ID = #{commentId}
+    </select>
    
 </mapper>

@@ -35,4 +35,6 @@ public class ProjectVO {
 	
 	// 조회용 JOIN 필드
 	private String projLdrNm;    // 프로젝트 장 이름
+	private String empNm;
+	private String deptNm;
 }

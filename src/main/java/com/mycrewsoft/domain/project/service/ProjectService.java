@@ -3,7 +3,9 @@ package com.mycrewsoft.domain.project.service;
 import java.util.List;
 
 import com.mycrewsoft.domain.project.dto.ProjectCreateRequestDto;
+import com.mycrewsoft.domain.project.dto.ProjectDetailResponseDto;
 import com.mycrewsoft.domain.project.dto.ProjectListResponseDto;
+import com.mycrewsoft.domain.project.dto.ProjectUpdateRequestDto;
 
 public interface ProjectService {
 	/**
@@ -22,4 +24,17 @@ public interface ProjectService {
 	 * 예정 → 진행 중 상태 자동 전환 (배치용)
 	 */
 	void updateProjStateToInProgress();
+	
+	/**
+	 * 프로젝트 상세 조회
+	 * @param projId
+	 * @return
+	 */
+	ProjectDetailResponseDto getProject(Long projId);
+	
+	/**
+	 * 프로젝트 수정
+	 * @param reqDto
+	 */
+	void modifyProject(Long projId, ProjectUpdateRequestDto updateReqDto);
 }
