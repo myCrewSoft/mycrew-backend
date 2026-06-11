@@ -52,4 +52,9 @@
         FETCH FIRST 50 ROWS ONLY
     </select>
 
+	<select id="selectAllEmpIds" resultType="long">
+	    SELECT EMP_ID
+	    FROM TB_EMPLOYEE
+	    WHERE ENABLED = 'Y'
+	</select>
 </mapper>

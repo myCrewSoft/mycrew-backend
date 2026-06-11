@@ -1,4 +1,4 @@
-package com.mycrewsoft.domain.messenger.event;
+package com.mycrewsoft.domain.video.event;
 
 import java.util.List;
 

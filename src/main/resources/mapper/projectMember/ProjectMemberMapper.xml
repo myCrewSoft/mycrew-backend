@@ -1,20 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.mycrewsoft.domain.projectmember.mapper.ProjectMemberMapper">
-<insert id="insertProjectMemberList">
-	INSERT ALL
-    <foreach collection="memberList" item="m">
-        INTO TB_PROJ_MEMBER (
-            PROJ_ID,
-            EMP_ID,
-            JOIN_DT
-        ) VALUES (
-            #{m.projId},
-            #{m.empId},
-            SYSDATE
-        )
-    </foreach>
-    SELECT 1 FROM DUAL
+<insert id="mergeMember">
+    MERGE INTO TB_PROJ_MEMBER T
+    USING DUAL
+    ON (T.PROJ_ID = #{projId} AND T.EMP_ID = #{empId})
+    WHEN MATCHED THEN
+        UPDATE SET T.LEAVE_DT = NULL, T.JOIN_DT = SYSDATE
+    WHEN NOT MATCHED THEN
+        INSERT (PROJ_ID, EMP_ID, JOIN_DT)
+        VALUES (#{projId}, #{empId}, SYSDATE)
 </insert>
 
 <select id="selectProjectMemberList" resultType="com.mycrewsoft.domain.projectmember.vo.ProjectMemberVO">
