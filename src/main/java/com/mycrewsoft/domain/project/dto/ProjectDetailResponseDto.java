@@ -28,7 +28,10 @@ public class ProjectDetailResponseDto {
 
     @Schema(description = "표시 상태코드 (01:예정 02:진행중 03:완료 04:중단)", example = "02")
     private String projStatCd;
-
+    
+    @Schema(description = "프로젝트 장 아이디")
+    private Long projLdrEmpId;
+    
     @Schema(description = "프로젝트 장 이름", example = "김철수")
     private String projLdrNm;
 

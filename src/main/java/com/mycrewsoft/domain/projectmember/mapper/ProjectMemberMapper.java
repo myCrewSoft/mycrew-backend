@@ -14,7 +14,7 @@ public interface ProjectMemberMapper {
 	 * @param memberList
 	 * @return
 	 */
-	int insertProjectMemberList(@Param("memberList") List<ProjectMemberVO> memberList);
+	int mergeMember(ProjectMemberVO memberVo);
 	
 	/**
 	 * 프로젝트 참여자 조회 (검증용)

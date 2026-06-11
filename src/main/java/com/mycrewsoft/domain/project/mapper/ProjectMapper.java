@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.mycrewsoft.domain.project.vo.ProjectVO;
+import com.mycrewsoft.domain.projectmember.vo.ProjectMemberVO;
 
 
 @Mapper
@@ -51,6 +52,14 @@ public interface ProjectMapper {
 	 * @return
 	 */
 	int updateProject(ProjectVO vo);
+	
+	/**
+	 * 프로젝트 참여자 단건 퇴출
+	 * @param projId
+	 * @param empId
+	 * @return
+	 */
+	int updateLeaveDt(Long projId, Long empId);
 	
 	// 프로젝트 진척률 계산
 	int updateProjectPrgrsRtd(@Param("projId") Long projId);
