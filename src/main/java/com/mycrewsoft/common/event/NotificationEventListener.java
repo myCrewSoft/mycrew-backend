@@ -25,10 +25,6 @@ import com.mycrewsoft.domain.employee.event.FirstLoginEvent;
 import com.mycrewsoft.domain.employee.event.PasswordChangedEvent;
 import com.mycrewsoft.domain.employee.event.PermissionChangedEvent;
 import com.mycrewsoft.domain.employee.event.ProfileChangedEvent;
-import com.mycrewsoft.domain.messenger.event.MeetingCancelledEvent;
-import com.mycrewsoft.domain.messenger.event.MeetingChangedEvent;
-import com.mycrewsoft.domain.messenger.event.MeetingInvitedEvent;
-import com.mycrewsoft.domain.messenger.event.MeetingReminderEvent;
 import com.mycrewsoft.domain.notification.service.NotificationService;
 import com.mycrewsoft.domain.project.event.ProjectClosedEvent;
 import com.mycrewsoft.domain.project.event.ProjectCompletedEvent;
@@ -50,6 +46,10 @@ import com.mycrewsoft.domain.task.event.TaskDeadlineEvent;
 import com.mycrewsoft.domain.task.event.TaskManagerChangedEvent;
 import com.mycrewsoft.domain.task.event.TaskMemberRemovedEvent;
 import com.mycrewsoft.domain.task.event.TaskStatusChangedEvent;
+import com.mycrewsoft.domain.video.event.MeetingChangedEvent;
+import com.mycrewsoft.domain.video.event.MeetingEndedEvent;
+import com.mycrewsoft.domain.video.event.MeetingInvitedEvent;
+import com.mycrewsoft.domain.video.event.MeetingReminderEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -326,9 +326,9 @@ public class NotificationEventListener {
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleMeetingCancelled(MeetingCancelledEvent event) {
+    public void handleMeetingCancelled(MeetingEndedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getMeetingNm() + "] 회의가 취소되었습니다.",
+            "[" + event.getMeetingNm() + "] 회의가 종료되었습니다.",
             "06",
             null,
             event.getEmpIds()

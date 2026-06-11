@@ -3,6 +3,7 @@ package com.mycrewsoft.domain.video.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,8 @@ import com.mycrewsoft.domain.video.dto.request.VideoMomUpdateRequest;
 import com.mycrewsoft.domain.video.dto.response.VideoConfResponse;
 import com.mycrewsoft.domain.video.dto.response.VideoMomResponse;
 import com.mycrewsoft.domain.video.dto.response.VideoTokenResponse;
+import com.mycrewsoft.domain.video.event.MeetingEndedEvent;
+import com.mycrewsoft.domain.video.event.MeetingInvitedEvent;
 import com.mycrewsoft.domain.video.mapper.VideoConfDtoMapper;
 import com.mycrewsoft.domain.video.mapper.VideoConfMapper;
 import com.mycrewsoft.domain.video.vo.VideoConfVO;
@@ -35,7 +38,8 @@ public class VideoConfServiceImpl implements VideoConfService {
     private final VideoConfMapper videoConfMapper;
     private final VideoConfDtoMapper videoConfDtoMapper;
     private final LiveKitTokenProvider liveKitTokenProvider;
-
+    private final ApplicationEventPublisher eventPublisher;
+    
     @Override
     @Transactional
     public VideoConfResponse createConf(VideoConfCreateRequest request) {
@@ -70,6 +74,11 @@ public class VideoConfServiceImpl implements VideoConfService {
         }
 
         VideoConfVO saved = videoConfMapper.selectConfById(confVO.getVconfId());
+        
+        eventPublisher.publishEvent(
+        	new MeetingInvitedEvent(saved.getVconfNm(), ptcptEmpIds)
+        );
+        
         return videoConfDtoMapper.toConfResponse(saved);
     }
 
@@ -131,8 +140,17 @@ public class VideoConfServiceImpl implements VideoConfService {
         if (!vo.getCrtrId().equals(empId)) {
             throw new CustomException(ErrorCode.VIDEO_ACCESS_DENIED);
         }
-
+        
         videoConfMapper.updateConfSttus(vconfId, "03");
+        
+        // 참여자 목록에서 empId 추출
+        List<Long> ptcptEmpIds = vo.getVideoPtcpt().stream()
+                .map(VideoPtcptVO::getEmpId)
+                .toList();
+        
+        eventPublisher.publishEvent(
+            	new MeetingEndedEvent(vo.getVconfNm(), ptcptEmpIds)
+        );
     }
 
     @Override
