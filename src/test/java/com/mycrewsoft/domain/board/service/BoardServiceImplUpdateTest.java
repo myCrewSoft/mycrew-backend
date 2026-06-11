@@ -90,4 +90,5 @@ class BoardServiceImplUpdateTest {
 			verify(boardMapper, never()).updateBoardDetails(org.mockito.ArgumentMatchers.any());
 		}
 	}
+
 }
