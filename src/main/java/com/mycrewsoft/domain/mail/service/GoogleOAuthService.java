@@ -92,6 +92,11 @@ public class GoogleOAuthService {
         mailAccount.setConnectedDt(LocalDateTime.now());
         mailAccount.setFrstRegDt(LocalDateTime.now());
 
+        // 한 구글 계정은 한 직원만 연동: 같은 google_sub를 점유한 다른 직원 행을 먼저 해제한 뒤 upsert
+        if (StringUtils.hasText(userInfo.getSub())) {
+            mailAccountMapper.releaseGoogleSubFromOtherEmployees(userInfo.getSub(), empId);
+        }
+
         mailAccountMapper.upsertGoogleMailAccount(mailAccount);
         return successUri(oauthState.context());
     }
