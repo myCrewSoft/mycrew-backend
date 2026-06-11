@@ -14,6 +14,8 @@ import com.mycrewsoft.domain.employee.dto.request.ChangeSignatureRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeMyPageResponseDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeProfileDTO;
 import com.mycrewsoft.domain.employee.mapper.EmployeeMapper;
+import com.mycrewsoft.domain.file.dto.FileUploadRequestDto;
+import com.mycrewsoft.domain.file.service.FileServiceImpl;
 import com.mycrewsoft.domain.mail.dto.response.GoogleOAuthAuthorizeResponse;
 import com.mycrewsoft.domain.mail.service.GoogleOAuthService;
 import com.mycrewsoft.security.util.SecurityUtil;
@@ -26,6 +28,8 @@ public class MyPageServiceImpl implements MyPageService {
 	private final EmployeeMapper employeeMapper;
 	private final PasswordEncoder passwordEncoder;
 	private final GoogleOAuthService googleOAuthService;
+	private final FileServiceImpl fileService;
+	
 	
 	@Override
 	@Transactional(readOnly = true)
@@ -71,8 +75,10 @@ public class MyPageServiceImpl implements MyPageService {
 
 	@Override
 	@Transactional
-	public void changeProfileImage(ChangeProfileImageRequestDTO request) {
+	public void changeProfileImage(FileUploadRequestDto file, ChangeProfileImageRequestDTO request) {
 		Long empId = SecurityUtil.getCurrentEmpId();
+		
+		Long driveAtchFileId = fileService.upload(file, "03");
 		int updatedCount = employeeMapper.updateProfileImageByEmpId(empId, request.getPrflImgFileId());
 	}
 

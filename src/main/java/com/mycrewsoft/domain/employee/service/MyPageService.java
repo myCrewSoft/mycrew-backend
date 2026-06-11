@@ -7,6 +7,7 @@ import com.mycrewsoft.domain.employee.dto.request.ChangeProfileImageRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.ChangeSignatureRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeMyPageResponseDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeProfileDTO;
+import com.mycrewsoft.domain.file.dto.FileUploadRequestDto;
 import com.mycrewsoft.domain.mail.dto.response.GoogleOAuthAuthorizeResponse;
 
 public interface MyPageService {
@@ -15,6 +16,6 @@ public interface MyPageService {
 	public void changePassword(ChangePasswordRequestDTO request);
 	public GoogleOAuthAuthorizeResponse changeEmail(ChangeEmailRequestDTO request);
 	public void changeSignature(ChangeSignatureRequestDTO request);
-	public void changeProfileImage(ChangeProfileImageRequestDTO request);
+	public void changeProfileImage(FileUploadRequestDto file, ChangeProfileImageRequestDTO request);
 	public void changeJobDuty(ChangeJobDutyRequestDTO request);
 }
