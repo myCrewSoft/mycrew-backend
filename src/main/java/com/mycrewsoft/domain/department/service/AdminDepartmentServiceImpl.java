@@ -184,6 +184,7 @@ public class AdminDepartmentServiceImpl implements AdminDepartmentService {
             DepartmentMemberTransferRequestDTO request) {
         String sourceDeptCd = normalizeCode(deptCd);
         assertDepartmentPermission(PermissionCode.ADMIN_DEPT_MEMBER_MANAGE, sourceDeptCd);
+        
         if (request == null || !StringUtils.hasText(request.getTargetDeptCd())) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }

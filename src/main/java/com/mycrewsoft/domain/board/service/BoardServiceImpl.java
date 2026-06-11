@@ -261,6 +261,7 @@ public class BoardServiceImpl implements BoardService {
 			Long prodId = writtenBoard.getProjId();
 			
 			ResourceContext context = ResourceContext.builder()
+										.resourceType(ResourceType.BOARD)
 										//내가 쓴 글인가?
 										.ownerEmpId(writer)
 										//내 BOARD_POST_UPDATE 권한이 부서 범위인가?

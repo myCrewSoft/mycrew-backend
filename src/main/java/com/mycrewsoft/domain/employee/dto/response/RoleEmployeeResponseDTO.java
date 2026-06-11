@@ -14,6 +14,8 @@ public class RoleEmployeeResponseDTO {
     private Long roleAssignmentId;
 	@Schema(description = "사원 ID", example = "1")
     private Long empId;
+		@Schema(description = "프로필 이미지 파일 ID", example = "12")
+    private Long prflImgFileId;
 	@Schema(description = "사원 이름", example = "홍길동")
     private String employeeName;
 	@Schema(description = "부서 코드", example = "D001")

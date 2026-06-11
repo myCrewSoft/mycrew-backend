@@ -1,5 +1,6 @@
 package com.mycrewsoft.domain.employee.controller;
 
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,8 +14,6 @@ import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.employee.dto.request.ChangeEmailRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.ChangeJobDutyRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.ChangePasswordRequestDTO;
-import com.mycrewsoft.domain.employee.dto.request.ChangeProfileImageRequestDTO;
-import com.mycrewsoft.domain.employee.dto.request.ChangeSignatureRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeMyPageResponseDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeProfileDTO;
 import com.mycrewsoft.domain.employee.service.MyPageService;
@@ -69,21 +68,26 @@ public class EmployeeMyPageController {
         return ResponseEntity.ok(ApiResponse.success("Google 이메일 재연동 URL 발급 성공", response));
     }
 
-    @Operation(summary = "전자서명 변경", description = "로그인한 사용자의 전자서명 파일 ID를 변경합니다.")
-    @PatchMapping("/signature")
-    public ResponseEntity<ApiResponse<String>> changeSignature(
-            @Valid @RequestBody ChangeSignatureRequestDTO request) {
-        myPageService.changeSignature(request);
-        return ResponseEntity.ok(ApiResponse.success("전자서명 변경 성공"));
+    @Operation(
+            summary = "전자서명 이미지 변경",
+            description = "전자서명 이미지 파일을 업로드(multipart)하여 로그인한 사용자의 전자서명으로 등록하고, 새로 저장된 파일 ID를 반환합니다."
+    )
+    @PatchMapping(value = "/signature", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<Long>> changeSignature(
+            @Validated @ModelAttribute FileUploadRequestDto file) {
+        Long stampFileId = myPageService.changeSignature(file);
+        return ResponseEntity.ok(ApiResponse.success("전자서명 변경 성공", stampFileId));
     }
 
-    @Operation(summary = "프로필 이미지 변경", description = "로그인한 사용자의 프로필 이미지 파일 ID를 변경합니다.")
-    @PatchMapping("/profile-image")
-    public ResponseEntity<ApiResponse<String>> changeProfileImage(
-    		@Validated @ModelAttribute FileUploadRequestDto file,
-            @Valid @RequestBody ChangeProfileImageRequestDTO request) {
-        myPageService.changeProfileImage(file, request);
-        return ResponseEntity.ok(ApiResponse.success("프로필 이미지 변경 성공"));
+    @Operation(
+            summary = "프로필 이미지 변경",
+            description = "프로필 이미지 파일을 업로드(multipart)하여 로그인한 사용자의 프로필 이미지로 등록하고, 새로 저장된 파일 ID를 반환합니다."
+    )
+    @PatchMapping(value = "/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<Long>> changeProfileImage(
+            @Validated @ModelAttribute FileUploadRequestDto file) {
+        Long prflImgFileId = myPageService.changeProfileImage(file);
+        return ResponseEntity.ok(ApiResponse.success("프로필 이미지 변경 성공", prflImgFileId));
     }
 
     @Operation(summary = "직무 변경", description = "로그인한 사용자의 직무 내용을 변경합니다.")

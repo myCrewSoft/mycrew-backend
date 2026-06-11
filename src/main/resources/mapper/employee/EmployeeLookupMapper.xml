@@ -11,7 +11,12 @@
             D.DEPT_NM,
             JG.JOB_GRD_NM,
             JP.JOB_PSTN_NM,
-            '/api/files/images/' || F.ATCH_FILE_DTL_ID AS PROFILE_IMAGE_URL
+            <!-- PRFL_IMG_FILE_ID 는 프로필 업로드 시 저장되는 첨부파일상세ID(ATCH_FILE_DTL_ID)이며,
+                 이미지 서빙(/api/files/images/{atchFileDtlId})에 그대로 사용한다. -->
+            CASE
+                WHEN E.PRFL_IMG_FILE_ID IS NOT NULL
+                THEN '/api/files/images/' || E.PRFL_IMG_FILE_ID
+            END AS PROFILE_IMAGE_URL
         FROM TB_EMPLOYEE E
         LEFT JOIN TB_DEPARTMENT D
             ON D.DEPT_CD = E.DEPT_CD
@@ -19,11 +24,6 @@
             ON JG.JOB_GRD_CD = E.JOB_GRD_CD
         LEFT JOIN TB_JOB_POSITION JP
             ON JP.JOB_PSTN_CD = E.JOB_PSTN_CD
-        LEFT JOIN TB_CMMN_ATCH_FILE_CLSF AC
-            ON AC.ATCH_FILE_ID = E.PRFL_IMG_FILE_ID
-        LEFT JOIN TB_CMMN_ATCH_FILE_DTL F
-            ON F.ATCH_FILE_ID = AC.ATCH_FILE_ID
-            AND F.DEL_YN = 'N'
         WHERE E.ENABLED = 'Y'
         <if test="excludeEmpId != null">
 		    AND E.EMP_ID <![CDATA[ <> ]]> #{excludeEmpId}
