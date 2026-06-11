@@ -1,7 +1,9 @@
 package com.mycrewsoft.domain.board.service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
@@ -364,6 +366,45 @@ public class BoardServiceImpl implements BoardService {
 		if(result ==0) {
 			throw new CustomException(ErrorCode.ACCESS_DENIED);
 		}
+	}
+
+	@Override
+	public boolean toggelLike(Long boardId, Long empId) {
+	
+		// DB에서 이 글에 이 사람이 좋아요를 누른 데이터가 있는지 조회
+		BoardLikeVo likeStatus = boardMapper.readLikeStatus(boardId, empId);
+		// 만약 결과가 NULL 이라면? (즉, 하트를 처음 누르는 상황)
+		if(likeStatus ==null) {
+			// 글 번호와 직원사번 를 채워 넣음
+			BoardLikeVo newLike = new BoardLikeVo();
+			newLike.setBoardId(boardId);
+			newLike.setEmpId(empId);
+			
+			//DB 에 이사람 이 글 좋아요 눌렀음 하고 저장함
+			boardMapper.insertLike(newLike);
+			return true;
+		}else {
+			//DB 에 이제 좋아요가 취소되었습니다 false 를 리턴함
+			boardMapper.deleteLike(boardId, empId);
+			return false;
+		}
+		
+		
+	}
+
+	@Override
+	public Map<String, Object> getLike(Long boardId, Long empId) {
+	
+		// map 을 사용하는 이유는 타입이 다른 int 와 boolean을 사용하기 때문에  
+		Map<String, Object> result = new HashMap<>();
+		
+		int likeCount = boardMapper.readLikeCount(boardId);
+		
+		boolean isLiked = boardMapper.readLikeStatus(boardId, empId)!=null;
+		
+		result.put("likeCount", likeCount);
+		result.put("isLiked", isLiked);
+		return result;
 	}
 
 }

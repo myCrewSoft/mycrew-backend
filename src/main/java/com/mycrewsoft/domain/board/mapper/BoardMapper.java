@@ -79,16 +79,26 @@ public interface BoardMapper {
 	//게시판 댓글 작성자 아이디 조회
 	Long readCmWrterEmpId(@Param("commentId") Long commentId);
 	
+	
+
+	//게시판 조회수 증가
+	 int updateViewCount(@Param("boardId") Long boardId);
+	 
+	
 	//게시판 좋아요 읽기
 	BoardLikeVo readLikeStatus(
 			@Param("boardId") Long boardId,
 			@Param("empId")  Long empId);
 	
-	//게시판 조회수 증가
-	 int updateViewCount(@Param("boardId") Long boardId);
-	 
 	 // 좋아요 수 
 	 int  readLikeCount(@Param("boardId") Long boardId);
+	 
+	 //게시글 좋아요 등록
+	 void insertLike(BoardLikeVo likeVo);
+	 
+	 //게시글 좋아요 취소
+	 int deleteLike(@Param("boardId")Long boardId,
+			 @Param("empId")Long empId);
 	 
 	 
 	 // 게시글 생성

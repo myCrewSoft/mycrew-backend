@@ -81,7 +81,8 @@
 
          AND B.DEL_YN = 'n'
 
-      ORDER BY B.BOARD_ID DESC OFFSET #{getOffset} ROWS FETCH NEXT #{getPageSize} ROWS ONLY
+      ORDER BY B.FRST_REG_DT DESC, B.BOARD_ID DESC
+      OFFSET #{getOffset} ROWS FETCH NEXT #{getPageSize} ROWS ONLY
    </select>
 
    <select id="getSideBar"
@@ -187,6 +188,24 @@
       WHERE BOARD_ID = #{boardId}
    </select>
    
+   <insert id="insertLike">
+	   INSERT INTO tb_board_like(
+	  		 BOARD_ID,
+	          EMP_ID,
+	          FRST_REG_DT
+	   )VALUES(
+	   		#{boardId},
+	          #{empId},
+	          SYSDATE
+	   )
+   
+   </insert>
+   
+   <delete id="deleteLike">
+   	DELETE FROM tb_board_like
+   	WHERE BOARD_ID =#{boardId}
+   	AND EMP_ID = #{empId}
+   </delete>
    
    <select id="countProjBoard">
    SELECT COUNT(*)
