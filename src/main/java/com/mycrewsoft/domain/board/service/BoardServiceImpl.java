@@ -221,19 +221,19 @@ public class BoardServiceImpl implements BoardService {
 	public Long createBoard(BoardCreateRequest boardCreateRequest) {
 
 		// 권한 체크
-		if ("notice".equals(boardCreateRequest.getBoardTypeCd())) {
+		if ("NOTICE".equals(boardCreateRequest.getBoardTypeCd())) {
 			// 공지사항 일때는 관리자만
 
-		} else if ("dept".equals(boardCreateRequest.getBoardTypeCd())) {
+		} else if ("DEPT".equals(boardCreateRequest.getBoardTypeCd())) {
 			// 부서게시판은 소속된 부서사람들만
 
-		} else if ("proj".equals(boardCreateRequest.getBoardTypeCd())) {
+		} else if ("PROJ".equals(boardCreateRequest.getBoardTypeCd())) {
 			// 프로젝트 게시판은 프로젝트하는 사람들만
 		} else {
 			// 자유와 익명은 직원들 전체 아무나
 		}
 		Long empId = SecurityUtil.getCurrentEmpId();
-		
+
 		// DTO -> VO로 변환
 		BoardVO boardVo = dtoMapper.toDto(boardCreateRequest, BoardVO.class);
 
@@ -242,7 +242,7 @@ public class BoardServiceImpl implements BoardService {
 		boardMapper.createBoard(boardVo);
 
 		// 공지사항이면 전 사원에게 알림
-		if("notice".equals(boardVo.getBoardTypeCd())) {
+		if("NOTICE".equals(boardVo.getBoardTypeCd())) {
 			List<Long> allEmpIds = employeeLookupMapper.selectAllEmpIds();
 			eventPublisher.publishEvent(
 				new NoticeCreatedEvent(boardVo.getBoardSj(), allEmpIds)
