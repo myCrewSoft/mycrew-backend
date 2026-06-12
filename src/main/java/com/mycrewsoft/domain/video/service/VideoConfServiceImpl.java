@@ -147,7 +147,7 @@ public class VideoConfServiceImpl implements VideoConfService {
         
         // 참여자 목록에서 empId 추출
         List<Long> ptcptEmpIds = vo.getVideoPtcpt().stream()
-                .map(VideoPtcptVO::getEmpId)
+                .map(VideoPtcptDetailVO::getEmpId)
                 .toList();
         
         eventPublisher.publishEvent(
