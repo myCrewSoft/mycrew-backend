@@ -26,6 +26,7 @@ import com.mycrewsoft.domain.drive.dto.DriveResponseDto;
 import com.mycrewsoft.domain.drive.dto.DriveSearchRequestDto;
 import com.mycrewsoft.domain.drive.mapper.DriveMapper;
 import com.mycrewsoft.domain.drive.vo.DriveVo;
+import com.mycrewsoft.domain.file.constant.FileConstants;
 import com.mycrewsoft.domain.file.dto.FileUploadRequestDto;
 import com.mycrewsoft.domain.file.service.FileService;
 import com.mycrewsoft.security.authz.AuthorizationService;
@@ -94,7 +95,7 @@ public class DriveServiceImpl implements DriveService {
 	            PermissionCode.DRIVE_UPLOAD, buildOwnerContext());
 		
 		//공통 파일 업로드 (디스크 저장 + 공통통첨부파일 테이블 insert)
-		 Long driveAtchFileId = fileService.upload(fileReqDto, "02");
+		 Long driveAtchFileId = fileService.upload(fileReqDto, FileConstants.DRIVE);
 		
 		//드라이브 아이템 insert
 		DriveVo vo = new DriveVo();

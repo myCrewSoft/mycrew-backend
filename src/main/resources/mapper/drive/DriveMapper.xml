@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.mycrewsoft.domain.drive.mapper.DriveMapper">
+
 <insert id="insertDriveItem" parameterType="com.mycrewsoft.domain.drive.vo.DriveVo">
+
 	<selectKey keyProperty="driveItemId" resultType="long" order="BEFORE">
 		SELECT SEQ_DRIVE_ITEM_ID.NEXTVAL FROM DUAL
     </selectKey>
@@ -245,4 +247,49 @@
     )
     AND DEL_YN = 'Y'
 </delete>
+
+<select id="selectListByProjId" resultType="com.mycrewsoft.domain.drive.vo.DriveVo">
+    SELECT * FROM (
+        SELECT ROWNUM AS RN, A.* FROM (
+            SELECT
+                D.DRIVE_ITEM_ID,
+                D.PRNT_DRIVE_ITEM_ID,
+                D.FRST_RGTR_ID,
+                D.LAST_MDFR_ID,
+                D.ITEM_TYPE_CD,
+                D.BOOKMARK_YN,
+                D.ITEM_NM,
+                D.FRST_REG_DT,
+                D.LAST_MDFCN_DT,
+                D.DRIVE_SCOPE_CD,
+                D.PROJ_ID,
+                D.DRIVE_ATCH_FILE_ID,
+                DTL.FILE_SZ,
+                DTL.ORGNL_FILE_NM
+            FROM TB_DRIVE D
+            LEFT JOIN TB_CMMN_ATCH_FILE_DTL DTL
+                ON D.DRIVE_ATCH_FILE_ID = DTL.ATCH_FILE_DTL_ID
+            WHERE D.PROJ_ID = #{projId}
+              AND D.DRIVE_SCOPE_CD = '02'
+              AND D.DEL_YN = 'N'
+              AND (
+                    (#{prntDriveItemId} IS NULL AND D.PRNT_DRIVE_ITEM_ID IS NULL)
+                    OR D.PRNT_DRIVE_ITEM_ID = #{prntDriveItemId}
+              )
+            ORDER BY D.ITEM_TYPE_CD DESC, D.FRST_REG_DT DESC
+        ) A WHERE ROWNUM &lt;= #{offset} + #{size}
+    ) WHERE RN &gt; #{offset}
+</select>
+
+<select id="countDriveListByProjId" resultType="long">
+	SELECT COUNT(*)
+    FROM TB_DRIVE D
+    WHERE D.PROJ_ID = #{projId}
+      AND D.DRIVE_SCOPE_CD = '02'
+      AND D.DEL_YN = 'N'
+      AND (
+            (#{prntDriveItemId} IS NULL AND D.PRNT_DRIVE_ITEM_ID IS NULL)
+            OR D.PRNT_DRIVE_ITEM_ID = #{prntDriveItemId}
+      )
+</select>
 </mapper>
