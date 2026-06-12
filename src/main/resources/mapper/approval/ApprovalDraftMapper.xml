@@ -213,6 +213,13 @@
           AND APRVR_EMP_ID = #{aprvrEmpId}
     </select>
 
+    <select id="selectApproverEmpIdsByStep" resultType="long">
+        SELECT APRVR_EMP_ID
+        FROM TB_APRVL_LINE
+        WHERE APRVL_STEP_SN = #{aprvlStepSn}
+        ORDER BY APRVL_LINE_SN ASC
+    </select>
+
     <select id="countApprovalLinesByStepAndStatus" resultType="int">
         SELECT COUNT(*)
         FROM TB_APRVL_LINE

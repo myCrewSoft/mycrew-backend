@@ -66,9 +66,7 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
 
         // 기안자 이름 조회 후 결재자들에게 알림
         String applicantNm = employeeMapper.selectEmployeeProfileByEmpId(empId).getEmpNm();
-        List<Long> approverIds = firstStep.getApprovalLines().stream()
-                .map(ApprovalLineVO::getAprvrEmpId)
-                .toList();
+        List<Long> approverIds = approvalDraftMapper.selectApproverEmpIdsByStep(firstStep.getAprvlStepSn());
         eventPublisher.publishEvent(
             new ApprovalRequestedEvent(savedDoc.getDocTtl(), applicantNm, approverIds)
         );
@@ -112,9 +110,7 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
         String applicantNm = employeeMapper.selectEmployeeProfileByEmpId(empId).getEmpNm();
         ApprovalStepVO currentStep = approvalDraftMapper.selectFirstApprovalStep(drftDocSn);
         if (currentStep != null) {
-            List<Long> approverIds = currentStep.getApprovalLines().stream()
-                    .map(ApprovalLineVO::getAprvrEmpId)
-                    .toList();
+            List<Long> approverIds = approvalDraftMapper.selectApproverEmpIdsByStep(currentStep.getAprvlStepSn());
             eventPublisher.publishEvent(
                 new ApprovalCancelledEvent(savedDoc.getDocTtl(), applicantNm, approverIds)
             );
@@ -179,9 +175,7 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
             // 다음 단계 결재자에게 알림
             String applicantNm = employeeMapper
                 .selectEmployeeProfileByEmpId(savedDoc.getEmpId()).getEmpNm();
-            List<Long> nextApproverIds = nextStep.getApprovalLines().stream()
-                    .map(ApprovalLineVO::getAprvrEmpId)
-                    .toList();
+            List<Long> nextApproverIds = approvalDraftMapper.selectApproverEmpIdsByStep(nextStep.getAprvlStepSn());
             eventPublisher.publishEvent(
                 new ApprovalRequestedEvent(savedDoc.getDocTtl(), applicantNm, nextApproverIds)
             );
@@ -201,9 +195,9 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
                 null
         );
         
-        // 최종 승인 시 기안자에게 알림
+        // 최종 승인 시 기안자에게 알림 + 근태 취합 연동(휴가/초과근무 신청일 경우)
         eventPublisher.publishEvent(
-            new ApprovalApprovedEvent(savedDoc.getDocTtl(), savedDoc.getEmpId())
+            new ApprovalApprovedEvent(savedDoc.getDocTtl(), savedDoc.getEmpId(), savedDoc.getDrftDocSn())
         );
         
         return new ApprovalMutationResponse(

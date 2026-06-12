@@ -56,6 +56,8 @@ public interface ApprovalDraftMapper {
             @Param("aprvlStepSn") Long aprvlStepSn,
             @Param("aprvrEmpId") Long aprvrEmpId);
 
+    List<Long> selectApproverEmpIdsByStep(@Param("aprvlStepSn") Long aprvlStepSn);
+
     int countApprovalLinesByStepAndStatus(
             @Param("aprvlStepSn") Long aprvlStepSn,
             @Param("aprvlPrgrsCd") String aprvlPrgrsCd);
