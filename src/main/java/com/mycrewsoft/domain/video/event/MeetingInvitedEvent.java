@@ -1,14 +1,14 @@
-package com.mycrewsoft.domain.project.event;
+package com.mycrewsoft.domain.video.event;
 
 import java.util.List;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-// 프로젝트 일시 중지 알림
+// 회의 초대 알림
 @Getter
 @RequiredArgsConstructor
-public class ProjectPausedEvent {
-    private final String projNm;
+public class MeetingInvitedEvent {
+    private final String meetingNm;
     private final List<Long> empIds;
 }

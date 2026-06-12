@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -410,12 +411,36 @@ public class MailServiceImpl implements MailService {
 
     private void ensureSystemLabels(Long empId) {
         for (String label : SYSTEM_LABELS) {
-            mailMapper.mergeSystemLabel(
-                    mailMapper.selectNextMailLabelId(),
-                    empId,
-                    label,
-                    label,
-                    label);
+            mergeSystemLabelSafely(empId, label);
+        }
+    }
+
+    /**
+     * 시스템 라벨을 보장한다.
+     * MAIL_LABEL_ID를 MAX(ID)+1로 채번하므로 동시 동기화 시 PK 충돌(ORA-00001)이 발생할 수 있다.
+     * 충돌이 나면 이미 해당 라벨이 생성됐는지 확인하고, 아니면 ID를 다시 채번해 재시도한다.
+     */
+    private void mergeSystemLabelSafely(Long empId, String label) {
+        final int maxAttempts = 5;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                mailMapper.mergeSystemLabel(
+                        mailMapper.selectNextMailLabelId(),
+                        empId,
+                        label,
+                        label,
+                        label);
+                return;
+            } catch (DuplicateKeyException e) {
+                // 다른 트랜잭션이 같은 ID/라벨을 막 생성한 경우: 이미 존재하면 정상 종료
+                if (mailMapper.selectLabelIdByType(empId, label) != null) {
+                    return;
+                }
+                // 존재하지 않으면 ID 채번 충돌이므로 다시 채번해 재시도
+                if (attempt == maxAttempts) {
+                    throw e;
+                }
+            }
         }
     }
 

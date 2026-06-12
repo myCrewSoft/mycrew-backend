@@ -214,8 +214,8 @@
      AND DEL_YN = 'n'
        <if test="searchRequest != null and searchRequest.keyword != null and searchRequest.keyword != ''">
            AND (
-               BOARD_SJ LIKE '%' || #{searchRequest.keyword} || '%'
-               OR BOARD_CN LIKE '%' || #{searchRequest.keyword} || '%'
+               UPPER(BOARD_SJ) LIKE '%' || UPPER(#{searchRequest.keyword}) || '%'
+               OR UPPER(BOARD_CN) LIKE '%' || UPPER(#{searchRequest.keyword}) || '%'
            )
        </if>
        
@@ -243,6 +243,12 @@
 			LEFT JOIN TB_EMPLOYEE e ON b.FRST_RGTR_ID = e.EMP_ID
 			WHERE p.PROJ_ID = #{projId}
 			AND b.DEL_YN = 'n'
+			<if test="searchRequest != null and searchRequest.keyword != null and searchRequest.keyword != ''">
+				AND (
+					UPPER(b.BOARD_SJ) LIKE '%' || UPPER(#{searchRequest.keyword}) || '%'
+					OR UPPER(b.BOARD_CN) LIKE '%' || UPPER(#{searchRequest.keyword}) || '%'
+				)
+			</if>
 			ORDER BY b.FRST_REG_DT DESC
 			OFFSET #{getOffset} ROWS FETCH NEXT #{getPageSize} ROWS ONLY
 		</select>

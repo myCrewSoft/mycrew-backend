@@ -8,5 +8,6 @@ public final class FileConstants {
 	public static final String DRIVE = "02";
 	public static final String PROFILE = "03";
 	public static final String VOICE = "04";
+	public static final String SIGNATURE = "05";
 
 }

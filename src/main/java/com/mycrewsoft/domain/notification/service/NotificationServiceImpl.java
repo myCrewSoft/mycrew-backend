@@ -74,7 +74,7 @@ public class NotificationServiceImpl implements NotificationService {
             }
             AlrmRcvrVO rcvrVO = new AlrmRcvrVO();
             rcvrVO.setAlrmId(alrmVO.getAlrmId());
-            rcvrVO.setAlrmRcvrId(rcvrEmpId);
+            rcvrVO.setRcvrEmpId(rcvrEmpId);
             notificationMapper.insertAlrmRcvr(rcvrVO);
             NotificationResponse notificationResponse = dtoMapper.toResponse(alrmVO);
 
@@ -87,10 +87,10 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public void sendAlrm(String ttln, String typeCd, String cn, List<Long> rcvrEmpIds) {
         // null 체크
-        if (StringUtils.isNotBlank(ttln)) {
+        if (StringUtils.isBlank(ttln)) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
-        if (StringUtils.isNotBlank(typeCd)) {
+        if (StringUtils.isBlank(typeCd)) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
         if (rcvrEmpIds == null || rcvrEmpIds.isEmpty()) {

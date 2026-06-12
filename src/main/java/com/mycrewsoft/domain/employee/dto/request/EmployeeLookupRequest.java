@@ -23,6 +23,9 @@ public class EmployeeLookupRequest {
     @Schema(description = "특정 프로젝트 참가자만 조회 (프로젝트 ID)", example = "1")
     private Long projId;
     
+    @Schema(description = "특정 프로젝트 참가자 제외 (프로젝트 ID)")
+    private Long excludeProjId;
+    
     @Schema(description = "검색 결과에서 제외할 사원 ID (본인 제외용)", example = "1001")
     private Long excludeEmpId;
 

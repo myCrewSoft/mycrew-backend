@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,6 +19,7 @@ import com.mycrewsoft.domain.employee.dto.request.LoginRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.TokenRefreshRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.LoginResponseDTO;
 import com.mycrewsoft.domain.employee.dto.response.TokenRefreshResponseDTO;
+import com.mycrewsoft.domain.employee.event.FirstLoginEvent;
 import com.mycrewsoft.domain.employee.mapper.AdminEmployeeMapper;
 import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 import com.mycrewsoft.domain.empstat.code.EmpStatCode;
@@ -45,6 +47,7 @@ public class AuthServiceImpl implements AuthService {
 	private final RbacSessionRefreshService rbacSessionRefreshService;
 	private final AdminEmployeeMapper adminEmployeeMapper;
 	private final MailAccountMapper mailAccountMapper;
+	private final ApplicationEventPublisher eventPublisher;
 	
 	@Override
 	@Transactional
@@ -193,6 +196,11 @@ public class AuthServiceImpl implements AuthService {
 				empId,
 				encodedPassword,
 				EmpStatCode.EMP_LOGIN.getCode());
+		
+		// 첫로그인시 입사 알림
+		eventPublisher.publishEvent(
+			new FirstLoginEvent(empId)
+		);
 	}
 
 	@Override

@@ -2,7 +2,6 @@ package com.mycrewsoft.common.event;
 
 import java.util.List;
 
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -25,18 +24,12 @@ import com.mycrewsoft.domain.employee.event.FirstLoginEvent;
 import com.mycrewsoft.domain.employee.event.PasswordChangedEvent;
 import com.mycrewsoft.domain.employee.event.PermissionChangedEvent;
 import com.mycrewsoft.domain.employee.event.ProfileChangedEvent;
-import com.mycrewsoft.domain.messenger.event.MeetingCancelledEvent;
-import com.mycrewsoft.domain.messenger.event.MeetingChangedEvent;
-import com.mycrewsoft.domain.messenger.event.MeetingInvitedEvent;
-import com.mycrewsoft.domain.messenger.event.MeetingReminderEvent;
 import com.mycrewsoft.domain.notification.service.NotificationService;
 import com.mycrewsoft.domain.project.event.ProjectClosedEvent;
 import com.mycrewsoft.domain.project.event.ProjectCompletedEvent;
 import com.mycrewsoft.domain.project.event.ProjectCreatedEvent;
 import com.mycrewsoft.domain.project.event.ProjectDeadlineEvent;
-import com.mycrewsoft.domain.project.event.ProjectDeletedEvent;
 import com.mycrewsoft.domain.project.event.ProjectManagerChangedEvent;
-import com.mycrewsoft.domain.project.event.ProjectPausedEvent;
 import com.mycrewsoft.domain.project.event.ProjectStoppedEvent;
 import com.mycrewsoft.domain.schedule.event.ScheduleCancelledEvent;
 import com.mycrewsoft.domain.schedule.event.ScheduleChangedEvent;
@@ -50,6 +43,10 @@ import com.mycrewsoft.domain.task.event.TaskDeadlineEvent;
 import com.mycrewsoft.domain.task.event.TaskManagerChangedEvent;
 import com.mycrewsoft.domain.task.event.TaskMemberRemovedEvent;
 import com.mycrewsoft.domain.task.event.TaskStatusChangedEvent;
+import com.mycrewsoft.domain.video.event.MeetingChangedEvent;
+import com.mycrewsoft.domain.video.event.MeetingEndedEvent;
+import com.mycrewsoft.domain.video.event.MeetingInvitedEvent;
+import com.mycrewsoft.domain.video.event.MeetingReminderEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -168,31 +165,9 @@ public class NotificationEventListener {
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleProjectCancelled(ProjectPausedEvent event) {
-        notificationService.sendAlrm(
-            "[" + event.getProjNm() + "] 프로젝트가 일시 중지되었습니다.",
-            "04",
-            null,
-            event.getEmpIds()
-        );
-    }
-
-    @Async
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleProjectCancelled(ProjectStoppedEvent event) {
         notificationService.sendAlrm(
             "[" + event.getProjNm() + "] 프로젝트가 중지되었습니다.",
-            "04",
-            null,
-            event.getEmpIds()
-        );
-    }
-
-    @Async
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleProjectCancelled(ProjectDeletedEvent event) {
-        notificationService.sendAlrm(
-            "[" + event.getProjNm() + "] 프로젝트가 삭제되었습니다.",
             "04",
             null,
             event.getEmpIds()
@@ -326,9 +301,9 @@ public class NotificationEventListener {
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleMeetingCancelled(MeetingCancelledEvent event) {
+    public void handleMeetingCancelled(MeetingEndedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getMeetingNm() + "] 회의가 취소되었습니다.",
+            "[" + event.getMeetingNm() + "] 회의가 종료되었습니다.",
             "06",
             null,
             event.getEmpIds()
@@ -526,7 +501,7 @@ public class NotificationEventListener {
             "사용 권한이 변경되었습니다.",
             "09",
             null,
-            List.of(event.getEmpId())
+            event.getEmpIds()
         );
     }
 }

@@ -15,6 +15,7 @@ import com.mycrewsoft.domain.approval.dto.response.ApprovalDocumentDetailRespons
 import com.mycrewsoft.domain.approval.dto.response.ApprovalDraftSummaryResponse;
 import com.mycrewsoft.domain.approval.dto.response.ApprovalStepStatusResponse;
 import com.mycrewsoft.domain.approval.dto.response.ApprovalTemplateResponse;
+import com.mycrewsoft.domain.approval.vo.ApprovalDeadlineVO;
 
 @Mapper
 public interface ApprovalDraftMapper {
@@ -192,4 +193,6 @@ public interface ApprovalDraftMapper {
     Long selectTemplateOwnerByTemplateCode(@Param("tmplatCd") String tmplatCd);
     
     void updateTemplate(ApprovalTemplateVO object);
+
+    List<ApprovalDeadlineVO> selectApprovalsDueSoon();
 }

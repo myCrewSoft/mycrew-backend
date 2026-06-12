@@ -1,5 +1,6 @@
 package com.mycrewsoft.domain.employee.service;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,11 +10,11 @@ import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.employee.dto.request.ChangeEmailRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.ChangeJobDutyRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.ChangePasswordRequestDTO;
-import com.mycrewsoft.domain.employee.dto.request.ChangeProfileImageRequestDTO;
-import com.mycrewsoft.domain.employee.dto.request.ChangeSignatureRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeMyPageResponseDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeProfileDTO;
+import com.mycrewsoft.domain.employee.event.PasswordChangedEvent;
 import com.mycrewsoft.domain.employee.mapper.EmployeeMapper;
+import com.mycrewsoft.domain.file.constant.FileConstants;
 import com.mycrewsoft.domain.file.dto.FileUploadRequestDto;
 import com.mycrewsoft.domain.file.service.FileServiceImpl;
 import com.mycrewsoft.domain.mail.dto.response.GoogleOAuthAuthorizeResponse;
@@ -29,7 +30,7 @@ public class MyPageServiceImpl implements MyPageService {
 	private final PasswordEncoder passwordEncoder;
 	private final GoogleOAuthService googleOAuthService;
 	private final FileServiceImpl fileService;
-	
+	private final ApplicationEventPublisher eventPublisher;
 	
 	@Override
 	@Transactional(readOnly = true)
@@ -57,6 +58,10 @@ public class MyPageServiceImpl implements MyPageService {
 		
 		String newPasswordHash = passwordEncoder.encode(request.getNewPassword());
 		int updatedCount = employeeMapper.updatePasswordByEmpId(empId, newPasswordHash);
+		
+		eventPublisher.publishEvent(
+			new PasswordChangedEvent(empId)
+		);
 	}
 
 	@Override
@@ -68,18 +73,26 @@ public class MyPageServiceImpl implements MyPageService {
 
 	@Override
 	@Transactional
-	public void changeSignature(ChangeSignatureRequestDTO request) {
+	public Long changeSignature(FileUploadRequestDto file) {
 		Long empId = SecurityUtil.getCurrentEmpId();
-		int updatedCount = employeeMapper.updateSignatureByEmpId(empId, request.getMbrStampFileId());
+
+		// 기존 fileService를 경유하여 전자서명 이미지를 업로드한다.
+		Long stampFileId = fileService.upload(file, FileConstants.SIGNATURE);
+		employeeMapper.updateSignatureByEmpId(empId, stampFileId);
+
+		return stampFileId;
 	}
 
 	@Override
 	@Transactional
-	public void changeProfileImage(FileUploadRequestDto file, ChangeProfileImageRequestDTO request) {
+	public Long changeProfileImage(FileUploadRequestDto file) {
 		Long empId = SecurityUtil.getCurrentEmpId();
-		
-		Long driveAtchFileId = fileService.upload(file, "03");
-		int updatedCount = employeeMapper.updateProfileImageByEmpId(empId, request.getPrflImgFileId());
+
+		// 기존 fileService를 경유하여 프로필 이미지를 업로드한다.
+		Long prflImgFileId = fileService.upload(file, FileConstants.PROFILE);
+		employeeMapper.updateProfileImageByEmpId(empId, prflImgFileId);
+
+		return prflImgFileId;
 	}
 
 	@Override

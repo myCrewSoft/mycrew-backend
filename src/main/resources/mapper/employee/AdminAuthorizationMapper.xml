@@ -32,6 +32,7 @@
     <resultMap id="RoleEmployeeResultMap" type="com.mycrewsoft.domain.employee.dto.response.RoleEmployeeResponseDTO">
         <id property="roleAssignmentId" column="ROLE_ASSIGNMENT_ID"/>
         <result property="empId" column="EMP_ID"/>
+        <result property="prflImgFileId" column="PRFL_IMG_FILE_ID"/>
         <result property="employeeName" column="EMPLOYEE_NAME"/>
         <result property="deptCd" column="DEPT_CD"/>
         <result property="deptName" column="DEPT_NAME"/>
@@ -119,6 +120,7 @@
         SELECT
             RA.ROLE_ASSIGN_ID AS ROLE_ASSIGNMENT_ID,
             E.EMP_ID,
+            E.PRFL_IMG_FILE_ID,
             E.EMP_NM AS EMPLOYEE_NAME,
             E.DEPT_CD,
             D.DEPT_NM AS DEPT_NAME,
