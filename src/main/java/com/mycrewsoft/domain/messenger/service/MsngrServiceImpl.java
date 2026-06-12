@@ -32,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -373,7 +374,93 @@ public class MsngrServiceImpl implements MsngrService {
 
         messagingTemplate.convertAndSend("/topic/chats/" + chtrmId + "/events", event);
     }
+    
+    // 프로젝트 채팅방 생성
+    @Override
+    @Transactional
+    public Long createProjectChtrm(
+        Long projId,
+        String projNm,
+        Long crtrId,
+        List<Long> empIds
+    ) {
 
+        // 1. 채팅방 생성
+        MsngrChtrmVO chtrmVO = new MsngrChtrmVO();
+        chtrmVO.setChtrmNm(projNm);
+        chtrmVO.setChtrmExpln(projNm + "프로젝트 채팅방");
+        chtrmVO.setChtrmTypeCd("M3");
+        chtrmVO.setEstblshId(crtrId);
+
+        msngrMapper.insertChtrm(chtrmVO);
+
+        Long chtrmId = chtrmVO.getChtrmId();
+
+        // 2. 프로젝트 참여자들을 채팅방 참여자로 등록
+        for (Long empId : empIds) {
+            MsngrChtrmPtcptVO ptcptVO = new MsngrChtrmPtcptVO();
+            ptcptVO.setChtrmId(chtrmId);
+            ptcptVO.setEmpId(empId);
+            ptcptVO.setPtcptSttusCd("STS4");
+
+            msngrMapper.insertPtcpt(ptcptVO);
+        }
+        
+        return chtrmId;
+    }
+    
+    // 프로젝트 인원 추가시 초대
+    @Override
+    @Transactional
+    public void addProjectChtrmParticipants(Long chtrmId, List<Long> empIds) {
+        if (chtrmId == null) {
+            throw new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND);
+        }
+
+        if (empIds == null || empIds.isEmpty()) {
+            return;
+        }
+
+        List<Long> distinctEmpIds = empIds.stream()
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+
+        for (Long empId : distinctEmpIds) {
+            String ptcptSttus = msngrMapper.selectPtcptSttus(empId);
+
+            if (ptcptSttus == null) {
+                ptcptSttus = "STS4";
+            }
+
+            MsngrChtrmPtcptVO ptcptVO = new MsngrChtrmPtcptVO();
+            ptcptVO.setChtrmId(chtrmId);
+            ptcptVO.setEmpId(empId);
+            ptcptVO.setPtcptSttusCd(ptcptSttus);
+
+            msngrMapper.mergeProjectPtcpt(ptcptVO);
+        }
+    }
+    
+    // 프로젝트 인원 퇴출 시 퇴장 조치
+    @Override
+    @Transactional
+    public void removeProjectChtrmParticipant(Long chtrmId, Long empId) {
+        if (chtrmId == null) {
+            throw new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND);
+        }
+
+        if (empId == null) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        int result = msngrMapper.updateProjectPtcptLeaveDt(chtrmId, empId);
+
+        if (result == 0) {
+            throw new CustomException(ErrorCode.CHAT_NOT_PARTICIPANT);
+        }
+    }
+    
     // 사용자 확인
     private Long getCurrentEmpIdOrThrow() {
         Long empId = SecurityUtil.getCurrentEmpId();

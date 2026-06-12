@@ -5,12 +5,13 @@ import java.util.List;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-// 프로젝트 등록 이벤트
+// 프로젝트 참여자 추가 이벤트
 @Getter
 @RequiredArgsConstructor
-public class ProjectCreatedEvent {
-	private final Long projId;
+public class ProjectMembersAddedEvent {
+
+    private final Long projId;
     private final String projNm;
-    private final Long crtrId;
+    private final Long chtrmId;
     private final List<Long> empIds;
 }
