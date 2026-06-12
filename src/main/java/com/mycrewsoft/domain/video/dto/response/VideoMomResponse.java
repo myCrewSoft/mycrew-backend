@@ -38,4 +38,7 @@ public class VideoMomResponse {
 
     @Schema(description = "결재 목록")
     private List<VideoMomAprvlResponse> aprvlList;
+    
+    @Schema(description = "수정 이력 목록")
+    private List<VideoMomHistResponse> histList;
 }

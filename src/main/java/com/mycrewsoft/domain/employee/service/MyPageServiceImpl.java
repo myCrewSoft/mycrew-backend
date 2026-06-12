@@ -1,5 +1,6 @@
 package com.mycrewsoft.domain.employee.service;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +12,7 @@ import com.mycrewsoft.domain.employee.dto.request.ChangeJobDutyRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.ChangePasswordRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeMyPageResponseDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeProfileDTO;
+import com.mycrewsoft.domain.employee.event.PasswordChangedEvent;
 import com.mycrewsoft.domain.employee.mapper.EmployeeMapper;
 import com.mycrewsoft.domain.file.constant.FileConstants;
 import com.mycrewsoft.domain.file.dto.FileUploadRequestDto;
@@ -28,7 +30,7 @@ public class MyPageServiceImpl implements MyPageService {
 	private final PasswordEncoder passwordEncoder;
 	private final GoogleOAuthService googleOAuthService;
 	private final FileServiceImpl fileService;
-	
+	private final ApplicationEventPublisher eventPublisher;
 	
 	@Override
 	@Transactional(readOnly = true)
@@ -56,6 +58,10 @@ public class MyPageServiceImpl implements MyPageService {
 		
 		String newPasswordHash = passwordEncoder.encode(request.getNewPassword());
 		int updatedCount = employeeMapper.updatePasswordByEmpId(empId, newPasswordHash);
+		
+		eventPublisher.publishEvent(
+			new PasswordChangedEvent(empId)
+		);
 	}
 
 	@Override

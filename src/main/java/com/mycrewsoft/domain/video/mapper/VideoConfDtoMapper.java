@@ -9,12 +9,15 @@ import com.mycrewsoft.domain.video.dto.request.VideoConfCreateRequest;
 import com.mycrewsoft.domain.video.dto.request.VideoMomUpdateRequest;
 import com.mycrewsoft.domain.video.dto.response.VideoConfResponse;
 import com.mycrewsoft.domain.video.dto.response.VideoMomAprvlResponse;
+import com.mycrewsoft.domain.video.dto.response.VideoMomHistResponse;
 import com.mycrewsoft.domain.video.dto.response.VideoMomResponse;
 import com.mycrewsoft.domain.video.dto.response.VideoPtcptResponse;
+import com.mycrewsoft.domain.video.vo.VideoConfListVO;
 import com.mycrewsoft.domain.video.vo.VideoConfVO;
 import com.mycrewsoft.domain.video.vo.VideoMomAprvlVO;
+import com.mycrewsoft.domain.video.vo.VideoMomHistVO;
 import com.mycrewsoft.domain.video.vo.VideoMomVO;
-import com.mycrewsoft.domain.video.vo.VideoPtcptVO;
+import com.mycrewsoft.domain.video.vo.VideoPtcptDetailVO;
 
 @Mapper(componentModel = "spring")
 public interface VideoConfDtoMapper {
@@ -51,13 +54,13 @@ public interface VideoConfDtoMapper {
 
     // 화상회의 VO → 응답 DTO
     @Mapping(source = "videoPtcpt", target = "ptcptList")
-    VideoConfResponse toConfResponse(VideoConfVO vo);
+    VideoConfResponse toConfResponse(VideoConfListVO vo);
 
     // 화상회의 VO 목록 → 응답 DTO 목록
-    List<VideoConfResponse> toConfResponseList(List<VideoConfVO> voList);
+    List<VideoConfResponse> toConfResponseList(List<VideoConfListVO> voList);
 
     // 참여자 VO → 응답 DTO
-    VideoPtcptResponse toPtcptResponse(VideoPtcptVO vo);
+    VideoPtcptResponse toPtcptResponse(VideoPtcptDetailVO vo);
 
     // 회의록 VO → 응답 DTO
     @Mapping(source = "videoMomAprvl", target = "aprvlList")
@@ -65,4 +68,7 @@ public interface VideoConfDtoMapper {
 
     // 회의록 결재 VO → 응답 DTO
     VideoMomAprvlResponse toMomAprvlResponse(VideoMomAprvlVO vo);
+    
+    // 회의록 수정 이력 VO → 응답 DTO
+    VideoMomHistResponse toMomHistResponse(VideoMomHistVO vo);
 }

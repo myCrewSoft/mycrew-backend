@@ -6,7 +6,9 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.mycrewsoft.domain.video.vo.VideoConfVO;
+import com.mycrewsoft.domain.video.vo.MeetingReminderVO;
 import com.mycrewsoft.domain.video.vo.VideoChatLogVO;
+import com.mycrewsoft.domain.video.vo.VideoConfListVO;
 import com.mycrewsoft.domain.video.vo.VideoMomAprvlVO;
 import com.mycrewsoft.domain.video.vo.VideoMomHistVO;
 import com.mycrewsoft.domain.video.vo.VideoMomVO;
@@ -26,10 +28,10 @@ public interface VideoConfMapper {
     void insertPtcpt(VideoPtcptVO vo);
 
     // 화상회의 단건 조회 (참여자 목록 포함)
-    VideoConfVO selectConfById(@Param("vconfId") Long vconfId);
+    VideoConfListVO selectConfById(@Param("vconfId") Long vconfId);
 
     // 로그인한 사원이 참여 중인 화상회의 목록 조회
-    List<VideoConfVO> selectConfList(@Param("empId") Long empId);
+    List<VideoConfListVO> selectConfList(@Param("empId") Long empId);
 
     // 참여자 입장 시각 업데이트 (LiveKit 실제 입장 시점)
     void updatePtcptJoinDt(@Param("vconfPtcptId") Long vconfPtcptId);
@@ -63,4 +65,7 @@ public interface VideoConfMapper {
 
     // 녹취록 단건 등록
     void insertRcrdg(VideoRcrdgVO vo);
+
+    // 회의 시작 10분 전 알림
+    List<MeetingReminderVO> selectConfsStartingSoon();
 }

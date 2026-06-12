@@ -1,17 +1,24 @@
 package com.mycrewsoft.domain.approval.service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mycrewsoft.domain.approval.approvaldocVO.ApprovalDocVO;
-import com.mycrewsoft.domain.approval.approvalstepVO.ApprovalStepVO;
 import com.mycrewsoft.domain.approval.approvallineVO.ApprovalLineVO;
+import com.mycrewsoft.domain.approval.approvalstepVO.ApprovalStepVO;
 import com.mycrewsoft.domain.approval.dto.request.ApprovalActionRequestDTO;
 import com.mycrewsoft.domain.approval.dto.response.ApprovalAvailabilityResponse;
 import com.mycrewsoft.domain.approval.dto.response.ApprovalMutationResponse;
+import com.mycrewsoft.domain.approval.event.ApprovalApprovedEvent;
+import com.mycrewsoft.domain.approval.event.ApprovalCancelledEvent;
+import com.mycrewsoft.domain.approval.event.ApprovalRejectedEvent;
+import com.mycrewsoft.domain.approval.event.ApprovalRequestedEvent;
 import com.mycrewsoft.domain.approval.mapper.ApprovalDraftMapper;
+import com.mycrewsoft.domain.employee.mapper.EmployeeMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,7 +28,9 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
 
     private final ApprovalServiceSupport support;
     private final ApprovalDraftMapper approvalDraftMapper;
-
+    private final ApplicationEventPublisher eventPublisher;
+    private final EmployeeMapper employeeMapper;
+    
     @Transactional
     public ApprovalMutationResponse submitApproval(Long drftDocSn) {
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
@@ -55,6 +64,15 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
                 now
         );
 
+        // 기안자 이름 조회 후 결재자들에게 알림
+        String applicantNm = employeeMapper.selectEmployeeProfileByEmpId(empId).getEmpNm();
+        List<Long> approverIds = firstStep.getApprovalLines().stream()
+                .map(ApprovalLineVO::getAprvrEmpId)
+                .toList();
+        eventPublisher.publishEvent(
+            new ApprovalRequestedEvent(savedDoc.getDocTtl(), applicantNm, approverIds)
+        );
+        
         return new ApprovalMutationResponse(
                 drftDocSn,
                 ApprovalConstants.DOC_STATUS_IN_PROGRESS,
@@ -90,6 +108,18 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
                 ApprovalConstants.LINE_STATUS_WITHDRAW_CANCELLED
         );
 
+        // 기안자 이름 조회 후 현재 결재 대기 중인 결재자들에게 알림
+        String applicantNm = employeeMapper.selectEmployeeProfileByEmpId(empId).getEmpNm();
+        ApprovalStepVO currentStep = approvalDraftMapper.selectFirstApprovalStep(drftDocSn);
+        if (currentStep != null) {
+            List<Long> approverIds = currentStep.getApprovalLines().stream()
+                    .map(ApprovalLineVO::getAprvrEmpId)
+                    .toList();
+            eventPublisher.publishEvent(
+                new ApprovalCancelledEvent(savedDoc.getDocTtl(), applicantNm, approverIds)
+            );
+        }
+        
         return new ApprovalMutationResponse(
                 drftDocSn,
                 ApprovalConstants.DOC_STATUS_WITHDRAWN,
@@ -145,6 +175,18 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
                     empId,
                     now
             );
+            
+            // 다음 단계 결재자에게 알림
+            String applicantNm = employeeMapper
+                .selectEmployeeProfileByEmpId(savedDoc.getEmpId()).getEmpNm();
+            List<Long> nextApproverIds = nextStep.getApprovalLines().stream()
+                    .map(ApprovalLineVO::getAprvrEmpId)
+                    .toList();
+            eventPublisher.publishEvent(
+                new ApprovalRequestedEvent(savedDoc.getDocTtl(), applicantNm, nextApproverIds)
+            );
+            
+           
             return new ApprovalMutationResponse(
                     drftDocSn,
                     ApprovalConstants.DOC_STATUS_IN_PROGRESS,
@@ -158,6 +200,12 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
                 now,
                 null
         );
+        
+        // 최종 승인 시 기안자에게 알림
+        eventPublisher.publishEvent(
+            new ApprovalApprovedEvent(savedDoc.getDocTtl(), savedDoc.getEmpId())
+        );
+        
         return new ApprovalMutationResponse(
                 drftDocSn,
                 ApprovalConstants.DOC_STATUS_COMPLETED,
@@ -207,7 +255,12 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
                 currentStep.getAprvlOrd(),
                 ApprovalConstants.LINE_STATUS_SKIPPED
         );
-
+        
+        // 반려 시 기안자에게 알림
+        eventPublisher.publishEvent(
+            new ApprovalRejectedEvent(savedDoc.getDocTtl(), savedDoc.getEmpId())
+        );
+        
         return new ApprovalMutationResponse(
                 drftDocSn,
                 ApprovalConstants.DOC_STATUS_REJECTED,

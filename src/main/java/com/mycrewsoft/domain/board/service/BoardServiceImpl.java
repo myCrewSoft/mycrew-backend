@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -24,10 +25,13 @@ import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
 import com.mycrewsoft.domain.board.dto.request.BoardUpdateRequest;
 import com.mycrewsoft.domain.board.dto.response.BoardResponse;
 import com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse;
+import com.mycrewsoft.domain.board.event.CommentCreatedEvent;
+import com.mycrewsoft.domain.board.event.NoticeCreatedEvent;
 import com.mycrewsoft.domain.board.mapper.BoardMapper;
 import com.mycrewsoft.domain.board.vo.BoardCommentVO;
 import com.mycrewsoft.domain.board.vo.BoardLikeVo;
 import com.mycrewsoft.domain.board.vo.BoardVO;
+import com.mycrewsoft.domain.employee.mapper.EmployeeLookupMapper;
 import com.mycrewsoft.domain.employee.mapper.EmployeeMapper;
 import com.mycrewsoft.security.authz.AuthorizationService;
 import com.mycrewsoft.security.authz.PermissionScopeSet;
@@ -44,11 +48,13 @@ import lombok.extern.slf4j.Slf4j;
 public class BoardServiceImpl implements BoardService {
 
 	private final EmployeeMapper employeeMapper;
+	private final EmployeeLookupMapper employeeLookupMapper;
 	private final BoardMapper boardMapper;
 	private final AuthorizationService authorizationService;
 	private final ObjectMapper objectMapper;
 	private final DtoMapper dtoMapper;
-
+	private final ApplicationEventPublisher eventPublisher;
+	
 	// 데이터를 몇 페이지에 몇개씩 보여줄지
 	@Override
 	@Transactional(readOnly = true)
@@ -151,6 +157,9 @@ public class BoardServiceImpl implements BoardService {
 
 			authorizationService.assertCurrentUserPermission(PermissionCode.BOARD_POST_READ, resource);
 		}
+		
+		
+		
 		// 2. 데이터베이스 조회 (게시물의 게시글, 게시판 댓글, 좋아요,조회수,좋아요 수 )
 		int updatedView = boardMapper.updateViewCount(boardId);
 		if (updatedView == 0) {
@@ -167,6 +176,35 @@ public class BoardServiceImpl implements BoardService {
 		BoardLikeVo boardLikeVo = boardMapper.readLikeStatus(boardId, empId);
 
 		int boardLikeCount = boardMapper.readLikeCount(boardId);
+		
+		//내가 갖고 있는 BOARD_POST_READ 권한이 Global 인지 판단(Global == 타인, 모든 부서, 모든 프로젝트의 게시글 범위)
+		if(!authorizationService.hasGlobalScope(PermissionCode.BOARD_POST_READ)) {
+			//내 BOARD_POST_READ 권한이 Global이 아니라면, 세부 검증으로 이동.
+					
+	
+			//db에서 게시글을 조회하여 실제 데이터로 검증
+			Long writer	= boardVo.getFrstRgtrId();
+			String getDeptCd = boardVo.getDeptCd();
+			Long prod = boardVo.getProjId();
+			String prodId = null;
+			
+			if(prod != null) {
+				prodId = prod.toString();
+			}
+			
+			ResourceContext context = ResourceContext.builder()
+										//내가 쓴 글인가? - 내가 작성한 글이면 어떤 게시판이든 상관없이 읽기 가능
+										.ownerEmpId(writer)
+										//내 BOARD_POST_READ 권한이 부서 범위인가? - 만일 내가 인사부 소속인데, 사업부 게시판 관리 권한을 받았다면?
+										.deptCd(getDeptCd)
+										//내 BOARD_POST_READ 권한이 프로젝트 범위인가? - 만일 내가 프로젝트 참여자가 아니지만, 프로젝트 관리 권한을 받았다면?
+										.projId(prodId)
+										.build();
+			
+			//위에서 나열된 3가지 조건 중 하나라도 충족하면 권한 통과.
+			authorizationService.assertCurrentUserPermission(PermissionCode.BOARD_POST_READ, context);
+		
+		}
 
 		// vo 를 dto로 바꾸는 작업
 		BoardResponse boardResponse = dtoMapper.toDto(boardVo, BoardResponse.class);
@@ -209,35 +247,54 @@ public class BoardServiceImpl implements BoardService {
 		return new PageImpl<>(content, pageable, total);
 	}
 
-	// 게시글 생성 메서드
 	@Override
 	@Transactional
 	public Long createBoard(BoardCreateRequest boardCreateRequest) {
+	    Long empId = SecurityUtil.getCurrentEmpId();
+	    String boardTypeCd = boardCreateRequest.getBoardTypeCd();
 
-		// 권한 체크
-		if ("notice".equals(boardCreateRequest.getBoardTypeCd())) {
-			// 공지사항 일때는 관리자만
+	    // 1. 게시판 타입별 권한 체크 (기존 다른 메서드와 동일한 패턴 적용)
+	    if (!authorizationService.hasGlobalScope(PermissionCode.BOARD_POST_CREATE)) {
+	        
+	        // 생성할 자원의 컨텍스트 빌드
+	        ResourceContext.ResourceContextBuilder contextBuilder = ResourceContext.builder()
+	                .ownerEmpId(empId); // 작성자 본인 등록
 
-		} else if ("dept".equals(boardCreateRequest.getBoardTypeCd())) {
-			// 부서게시판은 소속된 부서사람들만
+	        if ("DEPT".equalsIgnoreCase(boardTypeCd)) {
+	            // 부서게시판일 경우: 요청 객체에 담긴 부서코드로 자원 설정
+	            contextBuilder.deptCd(boardCreateRequest.getDeptCd());
+	            
+	        } else if ("PROJ".equalsIgnoreCase(boardTypeCd)) {
+	            // 프로젝트 게시판일 경우: 요청 객체에 담긴 프로젝트 ID 설정
+	            if (boardCreateRequest.getProjId() != null) {
+	                contextBuilder.projId(boardCreateRequest.getProjId().toString());
+	            }
+	        }
+	        
+	        // 공지사항(NOTICE)의 경우 특정 부서나 프로젝트가 없으므로 
+	        // 전사 관리자(Global 권한자)가 아니면 아래 assert에서 걸러지도록 유도하거나, 
+	        // 별도의 관리자 권한 코드를 사용할 수 있습니다.
 
-		} else if ("proj".equals(boardCreateRequest.getBoardTypeCd())) {
-			// 프로젝트 게시판은 프로젝트하는 사람들만
-		} else {
-			// 자유와 익명은 직원들 전체 아무나
-		}
-		Long empId = SecurityUtil.getCurrentEmpId();
-		
-		// DTO -> VO로 변환
-		BoardVO boardVo = dtoMapper.toDto(boardCreateRequest, BoardVO.class);
+	        // 최종 권한 검증 및 예외 발생
+	        authorizationService.assertCurrentUserPermission(PermissionCode.BOARD_POST_CREATE, contextBuilder.build());
+	    }
 
-		boardVo.setFrstRgtrId(empId);
-		// 데이터베이스에서 생성
-		boardMapper.createBoard(boardVo);
+	    // 2. DTO -> VO로 변환 및 저장 (기존 로직)
+	    BoardVO boardVo = dtoMapper.toDto(boardCreateRequest, BoardVO.class);
+	    boardVo.setFrstRgtrId(empId);
+	    
+	    boardMapper.createBoard(boardVo);
+      
+      // 공지사항이면 전 사원에게 알림
+      if("NOTICE".equals(boardVo.getBoardTypeCd())) {
+        List<Long> allEmpIds = employeeLookupMapper.selectAllEmpIds();
+        eventPublisher.publishEvent(
+          new NoticeCreatedEvent(boardVo.getBoardSj(), allEmpIds)
+        );
 
-		return boardVo.getBoardId();
+      }
+	    return boardVo.getBoardId();
 	}
-
 	@Override
 	@Transactional
 	public Long updateBoardDetail(Long boardId, BoardUpdateRequest boardUpdateRequest) {
@@ -258,16 +315,20 @@ public class BoardServiceImpl implements BoardService {
 			//db에서 게시글을 조회하여 실제 데이터로 검증
 			Long writer	= writtenBoard.getFrstRgtrId();
 			String deptCd = writtenBoard.getDeptCd();
-			Long prodId = writtenBoard.getProjId();
+			Long prod = writtenBoard.getProjId();
+			String prodId = null;
+			
+			if(prod != null) {
+				prodId = prod.toString();
+			}
 			
 			ResourceContext context = ResourceContext.builder()
-										.resourceType(ResourceType.BOARD)
-										//내가 쓴 글인가?
+										//내가 쓴 글인가? - 내가 작성한 글이면 어떤 게시판이든 상관없이 수정 가능
 										.ownerEmpId(writer)
-										//내 BOARD_POST_UPDATE 권한이 부서 범위인가?
+										//내 BOARD_POST_UPDATE 권한이 부서 범위인가? - 만일 내가 인사부 소속인데, 사업부 게시판 관리 권한을 받았다면?
 										.deptCd(deptCd)
-										//내 BOARD_POST_UPDATE 권한이 프로젝트 범위인가? 
-										.projId(prodId.toString())
+										//내 BOARD_POST_UPDATE 권한이 프로젝트 범위인가? - 만일 내가 프로젝트 참여자가 아니지만, 프로젝트 관리 권한을 받았다면?
+										.projId(prodId)
 										.build();
 			
 			//위에서 나열된 3가지 조건 중 하나라도 충족하면 권한 통과.
@@ -300,29 +361,34 @@ public class BoardServiceImpl implements BoardService {
 	@Override
 	@Transactional
 	public void deleteBoardDetail(Long boardId) {
-		// 로그인한 사원 아이디 empId
+		//로그인한 사원 아이디 empId
 		Long empId = SecurityUtil.getCurrentEmpId();
 		
-		// db에서 글을 조회
+		//db에서 글을 조회
 		BoardVO readedBoard  = boardMapper.readBoard(boardId);
 		if (readedBoard == null) {
 			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
 		}
 
 		Long written = readedBoard.getFrstRgtrId();
+		String deptCd = readedBoard.getDeptCd();
+		Long prod = readedBoard.getProjId();
+		String prodId = null;
 		
-		//내가 작성한 글만 권한
-		// 현재 접속한 사원 아이디 = 작성한 사람 아이디
-		if(!empId.equals(written)) {
-			throw new CustomException(ErrorCode.ACCESS_DENIED);
+		if(prod != null) {
+			prodId = prod.toString();
 		}
+		
+		ResourceContext context = ResourceContext.builder().ownerEmpId(written).deptCd(deptCd).projId(prodId).build();
+
+		//위에서 나열된 3가지 조건 중 하나라도 충족하면 권한 통과.
+		authorizationService.assertCurrentUserPermission(PermissionCode.BOARD_POST_DELETE, context);
 
 		//데이터베이스에서 논리 삭제
 		int result = boardMapper.deleteBoardDetail(boardId);
 		if(result ==0) {
 			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
 		}
-		
 		
 	}
 
@@ -341,6 +407,14 @@ public class BoardServiceImpl implements BoardService {
 		// 데이터베이스에서 생성
 		boardMapper.insertComment(boardCommentVO);
 
+		// 글 작성자에게 댓글 등록 알림
+		BoardVO boardVo = boardMapper.readBoard(boardCommentVO.getBoardId());
+		String boardSj = boardVo.getBoardSj();
+		Long boardWriter = boardVo.getFrstRgtrId();
+		eventPublisher.publishEvent(
+			new CommentCreatedEvent(boardSj, boardWriter)
+		);
+		
 		return boardCommentVO.getCommentId();
 	}
 

@@ -15,6 +15,7 @@ import com.mycrewsoft.domain.approval.dto.response.ApprovalDocumentDetailRespons
 import com.mycrewsoft.domain.approval.dto.response.ApprovalDraftSummaryResponse;
 import com.mycrewsoft.domain.approval.dto.response.ApprovalStepStatusResponse;
 import com.mycrewsoft.domain.approval.dto.response.ApprovalTemplateResponse;
+import com.mycrewsoft.domain.approval.vo.ApprovalDeadlineVO;
 
 @Mapper
 public interface ApprovalDraftMapper {
@@ -202,4 +203,5 @@ public interface ApprovalDraftMapper {
 
     /** 결재자(사원)의 전자서명 파일 ID 조회 (없으면 null) */
     Long selectEmpStampFileId(@Param("empId") Long empId);
+    List<ApprovalDeadlineVO> selectApprovalsDueSoon();
 }
