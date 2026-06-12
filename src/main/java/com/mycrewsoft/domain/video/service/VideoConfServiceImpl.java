@@ -78,8 +78,15 @@ public class VideoConfServiceImpl implements VideoConfService {
         VideoConfListVO saved = videoConfMapper.selectConfById(confVO.getVconfId());
         
         eventPublisher.publishEvent(
-        	new MeetingInvitedEvent(saved.getVconfNm(), ptcptEmpIds)
-        );
+    	    new MeetingInvitedEvent(
+	    		saved.getVconfId(),
+	    		saved.getVconfNm(),
+	    		saved.getBeginDt(),
+	    		saved.getEndDt(),
+	    		ptcptEmpIds,
+		        SecurityUtil.getCurrentEmpId()
+    	    )
+    	);
         
         return videoConfDtoMapper.toConfResponse(saved);
     }
@@ -147,7 +154,7 @@ public class VideoConfServiceImpl implements VideoConfService {
         
         // 참여자 목록에서 empId 추출
         List<Long> ptcptEmpIds = vo.getVideoPtcpt().stream()
-                .map(VideoPtcptVO::getEmpId)
+                .map(VideoPtcptDetailVO::getEmpId)
                 .toList();
         
         eventPublisher.publishEvent(
