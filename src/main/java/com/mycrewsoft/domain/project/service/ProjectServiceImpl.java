@@ -111,10 +111,13 @@ public class ProjectServiceImpl implements ProjectService{
 		        .toList();
         eventPublisher.publishEvent(
             new ProjectCreatedEvent(
-            	projVo.getProjId(),
-            	projVo.getProjNm(), 
-            	SecurityUtil.getCurrentEmpId(),
-            	memberEmpIds)
+            		projVo.getProjId(),
+                projVo.getProjNm(),
+                SecurityUtil.getCurrentEmpId(),
+                projVo.getProjBgngYmd(),
+                projVo.getProjEndYmd(),
+                memberEmpIds
+            )
         );
 	}
 

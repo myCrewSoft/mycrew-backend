@@ -155,7 +155,7 @@
 	
 	
 	<!-- 프로젝트 진척률 = sum(업무진척률 * 업무중요도 가중치) / sum(가중치) -->
-	<update id="updateProjectPrgrsRt">
+	<update id="updateProjectPrgrsRtd">
 	    UPDATE TB_PROJECT
 	    SET PROJ_PRGRS_RT = (
 	        SELECT ROUND(

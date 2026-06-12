@@ -99,10 +99,17 @@ public class TaskServiceImpl implements TaskService {
                 taskMapper.insertTaskPtcpt(ptcptVO);
             }
 
-            // 업무 배정 알림
-            eventPublisher.publishEvent(
-                new TaskAssignedEvent(task.getTaskNm(), request.getEmpIdList())
-            );
+        // 업무 배정 알림
+        eventPublisher.publishEvent(
+    	    new TaskAssignedEvent(
+    	        task.getTaskId(),
+    	        task.getTaskNm(),
+    	        task.getTaskBgngDt(),
+    	        task.getTaskEndDt(),
+    	        request.getEmpIdList(),
+    	        SecurityUtil.getCurrentEmpId()
+    	    )
+    	);
         }
         
         // 프로젝트 진척률 최신화
@@ -203,8 +210,15 @@ public class TaskServiceImpl implements TaskService {
 
         // 업무 배정 알림
         eventPublisher.publishEvent(
-            new TaskAssignedEvent(existing.getTaskNm(), empIdList)
-        );
+    	    new TaskAssignedEvent(
+	    		existing.getTaskId(),
+	    		existing.getTaskNm(),
+	    		existing.getTaskBgngDt(),
+	    		existing.getTaskEndDt(),
+	    		empIdList,
+    	        SecurityUtil.getCurrentEmpId()
+    	    )
+    	);
     }
 
     @Override

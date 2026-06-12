@@ -1,5 +1,6 @@
 package com.mycrewsoft.domain.project.event;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import lombok.Getter;
@@ -12,5 +13,7 @@ public class ProjectCreatedEvent {
 	private final Long projId;
     private final String projNm;
     private final Long crtrId;
+    private final LocalDate projBgngYmd;
+    private final LocalDate projEndYmd;
     private final List<Long> empIds;
 }
