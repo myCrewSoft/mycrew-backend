@@ -79,4 +79,13 @@ public interface MsngrMapper {
     
     // 프로젝트 채팅방 조회
     Long selectProjectChtrmId(@Param("projId") Long projId);
+    
+    // 프로젝트 인원 추가
+    int mergeProjectPtcpt(MsngrChtrmPtcptVO ptcptVO);
+    
+    // 프로젝트 인원 퇴장 조치
+    int updateProjectPtcptLeaveDt(
+	    @Param("chtrmId") Long chtrmId,
+	    @Param("empId") Long empId
+	);
 }

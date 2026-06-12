@@ -41,6 +41,12 @@ public interface MsngrService {
         Long crtrId,
         List<Long> empIds
     );
+   
+    // 프로젝트 인원 추가시 초대
+    void addProjectChtrmParticipants(Long chtrmId, List<Long> empIds);
+    
+    // 프로젝트 인원 삭제 시 퇴장 조치
+    void removeProjectChtrmParticipant(Long chtrmId, Long empId);
     
     // 웹소켓용
     void saveMsgAndBroadcast(Long chtrmId, String content, Long sndrId);
