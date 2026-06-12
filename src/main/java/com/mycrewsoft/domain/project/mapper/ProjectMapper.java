@@ -5,6 +5,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import com.mycrewsoft.domain.project.vo.ProjectDeadlineVO;
 import com.mycrewsoft.domain.project.vo.ProjectVO;
 import com.mycrewsoft.domain.projectmember.vo.ProjectMemberVO;
 
@@ -63,4 +64,7 @@ public interface ProjectMapper {
 	
 	// 프로젝트 진척률 계산
 	int updateProjectPrgrsRtd(@Param("projId") Long projId);
+
+	// 프로젝트 마감 하루전 알림
+	List<ProjectDeadlineVO> selectProjectsDueTomorrow();
 }

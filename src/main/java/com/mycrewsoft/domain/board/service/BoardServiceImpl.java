@@ -286,7 +286,7 @@ public class BoardServiceImpl implements BoardService {
 	    boardMapper.createBoard(boardVo);
       
       // 공지사항이면 전 사원에게 알림
-      if("notice".equals(boardVo.getBoardTypeCd())) {
+      if("NOTICE".equals(boardVo.getBoardTypeCd())) {
         List<Long> allEmpIds = employeeLookupMapper.selectAllEmpIds();
         eventPublisher.publishEvent(
           new NoticeCreatedEvent(boardVo.getBoardSj(), allEmpIds)

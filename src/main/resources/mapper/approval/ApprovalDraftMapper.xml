@@ -619,4 +619,18 @@
 			ATCH_FILE_ID=#{atchFileId}
 		WHERE TMPLAT_CD=#{tmplatCd}
     </update>
+
+    <select id="selectApprovalsDueSoon" resultType="ApprovalDeadlineVO">
+        SELECT
+            D.DRFT_DOC_SN,
+            D.DOC_TTL,
+            L.APRVR_EMP_ID
+        FROM TB_APRVL_DOC D
+        JOIN TB_APRVL_STEP S ON S.DRFT_DOC_SN = D.DRFT_DOC_SN
+        JOIN TB_APRVL_LINE L ON L.APRVL_STEP_SN = S.APRVL_STEP_SN
+        WHERE D.APRVL_DOC_STTS_CD = '01'
+        AND S.STEP_PRGRS_CD = '02'
+        AND L.APRVL_PRGRS_CD = '01'
+        AND TRUNC(D.APRVL_HOPE_DT) = TRUNC(SYSDATE + 3)
+    </select>
 </mapper>

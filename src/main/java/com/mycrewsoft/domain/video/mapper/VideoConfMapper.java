@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.mycrewsoft.domain.video.vo.VideoConfVO;
+import com.mycrewsoft.domain.video.vo.MeetingReminderVO;
 import com.mycrewsoft.domain.video.vo.VideoChatLogVO;
 import com.mycrewsoft.domain.video.vo.VideoMomAprvlVO;
 import com.mycrewsoft.domain.video.vo.VideoMomHistVO;
@@ -63,4 +64,7 @@ public interface VideoConfMapper {
 
     // 녹취록 단건 등록
     void insertRcrdg(VideoRcrdgVO vo);
+
+    // 회의 시작 10분 전 알림
+    List<MeetingReminderVO> selectConfsStartingSoon();
 }

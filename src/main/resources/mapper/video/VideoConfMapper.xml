@@ -26,6 +26,14 @@
         </collection>
     </resultMap>
 
+    <resultMap id="meetingReminderResultMap" type="MeetingReminderVO">
+        <id property="vconfId" column="VCONF_ID"/>
+        <result property="vconfNm" column="VCONF_NM"/>
+        <collection property="empIds" ofType="long" columnPrefix="P_">
+            <result column="EMP_ID"/>
+        </collection>
+    </resultMap>
+
     <sql id="confColumns">
         C.VCONF_ID, C.VCONF_NM, C.ROOM_NM, C.CRTR_ID, C.CONF_STTUS_CD,
         C.BEGIN_DT, C.END_DT, C.CREAT_DT
@@ -268,4 +276,15 @@
             SYSDATE
         )
     </insert>
+
+    <select id="selectConfsStartingSoon" resultMap="meetingReminderResultMap">
+        SELECT
+            C.VCONF_ID,
+            C.VCONF_NM,
+            P.EMP_ID AS P_EMP_ID
+        FROM TB_VIDEO_CONF C
+        JOIN TB_VIDEO_PTCPT P ON P.VCONF_ID = C.VCONF_ID
+        WHERE C.CONF_STTUS_CD = '01'
+        AND BEGIN_DT BETWEEN SYSDATE AND SYSDATE + (10/1440)
+    </select>
 </mapper>

@@ -170,4 +170,24 @@
 	    )
 	    WHERE PROJ_ID = #{projId}
 	</update>
+
+	<resultMap id="projectDeadlineResultMap" type="ProjectDeadlineVO">
+		<id property="projId" column="PROJ_ID"/>
+		<result property="projNm" column="PROJ_NM"/>
+		<collection property="empIds" ofType="long" columnPrefix="M_">
+			<result column="EMP_ID"/>
+		</collection>
+	</resultMap>
+
+	<select id="selectProjectsDueTomorrow" resultMap="projectDeadlineResultMap">
+		SELECT
+			P.PROJ_ID,
+			P.PROJ_NM,
+			PM.EMP_ID AS M_EMP_ID
+		FROM TB_PROJECT P
+		JOIN TB_PROJ_MEMBER PM ON PM.PROJ_ID = P.PROJ_ID
+							AND PM.LEAVE_DT IS NULL
+		WHERE P.PROJ_STAT_CD = '02'
+		AND TRUNC(P.PROJ_END_YMD) = TRUNC(SYSDATE + 1)
+	</select>
 </mapper>
