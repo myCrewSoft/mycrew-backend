@@ -92,6 +92,7 @@
 	   P.PROJ_ID,
        P.PROJ_NM,
        P.PROJ_CN,
+       P.CHTRM_ID,
        P.PROJ_BGNG_YMD,
        P.PROJ_END_YMD,
        CASE

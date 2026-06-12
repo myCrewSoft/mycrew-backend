@@ -23,6 +23,8 @@ import com.mycrewsoft.domain.project.dto.ProjectMemberAddRequest;
 import com.mycrewsoft.domain.project.dto.ProjectUpdateRequestDto;
 import com.mycrewsoft.domain.project.event.ProjectCompletedEvent;
 import com.mycrewsoft.domain.project.event.ProjectCreatedEvent;
+import com.mycrewsoft.domain.project.event.ProjectMemberRemovedEvent;
+import com.mycrewsoft.domain.project.event.ProjectMembersAddedEvent;
 import com.mycrewsoft.domain.project.event.ProjectStoppedEvent;
 import com.mycrewsoft.domain.project.mapper.ProjectMapper;
 import com.mycrewsoft.domain.project.vo.ProjectVO;
@@ -120,6 +122,7 @@ public class ProjectServiceImpl implements ProjectService{
 	 * 프로젝트 전체 목록 조회(본인 참여 프로젝트 목록)
 	 */
 	@Override
+	@Transactional(readOnly = true)
 	public List<ProjectListResponseDto> getProjectList() {
 		//권한 체크
 		authorizationService.assertCurrentUserPermission(
@@ -176,6 +179,7 @@ public class ProjectServiceImpl implements ProjectService{
 	 * 프로젝트 수정
 	 */
 	@Override
+	@Transactional
 	public void modifyProject(Long projId, ProjectUpdateRequestDto updateReqDto) {
 		// 1. 권한 체크
 		authorizationService.assertCurrentUserPermission(
@@ -281,6 +285,7 @@ public class ProjectServiceImpl implements ProjectService{
 	 * 프로젝트 참여자 추가
 	 */
 	@Override
+	@Transactional
 	public void addProjMember(Long projId, ProjectMemberAddRequest reqDto) {
 		//현재 로그인한 사용자 조회
 		Long currentEmpId = SecurityUtil.getCurrentEmpId();
@@ -307,12 +312,28 @@ public class ProjectServiceImpl implements ProjectService{
 		for(ProjectMemberVO vo : addList) {
 			projectMemberMapper.mergeMember(vo);
 		}
+		
+		// 메신저에 추가된 사원 초대
+		List<Long> addedEmpIds = addList.stream()
+			    .map(ProjectMemberVO::getEmpId)
+			    .distinct()
+			    .toList();
+		
+		eventPublisher.publishEvent(
+		    new ProjectMembersAddedEvent(
+		        projId,
+		        project.getProjNm(),
+		        project.getChtrmId(),
+		        addedEmpIds
+		    )
+		);
 	}
 
 	/**
 	 * 프로젝트 참여자 단건 퇴출
 	 */
 	@Override
+	@Transactional
 	public void removeProjMember(Long projId, Long empId) {
 		//현재 로그인한 사용자 조회
 		Long currentEmpId = SecurityUtil.getCurrentEmpId();
@@ -334,6 +355,16 @@ public class ProjectServiceImpl implements ProjectService{
 		//퇴출 (퇴출일시 업데이트)
 		int result = projectMapper.updateLeaveDt(projId, empId);
 		if(result == 0) throw new CustomException(ErrorCode.PROJECT_NOT_PARTICIPANT);
+		
+		// 메신저에서 퇴출된 사원 퇴장 처리
+		eventPublisher.publishEvent(
+		    new ProjectMemberRemovedEvent(
+		        projId,
+		        project.getProjNm(),
+		        project.getChtrmId(),
+		        empId
+		    )
+		);
 	}
 	
 	// 프로젝트 채팅방ID 입력
