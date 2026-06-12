@@ -25,7 +25,7 @@ import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.FileUtil;
 import com.mycrewsoft.domain.video.mapper.VideoConfMapper;
 import com.mycrewsoft.domain.video.vo.VideoChatLogVO;
-import com.mycrewsoft.domain.video.vo.VideoConfVO;
+import com.mycrewsoft.domain.video.vo.VideoConfListVO;
 import com.mycrewsoft.security.util.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
@@ -56,7 +56,7 @@ public class VideoSttServiceImpl implements VideoSttService {
         Long empId = SecurityUtil.getCurrentEmpId();
 
         // 회의 존재 여부 확인
-        VideoConfVO confVO = videoConfMapper.selectConfById(vconfId);
+        VideoConfListVO confVO = videoConfMapper.selectConfById(vconfId);
         if (confVO == null) throw new CustomException(ErrorCode.VIDEO_CONF_NOT_FOUND);
 
         // 참여자만 STT 요청 가능

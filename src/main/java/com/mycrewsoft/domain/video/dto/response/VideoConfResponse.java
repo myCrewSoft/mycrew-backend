@@ -27,6 +27,12 @@ public class VideoConfResponse {
     @Schema(description = "생성자 ID")
     private Long crtrId;
 
+    @Schema(description = "생성자 이름")
+    private String crtrNm;
+
+    @Schema(description = "회의록 상태 코드 (01: AI초안 / 02: 편집중 / 03: 검토중 / 04: 확정)")
+    private String momSttusCd;     
+    
     @Schema(description = "시작 일시")
     private LocalDateTime beginDt;
 
