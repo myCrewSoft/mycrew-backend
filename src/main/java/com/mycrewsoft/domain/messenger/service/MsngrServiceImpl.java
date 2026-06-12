@@ -373,7 +373,40 @@ public class MsngrServiceImpl implements MsngrService {
 
         messagingTemplate.convertAndSend("/topic/chats/" + chtrmId + "/events", event);
     }
+    
+    @Override
+    @Transactional
+    public Long createProjectChtrm(
+        Long projId,
+        String projNm,
+        Long crtrId,
+        List<Long> empIds
+    ) {
 
+        // 1. 채팅방 생성
+        MsngrChtrmVO chtrmVO = new MsngrChtrmVO();
+        chtrmVO.setChtrmNm(projNm);
+        chtrmVO.setChtrmExpln(projNm + "프로젝트 채팅방");
+        chtrmVO.setChtrmTypeCd("M3");
+        chtrmVO.setEstblshId(crtrId);
+
+        msngrMapper.insertChtrm(chtrmVO);
+
+        Long chtrmId = chtrmVO.getChtrmId();
+
+        // 2. 프로젝트 참여자들을 채팅방 참여자로 등록
+        for (Long empId : empIds) {
+            MsngrChtrmPtcptVO ptcptVO = new MsngrChtrmPtcptVO();
+            ptcptVO.setChtrmId(chtrmId);
+            ptcptVO.setEmpId(empId);
+            ptcptVO.setPtcptSttusCd("STS4");
+
+            msngrMapper.insertPtcpt(ptcptVO);
+        }
+        
+        return chtrmId;
+    }
+    
     // 사용자 확인
     private Long getCurrentEmpIdOrThrow() {
         Long empId = SecurityUtil.getCurrentEmpId();

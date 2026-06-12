@@ -76,4 +76,7 @@ public interface MsngrMapper {
     // 안 읽은 사용자 수 조회
     int selectUnreadCountByMsgId(@Param("chtrmId") Long chtrmId,
                                  @Param("msgId") Long msgId);
+    
+    // 프로젝트 채팅방 조회
+    Long selectProjectChtrmId(@Param("projId") Long projId);
 }

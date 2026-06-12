@@ -34,6 +34,14 @@ public interface MsngrService {
 
     void removeChtrmPtcpt(Long chtrmId, RemoveParticipantsRequest request);
 
+    // 프로젝트 채팅방 생성
+    Long createProjectChtrm(
+		Long projId,
+        String projNm,
+        Long crtrId,
+        List<Long> empIds
+    );
+    
     // 웹소켓용
     void saveMsgAndBroadcast(Long chtrmId, String content, Long sndrId);
 
