@@ -46,5 +46,5 @@ public interface PromptService {
      * @param question 사용자 질문
      * @return LLM에 전달할 최종 프롬프트 문자열
      */
-    public String build(String question) ;
+    public String build(String question);
 }
