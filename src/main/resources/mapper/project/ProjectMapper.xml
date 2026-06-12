@@ -190,4 +190,10 @@
 		WHERE P.PROJ_STAT_CD = '02'
 		AND TRUNC(P.PROJ_END_YMD) = TRUNC(SYSDATE + 1)
 	</select>
+	
+	<update id="updateProjectChtrmId">
+	    UPDATE TB_PROJECT
+	    SET CHTRM_ID = #{chtrmId}
+	    WHERE PROJ_ID = #{projId}
+	</update>
 </mapper>

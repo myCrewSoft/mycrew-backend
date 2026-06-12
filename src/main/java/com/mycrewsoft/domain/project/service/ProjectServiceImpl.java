@@ -103,12 +103,16 @@ public class ProjectServiceImpl implements ProjectService{
 			projectMemberMapper.mergeMember(vo);
 		}
     
-    // 프로젝트 배정 알림
+		// 프로젝트 배정 알림, 메신저 생성
 		List<Long> memberEmpIds = memberList.stream()
 		        .map(ProjectMemberVO::getEmpId)
 		        .toList();
         eventPublisher.publishEvent(
-            new ProjectCreatedEvent(projVo.getProjNm(), memberEmpIds)
+            new ProjectCreatedEvent(
+            	projVo.getProjId(),
+            	projVo.getProjNm(), 
+            	SecurityUtil.getCurrentEmpId(),
+            	memberEmpIds)
         );
 	}
 
@@ -330,5 +334,15 @@ public class ProjectServiceImpl implements ProjectService{
 		//퇴출 (퇴출일시 업데이트)
 		int result = projectMapper.updateLeaveDt(projId, empId);
 		if(result == 0) throw new CustomException(ErrorCode.PROJECT_NOT_PARTICIPANT);
+	}
+	
+	// 프로젝트 채팅방ID 입력
+	@Transactional
+	public void updateProjectChtrmId(Long projId, Long chtrmId) {
+	    int result = projectMapper.updateProjectChtrmId(projId, chtrmId);
+
+	    if (result == 0) {
+	        throw new CustomException(ErrorCode.PROJECT_NOT_FOUND);
+	    }
 	}
 }
