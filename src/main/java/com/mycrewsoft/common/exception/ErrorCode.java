@@ -25,7 +25,8 @@ public enum ErrorCode {
 	APPROVAL_DOC_STATUS_INVALID(HttpStatus.BAD_REQUEST, "APR_004", "현재 상태에서 처리할 수 없는 결재 문서입니다."),
 	APPROVAL_LINE_INVALID(HttpStatus.BAD_REQUEST, "APR_005", "결재선 정보가 올바르지 않습니다."),
 	APPROVAL_REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "APR_006", "반려 사유는 필수입니다."),
-	
+	APPROVAL_SIGNATURE_REQUIRED(HttpStatus.BAD_REQUEST, "APR_007", "전자서명 이미지가 등록되어 있지 않아 승인할 수 없습니다. 마이페이지에서 전자서명을 먼저 등록해 주세요."),
+
     // COMMON
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "COMMON_001", "입력값이 올바르지 않습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_002", "서버 내부 오류가 발생했습니다."),
