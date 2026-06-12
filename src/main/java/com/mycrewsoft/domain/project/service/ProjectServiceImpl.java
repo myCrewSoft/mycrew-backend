@@ -117,13 +117,13 @@ public class ProjectServiceImpl implements ProjectService{
 	 */
 	@Override
 	public List<ProjectListResponseDto> getProjectList() {
-		//권한 체크
-		authorizationService.assertCurrentUserPermission(
-				PermissionCode.PROJECT_READ,
-				ResourceContext.builder()
-					.resourceType(ResourceType.PROJECT)
-					.build()
-		);
+//		//권한 체크
+//		authorizationService.assertCurrentUserPermission(
+//				PermissionCode.PROJECT_READ,
+//				ResourceContext.builder()
+//					.resourceType(ResourceType.PROJECT)
+//					.build()
+//		);
 		
 		//본인이 참여하는 프로젝트만 조회
 		Long empId = SecurityUtil.getCurrentEmpId();
@@ -259,16 +259,16 @@ public class ProjectServiceImpl implements ProjectService{
 	 * 상태 전이 규칙 검증
 	 */
 	private void validateStatTransition(String currentStat, String newStat) {
-	    // 완료(03) → 변경 불가
-	    if ("03".equals(currentStat)) {
-	        throw new CustomException(ErrorCode.PROJECT_INVALID_STAT_TRANSITION);
-	    }
-	    // 중단(04) → 변경 불가
-	    if ("04".equals(currentStat)) {
+		// 완료(03), 중단(04) → 일반 수정으로는 변경 불가 (재개는 관리자 전용 기능)
+	    if ("03".equals(currentStat) || "04".equals(currentStat)) {
 	        throw new CustomException(ErrorCode.PROJECT_INVALID_STAT_TRANSITION);
 	    }
 	    // 진행중(02) → 예정(01) 불가
 	    if ("02".equals(currentStat) && "01".equals(newStat)) {
+	        throw new CustomException(ErrorCode.PROJECT_INVALID_STAT_TRANSITION);
+	    }
+	    // 예정(01) → 완료(03) 불가 (진행을 거치지 않고 바로 완료 불가)
+	    if ("01".equals(currentStat) && "03".equals(newStat)) {
 	        throw new CustomException(ErrorCode.PROJECT_INVALID_STAT_TRANSITION);
 	    }
 	}
