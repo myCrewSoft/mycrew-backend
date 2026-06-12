@@ -30,6 +30,8 @@ import com.mycrewsoft.domain.project.event.ProjectCompletedEvent;
 import com.mycrewsoft.domain.project.event.ProjectCreatedEvent;
 import com.mycrewsoft.domain.project.event.ProjectDeadlineEvent;
 import com.mycrewsoft.domain.project.event.ProjectManagerChangedEvent;
+import com.mycrewsoft.domain.project.event.ProjectMemberRemovedEvent;
+import com.mycrewsoft.domain.project.event.ProjectMembersAddedEvent;
 import com.mycrewsoft.domain.project.event.ProjectStoppedEvent;
 import com.mycrewsoft.domain.schedule.event.ScheduleCancelledEvent;
 import com.mycrewsoft.domain.schedule.event.ScheduleChangedEvent;
@@ -139,6 +141,27 @@ public class NotificationEventListener {
             null,
             event.getEmpIds()
         );
+    }
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleProjectMembersAdded(ProjectMembersAddedEvent event) {
+    	notificationService.sendAlrm(
+    			"[" + event.getProjNm() + "] 프로젝트에 등록되었습니다.",
+    			"04",
+    			null,
+    			event.getEmpIds()
+    			);
+    }
+    
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleProjectMemberRemoved(ProjectMemberRemovedEvent event) {
+    	notificationService.sendAlrm(
+    			"[" + event.getProjNm() + "] 프로젝트에서 제외되었습니다.",
+    			"04",
+    			null,
+    			List.of(event.getEmpId())
+    			);
     }
 
     @Async
