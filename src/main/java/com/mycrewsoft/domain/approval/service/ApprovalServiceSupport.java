@@ -37,6 +37,11 @@ public class ApprovalServiceSupport {
     private final AuthorizationService authorizationService;
     private final DTOtoVOMapper dtoToVOMapper;
     private final ApprovalDraftMapper approvalDraftMapper;
+    private final com.mycrewsoft.domain.file.service.FileService fileService;
+
+    // 결재란 서명 토큰: {{SIGN:1}}, {{ SIGN : 2 }} 등 공백 허용
+    private static final java.util.regex.Pattern SIGN_TOKEN_PATTERN =
+            java.util.regex.Pattern.compile("\\{\\{\\s*SIGN\\s*:\\s*(\\d+)\\s*\\}\\}");
 
     public void assertCreatePermission() {
         ResourceContext resource = ResourceContext.builder()
@@ -63,6 +68,14 @@ public class ApprovalServiceSupport {
     			.ownerEmpId(empId)
     			.build();
     	authorizationService.assertCurrentUserPermission(PermissionCode.APPROVAL_TEMPLATE_UPDATE, resource);
+    }
+    public void assertTemplateDeletePermission(Long empId) {
+    	// 제작자(SELF 범위) 또는 결재 양식 삭제 권한(GLOBAL)을 가진 사용자만 삭제 가능
+    	ResourceContext resource = ResourceContext.builder()
+    			.resourceType(ResourceType.APPROVAL)
+    			.ownerEmpId(empId)
+    			.build();
+    	authorizationService.assertCurrentUserPermission(PermissionCode.APPROVAL_TEMPLATE_DELETE, resource);
     }
     
     
@@ -236,6 +249,63 @@ public class ApprovalServiceSupport {
                 approvalDraftMapper.selectApprovalStepStatuses(detail.getDrftDocSn());
         detail.setApprovalSteps(steps);
         detail.setStatusMessages(makeStatusMessages(detail, steps));
+        injectSignatures(detail, steps);
+    }
+
+    /**
+     * 본문 HTML의 결재란 토큰 {{SIGN:순서}} 를 해당 결재자의 전자서명 이미지로 치환한다.
+     * - 승인 완료된 단계의 서명(승인 시점 스냅샷 파일)을 base64 data URI로 주입한다.
+     *   (문서 뷰어가 스크립트 차단 sandbox iframe + 이미지 엔드포인트가 JWT 보호라, 자체 포함 data URI가 필요)
+     * - 아직 승인되지 않았거나 매칭되는 결재자가 없는 토큰은 빈 문자열로 제거한다.
+     */
+    private void injectSignatures(
+            ApprovalDocumentDetailResponse detail,
+            List<ApprovalStepStatusResponse> steps) {
+        String html = detail.getAprvlFullCn();
+        if (!StringUtils.hasText(html) || !html.contains("{{")) {
+            return;
+        }
+
+        java.util.Map<Long, String> imgByOrder = new java.util.HashMap<>();
+        for (ApprovalStepStatusResponse step : steps) {
+            if (!ApprovalConstants.LINE_STATUS_APPROVED.equals(step.getAprvlPrgrsCd())) {
+                continue;
+            }
+            if (step.getAprvrStampFileId() == null || step.getAprvlOrd() == null) {
+                continue;
+            }
+            String img = buildSignatureImg(step.getAprvrStampFileId(), step.getAprvrEmpNm());
+            if (img != null) {
+                imgByOrder.put(step.getAprvlOrd(), img);
+            }
+        }
+
+        java.util.regex.Matcher matcher = SIGN_TOKEN_PATTERN.matcher(html);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            Long order = Long.valueOf(matcher.group(1));
+            String replacement = imgByOrder.getOrDefault(order, "");
+            matcher.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(sb);
+        detail.setAprvlFullCn(sb.toString());
+    }
+
+    /** 전자서명 파일을 base64 data URI img 태그로 만든다. 파일이 없거나 손상되면 null. */
+    private String buildSignatureImg(Long stampFileId, String approverName) {
+        try {
+            org.springframework.core.io.Resource resource = fileService.serveImage(stampFileId);
+            byte[] bytes = resource.getContentAsByteArray();
+            String mime = com.mycrewsoft.common.util.FileUtil.resolveImageContentType(
+                    com.mycrewsoft.common.util.FileUtil.getExtension(resource.getFilename()));
+            String base64 = java.util.Base64.getEncoder().encodeToString(bytes);
+            String alt = StringUtils.hasText(approverName) ? approverName + " 전자서명" : "전자서명";
+            return "<img src=\"data:" + mime + ";base64," + base64
+                    + "\" alt=\"" + alt
+                    + "\" style=\"max-height:64px;max-width:180px;object-fit:contain\" />";
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public List<String> makeStatusMessages(

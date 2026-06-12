@@ -3,6 +3,7 @@ package com.mycrewsoft.domain.approval.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -62,5 +63,15 @@ public class ApprovalTemplateController {
 	@PatchMapping("/templates/{tmplatCd}/favorite")
 	public ResponseEntity<ApiResponse<ApprovalMutationResponse>> toggleTemplateFavorite(@PathVariable String tmplatCd) {
 		return ResponseEntity.ok(ApiResponse.success(approvalTemplateService.toggleTemplateFavorite(tmplatCd)));
+	}
+
+	@Operation(
+			summary = "결재 템플릿 삭제",
+			description = "결재 양식을 삭제합니다. 양식 제작자 또는 '결재 양식 삭제' 권한(Global)을 가진 관리자만 삭제할 수 있습니다."
+	)
+	@DeleteMapping("/templates/{tmplatCd}")
+	public ResponseEntity<ApiResponse<String>> deleteTemplate(@PathVariable String tmplatCd) {
+		approvalTemplateService.deleteTemplate(tmplatCd);
+		return ResponseEntity.ok(ApiResponse.success("결재 양식이 삭제되었습니다."));
 	}
 }

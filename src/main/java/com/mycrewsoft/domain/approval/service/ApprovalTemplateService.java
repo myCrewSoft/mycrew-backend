@@ -17,4 +17,6 @@ public interface ApprovalTemplateService {
     List<ApprovalTemplateResponse> loadTemplates();
     
     void updateTemplates(ApprovalUpdateRequestDTO request);
+
+    void deleteTemplate(String tmplatCd);
 }

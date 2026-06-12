@@ -26,6 +26,9 @@ public class ApprovalStepStatusResponse {
     @Schema(description = "결재자명", example = "홍길동")
     private String aprvrEmpNm;
 
+    @Schema(description = "결재자 전자서명 파일 ID (승인 시점 스냅샷)", example = "9")
+    private Long aprvrStampFileId;
+
     @Schema(description = "결재 처리 상태 코드", example = "01")
     private String aprvlPrgrsCd;
 

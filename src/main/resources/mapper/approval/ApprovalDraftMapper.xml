@@ -257,6 +257,7 @@
         SET APRVL_PRGRS_CD = '02',
             APRVL_DT = #{now},
             APRVL_RSN = #{aprvlRsn},
+            APRVR_STAMP_FILE_ID = #{aprvrStampFileId},
             RTRN_RSN = NULL
         WHERE APRVL_LINE_SN = #{aprvlLineSn}
     </update>
@@ -509,7 +510,8 @@
             l.APRVL_PRGRS_CD AS aprvlPrgrsCd,
             l.APRVL_DT AS aprvlDt,
             l.APRVL_RSN AS aprvlRsn,
-            l.RTRN_RSN AS rtrnRsn
+            l.RTRN_RSN AS rtrnRsn,
+            l.APRVR_STAMP_FILE_ID AS aprvrStampFileId
         FROM TB_APRVL_STEP s
         JOIN TB_APRVL_LINE l ON l.APRVL_STEP_SN = s.APRVL_STEP_SN
         JOIN TB_EMPLOYEE e ON e.EMP_ID = l.APRVR_EMP_ID
@@ -620,6 +622,20 @@
 		WHERE TMPLAT_CD=#{tmplatCd}
     </update>
 
+    <update id="softDeleteTemplate">
+        UPDATE TB_APRVL_TMPLAT
+        SET USE_YN = 'N',
+            LAST_MDFR_ID = #{lastMdfrId},
+            LAST_MDFCN_DT = #{now}
+        WHERE TMPLAT_CD = #{tmplatCd}
+          AND USE_YN = 'Y'
+    </update>
+
+    <select id="selectEmpStampFileId" resultType="java.lang.Long">
+        SELECT EMP_STAMP_FILE_ID
+        FROM TB_EMPLOYEE
+        WHERE EMP_ID = #{empId}
+  </select>
     <select id="selectApprovalsDueSoon" resultType="ApprovalDeadlineVO">
         SELECT
             D.DRFT_DOC_SN,

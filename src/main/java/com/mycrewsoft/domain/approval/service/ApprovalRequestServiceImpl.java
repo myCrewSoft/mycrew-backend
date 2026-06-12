@@ -136,9 +136,18 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
 
         ApprovalStepVO currentStep = support.requireCurrentStep(drftDocSn);
         ApprovalLineVO myLine = support.requireMyWaitingLine(currentStep, empId);
+
+        // 전자서명 이미지가 등록되지 않은 결재자는 승인할 수 없다.
+        Long stampFileId = approvalDraftMapper.selectEmpStampFileId(empId);
+        if (stampFileId == null) {
+            throw new com.mycrewsoft.common.exception.CustomException(
+                    com.mycrewsoft.common.exception.ErrorCode.APPROVAL_SIGNATURE_REQUIRED);
+        }
+
         approvalDraftMapper.updateApprovalLineApproved(
                 myLine.getAprvlLineSn(),
                 request == null ? null : request.getReason(),
+                stampFileId, // 승인 시점의 전자서명 스냅샷
                 now
         );
 

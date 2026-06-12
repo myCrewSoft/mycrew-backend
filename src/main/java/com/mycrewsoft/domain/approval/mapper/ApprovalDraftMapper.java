@@ -81,6 +81,7 @@ public interface ApprovalDraftMapper {
     int updateApprovalLineApproved(
             @Param("aprvlLineSn") Long aprvlLineSn,
             @Param("aprvlRsn") String aprvlRsn,
+            @Param("aprvrStampFileId") Long aprvrStampFileId,
             @Param("now") LocalDateTime now);
 
     int updateApprovalLineRejected(
@@ -194,5 +195,13 @@ public interface ApprovalDraftMapper {
     
     void updateTemplate(ApprovalTemplateVO object);
 
+    /** 결재 양식 소프트 삭제 (USE_YN = 'N') */
+    int softDeleteTemplate(
+            @Param("tmplatCd") String tmplatCd,
+            @Param("lastMdfrId") Long lastMdfrId,
+            @Param("now") LocalDateTime now);
+
+    /** 결재자(사원)의 전자서명 파일 ID 조회 (없으면 null) */
+    Long selectEmpStampFileId(@Param("empId") Long empId);
     List<ApprovalDeadlineVO> selectApprovalsDueSoon();
 }

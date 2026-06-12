@@ -115,4 +115,23 @@ public class ApprovalTemplateServiceImpl implements ApprovalTemplateService {
 		
 		approvalDraftMapper.updateTemplate(newOne);
 	}
+
+	@Override
+	@Transactional
+	public void deleteTemplate(String tmplatCd) {
+		// 사용 중인 양식이 존재하는지 확인
+		if (approvalDraftMapper.existsUsableTemplate(tmplatCd) == 0) {
+			throw new CustomException(ErrorCode.TEMPLATE_NOT_FOUND);
+		}
+
+		// 제작자(SELF) 또는 결재 양식 삭제 권한(GLOBAL) 보유자만 삭제 가능
+		Long ownerEmpId = approvalDraftMapper.selectTemplateOwnerByTemplateCode(tmplatCd);
+		serviceSupport.assertTemplateDeletePermission(ownerEmpId);
+
+		// 소프트 삭제 (USE_YN = 'N') — 기존 문서가 참조하는 양식 코드/내용은 보존
+		approvalDraftMapper.softDeleteTemplate(
+				tmplatCd,
+				SecurityUtil.getCurrentEmpId(),
+				LocalDateTime.now());
+	}
 }
