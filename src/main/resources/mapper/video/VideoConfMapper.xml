@@ -4,12 +4,13 @@
 
 <mapper namespace="com.mycrewsoft.domain.video.mapper.VideoConfMapper">
 
-    <resultMap type="VideoConfVO" id="confResultMap" autoMapping="true">
-        <id property="vconfId" column="VCONF_ID"/>
-        <collection property="videoPtcpt" ofType="VideoPtcptVO" autoMapping="true">
-            <id property="vconfPtcptId" column="VCONF_PTCPT_ID"/>
-        </collection>
-    </resultMap>
+    <resultMap type="VideoConfListVO" id="confResultMap" autoMapping="true">
+	    <id property="vconfId" column="VCONF_ID"/>
+	    <collection property="videoPtcpt" ofType="VideoPtcptDetailVO" autoMapping="true">
+	        <id property="vconfPtcptId" column="VCONF_PTCPT_ID"/>
+	        <result property="jbgdNm" column="JOB_GRD_NM"/>
+	    </collection>
+	</resultMap>
 
     <resultMap type="VideoMomVO" id="momResultMap" autoMapping="true">
         <id property="momId" column="MOM_ID"/>
@@ -36,11 +37,16 @@
 
     <sql id="confColumns">
         C.VCONF_ID, C.VCONF_NM, C.ROOM_NM, C.CRTR_ID, C.CONF_STTUS_CD,
-        C.BEGIN_DT, C.END_DT, C.CREAT_DT
+	    C.BEGIN_DT, C.END_DT, C.CREAT_DT,
+	    E.EMP_NM AS CRTR_NM,
+	    M.MOM_STTUS_CD
     </sql>
 
     <sql id="ptcptColumns">
-        P.VCONF_PTCPT_ID, P.VCONF_ID, P.EMP_ID, P.JOIN_DT, P.LEAV_DT
+        P.VCONF_PTCPT_ID, P.VCONF_ID, P.EMP_ID, P.JOIN_DT, P.LEAV_DT,
+	    PE.EMP_NM,
+	    D.DEPT_NM,
+	    G.JOB_GRD_NM AS JBGD_NM
     </sql>
 
     <sql id="momColumns">
@@ -96,25 +102,35 @@
     </update>
 
     <select id="selectConfById" resultMap="confResultMap">
-        SELECT
-            <include refid="confColumns"/>,
-            <include refid="ptcptColumns"/>
-        FROM TB_VIDEO_CONF C
-        LEFT JOIN TB_VIDEO_PTCPT P ON C.VCONF_ID = P.VCONF_ID
-        WHERE C.VCONF_ID = #{vconfId}
-    </select>
+	    SELECT
+	        <include refid="confColumns"/>,
+	        <include refid="ptcptColumns"/>
+	    FROM TB_VIDEO_CONF C
+	    LEFT JOIN TB_EMPLOYEE E         ON C.CRTR_ID = E.EMP_ID
+	    LEFT JOIN TB_VIDEO_MOM M        ON C.VCONF_ID = M.VCONF_ID AND M.DEL_DT IS NULL
+	    LEFT JOIN TB_VIDEO_PTCPT P      ON C.VCONF_ID = P.VCONF_ID
+	    LEFT JOIN TB_EMPLOYEE PE        ON P.EMP_ID = PE.EMP_ID
+	    LEFT JOIN TB_DEPARTMENT D       ON PE.DEPT_CD = D.DEPT_CD
+	    LEFT JOIN TB_JOB_GRADE G        ON PE.JOB_GRD_CD = G.JOB_GRD_CD
+	    WHERE C.VCONF_ID = #{vconfId}
+	</select>
 
     <select id="selectConfList" resultMap="confResultMap">
-        SELECT
-            <include refid="confColumns"/>,
-            <include refid="ptcptColumns"/>
-        FROM TB_VIDEO_CONF C
-        LEFT JOIN TB_VIDEO_PTCPT P ON C.VCONF_ID = P.VCONF_ID
-        WHERE C.VCONF_ID IN (
-            SELECT VCONF_ID FROM TB_VIDEO_PTCPT WHERE EMP_ID = #{empId}
-        )
-        ORDER BY C.BEGIN_DT DESC
-    </select>
+	    SELECT
+	        <include refid="confColumns"/>,
+	        <include refid="ptcptColumns"/>
+	    FROM TB_VIDEO_CONF C
+	    LEFT JOIN TB_EMPLOYEE E         ON C.CRTR_ID = E.EMP_ID
+	    LEFT JOIN TB_VIDEO_MOM M        ON C.VCONF_ID = M.VCONF_ID AND M.DEL_DT IS NULL
+	    LEFT JOIN TB_VIDEO_PTCPT P      ON C.VCONF_ID = P.VCONF_ID
+	    LEFT JOIN TB_EMPLOYEE PE        ON P.EMP_ID = PE.EMP_ID
+	    LEFT JOIN TB_DEPARTMENT D       ON PE.DEPT_CD = D.DEPT_CD
+	    LEFT JOIN TB_JOB_GRADE G        ON PE.JOB_GRD_CD = G.JOB_GRD_CD
+	    WHERE C.VCONF_ID IN (
+	        SELECT VCONF_ID FROM TB_VIDEO_PTCPT WHERE EMP_ID = #{empId}
+	    )
+	    ORDER BY C.BEGIN_DT DESC
+	</select>
 
     <update id="updateConfSttus">
         UPDATE TB_VIDEO_CONF

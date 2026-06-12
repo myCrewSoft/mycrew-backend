@@ -17,6 +17,15 @@ public class VideoPtcptResponse {
     @Schema(description = "사원 ID")
     private Long empId;
 
+    @Schema(description = "사원 이름")
+    private String empNm;
+
+    @Schema(description = "부서명")
+    private String deptNm;
+
+    @Schema(description = "직급명")
+    private String jbgdNm;   
+    
     @Schema(description = "참여 일시")
     private LocalDateTime joinDt;
 

@@ -20,10 +20,12 @@ import com.mycrewsoft.domain.video.event.MeetingEndedEvent;
 import com.mycrewsoft.domain.video.event.MeetingInvitedEvent;
 import com.mycrewsoft.domain.video.mapper.VideoConfDtoMapper;
 import com.mycrewsoft.domain.video.mapper.VideoConfMapper;
+import com.mycrewsoft.domain.video.vo.VideoConfListVO;
 import com.mycrewsoft.domain.video.vo.VideoConfVO;
 import com.mycrewsoft.domain.video.vo.VideoMomAprvlVO;
 import com.mycrewsoft.domain.video.vo.VideoMomHistVO;
 import com.mycrewsoft.domain.video.vo.VideoMomVO;
+import com.mycrewsoft.domain.video.vo.VideoPtcptDetailVO;
 import com.mycrewsoft.domain.video.vo.VideoPtcptVO;
 import com.mycrewsoft.domain.video.vo.VideoRcrdgVO;
 import com.mycrewsoft.security.util.SecurityUtil;
@@ -73,7 +75,7 @@ public class VideoConfServiceImpl implements VideoConfService {
                     .forEach(videoConfMapper::insertPtcpt);
         }
 
-        VideoConfVO saved = videoConfMapper.selectConfById(confVO.getVconfId());
+        VideoConfListVO saved = videoConfMapper.selectConfById(confVO.getVconfId());
         
         eventPublisher.publishEvent(
         	new MeetingInvitedEvent(saved.getVconfNm(), ptcptEmpIds)
@@ -85,13 +87,13 @@ public class VideoConfServiceImpl implements VideoConfService {
     @Override
     public List<VideoConfResponse> getConfList() {
         Long empId = SecurityUtil.getCurrentEmpId();
-        List<VideoConfVO> list = videoConfMapper.selectConfList(empId);
+        List<VideoConfListVO> list = videoConfMapper.selectConfList(empId);
         return videoConfDtoMapper.toConfResponseList(list);
     }
 
     @Override
     public VideoConfResponse getConf(Long vconfId) {
-        VideoConfVO vo = videoConfMapper.selectConfById(vconfId);
+    	VideoConfListVO vo = videoConfMapper.selectConfById(vconfId);
         if (vo == null) throw new CustomException(ErrorCode.VIDEO_CONF_NOT_FOUND);
 
         Long empId = SecurityUtil.getCurrentEmpId();
@@ -107,7 +109,7 @@ public class VideoConfServiceImpl implements VideoConfService {
     public VideoTokenResponse issueToken(Long vconfId) {
         Long empId = SecurityUtil.getCurrentEmpId();
 
-        VideoConfVO vo = videoConfMapper.selectConfById(vconfId);
+        VideoConfListVO vo = videoConfMapper.selectConfById(vconfId);
         if (vo == null) throw new CustomException(ErrorCode.VIDEO_CONF_NOT_FOUND);
 
         // 종료된 회의는 토큰 발급 불가
@@ -116,7 +118,7 @@ public class VideoConfServiceImpl implements VideoConfService {
         }
 
         // 참여자 목록에서 본인 행 조회
-        VideoPtcptVO myPtcpt = vo.getVideoPtcpt().stream()
+        VideoPtcptDetailVO myPtcpt = vo.getVideoPtcpt().stream()
                 .filter(p -> p.getEmpId().equals(empId))
                 .findFirst()
                 .orElseThrow(() -> new CustomException(ErrorCode.VIDEO_ACCESS_DENIED));
@@ -133,7 +135,7 @@ public class VideoConfServiceImpl implements VideoConfService {
     public void endConf(Long vconfId) {
         Long empId = SecurityUtil.getCurrentEmpId();
 
-        VideoConfVO vo = videoConfMapper.selectConfById(vconfId);
+        VideoConfListVO vo = videoConfMapper.selectConfById(vconfId);
         if (vo == null) throw new CustomException(ErrorCode.VIDEO_CONF_NOT_FOUND);
 
         // 호스트만 종료 가능
@@ -157,7 +159,7 @@ public class VideoConfServiceImpl implements VideoConfService {
     public VideoMomResponse getMom(Long vconfId) {
         Long empId = SecurityUtil.getCurrentEmpId();
 
-        VideoConfVO confVO = videoConfMapper.selectConfById(vconfId);
+        VideoConfListVO confVO = videoConfMapper.selectConfById(vconfId);
         if (confVO == null) throw new CustomException(ErrorCode.VIDEO_CONF_NOT_FOUND);
 
         boolean isPtcpt = confVO.getVideoPtcpt().stream()
@@ -219,7 +221,7 @@ public class VideoConfServiceImpl implements VideoConfService {
         }
 
         int nextRound = momVO.getAprvlRoundNo() + 1;
-        VideoConfVO confVO = videoConfMapper.selectConfById(vconfId);
+        VideoConfListVO confVO = videoConfMapper.selectConfById(vconfId);
 
         List<VideoMomAprvlVO> aprvlList = confVO.getVideoPtcpt().stream()
                 .map(ptcpt -> {
@@ -282,7 +284,7 @@ public class VideoConfServiceImpl implements VideoConfService {
     public void saveRcrdg(Long vconfId, Long atchFileId) {
         Long empId = SecurityUtil.getCurrentEmpId();
 
-        VideoConfVO confVO = videoConfMapper.selectConfById(vconfId);
+        VideoConfListVO confVO = videoConfMapper.selectConfById(vconfId);
         if (confVO == null) throw new CustomException(ErrorCode.VIDEO_CONF_NOT_FOUND);
 
         // 호스트만 녹취록 저장 가능
