@@ -133,11 +133,13 @@ public enum ErrorCode {
     VIDEO_MOM_ALREADY_CONFIRMED(HttpStatus.BAD_REQUEST, "VIDEO_005", "이미 확정된 회의록입니다."),
     VIDEO_APRVL_ALREADY_DONE(HttpStatus.BAD_REQUEST,    "VIDEO_006", "이미 결재 처리된 항목입니다."),
     STT_TRANSCRIBE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "VIDEO_007", "음성 텍스트 변환에 실패했습니다."),
+    VIDEO_CONF_INVALID_DATE(HttpStatus.BAD_REQUEST, "VIDEO_008", "종료날짜는 시작날짜 이후여야 합니다."),
 	
 	// TASK
 	TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "TASK_001", "존재하지 않는 업무입니다."),
 	TASK_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "TASK_002", "업무 참여자가 아닙니다."),
 	TASK_NOT_OWNER(HttpStatus.FORBIDDEN, "TASK_003", "해당 업무에 대한 권한이 없습니다."),
+
 
 	// ATTENDANCE
 	ATND_POLICY_NOT_FOUND(HttpStatus.NOT_FOUND, "ATND_001", "적용 가능한 근무 정책이 없습니다. 관리자에게 문의하세요."),
@@ -147,7 +149,9 @@ public enum ErrorCode {
 	ATND_INVALID_PERIOD(HttpStatus.BAD_REQUEST, "ATND_005", "조회 기간 구분 값이 올바르지 않습니다."),
 	ATND_LEAVE_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "ATND_006", "존재하지 않는 휴가 종류입니다."),
 	ATND_LEAVE_INVALID_RANGE(HttpStatus.BAD_REQUEST, "ATND_007", "휴가 종료일은 시작일 이후여야 합니다."),
-	ATND_OT_INVALID_RANGE(HttpStatus.BAD_REQUEST, "ATND_008", "초과근무 종료 시각은 시작 시각 이후여야 합니다.");
+	ATND_OT_INVALID_RANGE(HttpStatus.BAD_REQUEST, "ATND_008", "초과근무 종료 시각은 시작 시각 이후여야 합니다."),
+	TASK_INVALID_DATE(HttpStatus.BAD_REQUEST, "TASK_004", "종료날짜는 시작날짜 이후여야 합니다.");
+
     // 팀원이 새 도메인 추가 시 아래 패턴으로 섹션 추가
     // BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지 않는 게시글입니다.")
 	

@@ -85,45 +85,54 @@
       OFFSET #{getOffset} ROWS FETCH NEXT #{getPageSize} ROWS ONLY
    </select>
 
-   <select id="getSideBar"
-      resultType="com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse">
-      SELECT DISTINCT
-      B.BOARD_TYPE_CD AS boardTypeCd,
-      TRIM(B.DEPT_CD) AS deptCd,  <!-- 게시판 유형에 따라 -->
-      CASE
-      WHEN B.BOARD_TYPE_CD = 'FREE' THEN '자유게시판'
-      WHEN B.BOARD_TYPE_CD = 'ANON' THEN '익명게시판'
-      WHEN B.BOARD_TYPE_CD = 'NOTICE' THEN '공지사항'
-      WHEN B.BOARD_TYPE_CD = 'DEPT' THEN D.DEPT_NM
-
-      ELSE B.BOARD_SJ END AS boardName FROM tb_board B
-
-      <!-- 조인한 부서 테이블의 진짜 부서명인D.DEPT_NM 그 외의 예외 케이스가 있다면 ➡️ 기본적으로 적혀있는 게시판 제목(B.BOARD_SJ)을 
-         이름으로 씁니다. -->
-      LEFT JOIN tb_department D ON TRIM(B.DEPT_CD) = TRIM(D.DEPT_CD)
-      WHERE 1 = 1
-      AND (
-      <if test="hasGlobal == true">
-         1 = 1
-      </if>
-      <if test="hasGlobal == false">
-         1 = 0
-      </if>
-
-      OR B.BOARD_TYPE_CD IN ('FREE', 'ANON', 'NOTICE', 'DEPT')
-      OR B.FRST_RGTR_ID = #{empId}
-      OR TRIM(B.DEPT_CD) = TRIM(#{myDeptCd})
-
-      <if
-         test="departmentScopeIds != null and departmentScopeIds.size() > 0">
-         OR TRIM(B.DEPT_CD) IN
-         <foreach collection="departmentScopeIds" item="scopeDeptCd"
-            open="(" separator="," close=")">
-            #{scopeDeptCd}
-         </foreach>
-      </if>
-      )
-   </select>
+	  <select id="getSideBar"
+	    resultType="com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse">
+	
+	    SELECT
+	        BOARD_TYPE_CD AS boardTypeCd,
+	        DEPT_CD AS deptCd,
+	        BOARD_NAME AS boardName
+	    FROM (
+	        SELECT 'NOTICE' AS BOARD_TYPE_CD, NULL AS DEPT_CD,
+	               '공지사항' AS BOARD_NAME, 1 AS SORT_ORDER
+	        FROM DUAL
+	
+	        UNION ALL
+	
+	        SELECT 'FREE', NULL, '자유게시판', 2
+	        FROM DUAL
+	
+	        UNION ALL
+	
+	        SELECT 'ANON', NULL, '익명게시판', 3
+	        FROM DUAL
+	
+	        UNION ALL
+	
+	        SELECT
+	            'DEPT',
+	            TRIM(D.DEPT_CD),
+	            D.DEPT_NM,
+	            4
+	        FROM TB_DEPARTMENT D
+	        WHERE D.USE_YN = 'Y'
+	        <if test="hasGlobal == false">
+	            AND (
+	                TRIM(D.DEPT_CD) = TRIM(#{myDeptCd})
+	                <if test="departmentScopeIds != null
+	                          and departmentScopeIds.size() > 0">
+	                    OR TRIM(D.DEPT_CD) IN
+	                    <foreach collection="departmentScopeIds"
+	                             item="scopeDeptCd"
+	                             open="(" separator="," close=")">
+	                        #{scopeDeptCd}
+	                    </foreach>
+	                </if>
+	            )
+	        </if>
+	    )
+	    ORDER BY SORT_ORDER, BOARD_NAME
+	</select>
    
    
    <select id="readBoard" resultMap="BoardMap">
@@ -310,6 +319,14 @@
 	        
 	        <if test="boardTypeCd != null and boardTypeCd != ''">
 	            BOARD_TYPE_CD = #{boardTypeCd},
+	        </if>
+
+	        <if test="imprtntYn != null and imprtntYn != ''">
+	            IMPRTNT_YN = #{imprtntYn},
+	        </if>
+
+	        <if test="cmntUseYn != null and cmntUseYn != ''">
+	            CMNT_USE_YN = #{cmntUseYn},
 	        </if>
 	        
 	        LAST_MDFR_DT = SYSDATE

@@ -349,4 +349,42 @@
             OR P.LAST_CFMTN_MSG_ID <![CDATA[ < ]]> M.MSG_ID
         )
     </select>
+    
+    <update id="mergeProjectPtcpt" parameterType="MsngrChtrmPtcptVO">
+	    MERGE INTO TB_MSNGR_CHTRM_PTCPT T
+	    USING (
+	        SELECT
+	            #{chtrmId} AS CHTRM_ID,
+	            #{empId} AS EMP_ID,
+	            #{ptcptSttusCd} AS PTCPT_STTUS_CD
+	        FROM DUAL
+	    ) S
+	    ON (
+	        T.CHTRM_ID = S.CHTRM_ID
+	        AND T.EMP_ID = S.EMP_ID
+	    )
+	    WHEN MATCHED THEN
+	        UPDATE SET
+	            T.PTCPT_STTUS_CD = S.PTCPT_STTUS_CD,
+	            T.LEAV_DT = NULL
+	    WHEN NOT MATCHED THEN
+	        INSERT (
+	            CHTRM_ID,
+	            EMP_ID,
+	            PTCPT_STTUS_CD
+	        )
+	        VALUES (
+	            S.CHTRM_ID,
+	            S.EMP_ID,
+	            S.PTCPT_STTUS_CD
+	        )
+	</update>
+	
+	<update id="updateProjectPtcptLeaveDt">
+	    UPDATE TB_MSNGR_CHTRM_PTCPT
+	    SET LEAV_DT = SYSDATE
+	    WHERE CHTRM_ID = #{chtrmId}
+	      AND EMP_ID = #{empId}
+	      AND LEAVE_DT IS NULL
+	</update>
 </mapper>

@@ -113,4 +113,26 @@ public interface DriveMapper {
 	 * @return
 	 */
 	int hardDeleteItem(Long driveItemId);
+	
+	/**
+	 * 프로젝트 드라이브 목록 조회
+	 * @param projId
+	 * @param prntDriveItemId
+	 * @param offset
+	 * @param size
+	 * @return
+	 */
+	List<DriveVo> selectListByProjId(
+			@Param("projId") Long projId,
+			@Param("prntDriveItemId") Long prntDriveItemId,
+			@Param("offset") int offset,
+			@Param("size") int size);
+	
+	/**
+	 * 페이징 처리를 위한 카운트
+	 * @param projId
+	 * @param prntDriveItemId
+	 * @return
+	 */
+	long countDriveListByProjId(@Param("projId") Long projId, @Param("prntDriveItemId") Long prntDriveItemId);
 }

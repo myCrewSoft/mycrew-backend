@@ -52,4 +52,7 @@ public interface ProjectService {
 	 * @param empId
 	 */
 	void removeProjMember(Long projId, Long empId);
+	
+	// 프로젝트 채팅방 ID 입력
+	void updateProjectChtrmId(Long projId, Long chtrmId);
 }

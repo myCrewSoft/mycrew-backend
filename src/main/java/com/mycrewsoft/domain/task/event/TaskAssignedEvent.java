@@ -1,5 +1,6 @@
 package com.mycrewsoft.domain.task.event;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import lombok.Getter;
@@ -9,6 +10,10 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public class TaskAssignedEvent {
-    private final String taskNm;
+	private final Long taskId;
+	private final String taskNm;
+	private final LocalDateTime taskBgngYmd;
+	private final LocalDateTime taskEndYmd;
     private final List<Long> rcvrEmpIds;
+    private final Long schdWrtrId;
 }

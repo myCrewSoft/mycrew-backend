@@ -78,8 +78,15 @@ public class VideoConfServiceImpl implements VideoConfService {
         VideoConfListVO saved = videoConfMapper.selectConfById(confVO.getVconfId());
         
         eventPublisher.publishEvent(
-        	new MeetingInvitedEvent(saved.getVconfNm(), ptcptEmpIds)
-        );
+    	    new MeetingInvitedEvent(
+	    		saved.getVconfId(),
+	    		saved.getVconfNm(),
+	    		saved.getBeginDt(),
+	    		saved.getEndDt(),
+	    		ptcptEmpIds,
+		        SecurityUtil.getCurrentEmpId()
+    	    )
+    	);
         
         return videoConfDtoMapper.toConfResponse(saved);
     }
