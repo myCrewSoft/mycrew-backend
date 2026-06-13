@@ -110,7 +110,9 @@ public class AttendanceServiceImpl implements AttendanceService {
 		int stdDay = nz(policy.getStdWorkMinDay());
 		int normalWorkMin = Math.min(workMin, stdDay);
 		int otCandidate = Math.max(0, workMin - stdDay);
-		int approvedOtMin = 0;                 // 사전 승인 연장(전자결재 연동, 추후 반영)
+		// 사전 승인된 초과근무(전자결재 승인 완료분)를 승인근무로 인정
+		int approvedToday = nz(attendanceMapper.selectApprovedOtMin(empId, today));
+		int approvedOtMin = Math.min(otCandidate, approvedToday);
 		int otMin = otCandidate;               // 연장근무 전체
 		int excessMin = otCandidate - approvedOtMin;
 
