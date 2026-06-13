@@ -18,6 +18,7 @@ import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.attendance.dto.request.AtndPolicySaveRequest;
 import com.mycrewsoft.domain.attendance.dto.response.AdminAtndRowResponse;
+import com.mycrewsoft.domain.attendance.dto.response.AdminAtndStatResponse;
 import com.mycrewsoft.domain.attendance.dto.response.AtndCheckResponse;
 import com.mycrewsoft.domain.attendance.dto.response.AtndHistoryResponse;
 import com.mycrewsoft.domain.attendance.dto.response.AtndPolicyResponse;
@@ -338,6 +339,33 @@ public class AttendanceServiceImpl implements AttendanceService {
 		assertViewAll();
 		LocalDate atndDt = StringUtils.hasText(date) ? LocalDate.parse(date) : LocalDate.now();
 		return attendanceMapper.selectAllAttendance(atndDt, deptCd, keyword);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<AdminAtndStatResponse> getAttendanceStats(String from, String to, String deptCd, String keyword) {
+		assertViewAll();
+		LocalDate fromDt = StringUtils.hasText(from)
+				? LocalDate.parse(from)
+				: LocalDate.now().withDayOfMonth(1);
+		LocalDate toDt = StringUtils.hasText(to) ? LocalDate.parse(to) : LocalDate.now();
+		if (toDt.isBefore(fromDt)) {
+			LocalDate tmp = fromDt;
+			fromDt = toDt;
+			toDt = tmp;
+		}
+		return attendanceMapper.selectAttendanceStats(fromDt, toDt, deptCd, keyword);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<AdminAtndRowResponse> getEmployeeAttendance(Long empId, String from, String to) {
+		assertViewAll();
+		LocalDate fromDt = StringUtils.hasText(from)
+				? LocalDate.parse(from)
+				: LocalDate.now().withDayOfMonth(1);
+		LocalDate toDt = StringUtils.hasText(to) ? LocalDate.parse(to) : LocalDate.now();
+		return attendanceMapper.selectEmployeeAttendance(empId, fromDt, toDt);
 	}
 
 	// ============================ 내부 헬퍼 ============================
