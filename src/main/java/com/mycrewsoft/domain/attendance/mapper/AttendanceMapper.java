@@ -67,8 +67,13 @@ public interface AttendanceMapper {
 	/** 근태 상태 코드명 조회 */
 	String selectStatNm(@Param("statCd") String statCd);
 
-	/** 귀속연도 잔여 연차(원장 합계) 조회 */
+	/** 귀속연도 잔여 연차(원장 합계 = 부여 - 사용) 조회 */
 	Double selectRemainAnnualLeave(
+			@Param("empId") Long empId,
+			@Param("baseYear") int baseYear);
+
+	/** 귀속연도 사용 연차(원장 사용 행 합계) 조회 */
+	Double selectUsedAnnualLeave(
 			@Param("empId") Long empId,
 			@Param("baseYear") int baseYear);
 

@@ -138,6 +138,14 @@
 		  AND BASE_YEAR = #{baseYear}
 	</select>
 
+	<select id="selectUsedAnnualLeave" resultType="double">
+		SELECT NVL(SUM(-LEAVE_DAY), 0)
+		FROM TB_ATND_LEAVE_LEDGER
+		WHERE EMP_ID = #{empId}
+		  AND BASE_YEAR = #{baseYear}
+		  AND LEDGER_SE_CD = '02'
+	</select>
+
 	<!-- ===================== 관리자 ===================== -->
 
 	<select id="selectAllAttendance" resultType="AdminAtndRowResponse">

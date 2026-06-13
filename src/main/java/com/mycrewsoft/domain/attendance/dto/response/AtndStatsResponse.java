@@ -68,4 +68,10 @@ public class AtndStatsResponse {
 
 	@Schema(description = "귀속연도 잔여 연차(일)", example = "12.5")
 	private Double remainAnnualLeave;
+
+	@Schema(description = "정책상 기본 연차(일)", example = "15")
+	private Double annualLeaveDef;
+
+	@Schema(description = "귀속연도 사용 연차(일)", example = "2.5")
+	private Double usedAnnualLeave;
 }

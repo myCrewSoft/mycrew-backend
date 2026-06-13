@@ -161,7 +161,20 @@ public class AttendanceLeaveServiceImpl implements AttendanceLeaveService {
 	@Transactional(readOnly = true)
 	public List<LeaveBalanceResponse> getLeaveBalances(int baseYear, String keyword) {
 		assertLeaveManage();
-		return attendanceMapper.selectLeaveBalances(baseYear, keyword);
+		List<LeaveBalanceResponse> rows = attendanceMapper.selectLeaveBalances(baseYear, keyword);
+
+		// 정책상 기본 연차를 기준으로 잔여 = 기본 + 원장(부여 - 사용)
+		com.mycrewsoft.domain.attendance.vo.AtndPolicyVO policy =
+				attendanceMapper.selectActivePolicy(java.time.LocalDate.now());
+		double baseDay = policy != null && policy.getAnnualLeaveDef() != null
+				? policy.getAnnualLeaveDef()
+				: 0d;
+		for (LeaveBalanceResponse row : rows) {
+			double ledger = row.getRemainDay() == null ? 0d : row.getRemainDay();
+			row.setBaseDay(baseDay);
+			row.setRemainDay(baseDay + ledger);
+		}
+		return rows;
 	}
 
 	@Override

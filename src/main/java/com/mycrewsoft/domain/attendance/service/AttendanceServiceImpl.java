@@ -231,7 +231,13 @@ public class AttendanceServiceImpl implements AttendanceService {
 		int remainingWorkMin = Math.max(0, stdWorkMinWk - nz(weekAgg.getNormalWorkMin()));
 		int remainingOtMin = Math.max(0, maxOtMinWk - nz(weekAgg.getOtMin()));
 
-		Double remainAnnual = attendanceMapper.selectRemainAnnualLeave(empId, today.getYear());
+		// 잔여 연차 = 정책 기본 연차 + 원장 합계(부여 - 사용)
+		double annualDef = policy != null && policy.getAnnualLeaveDef() != null
+				? policy.getAnnualLeaveDef()
+				: 0d;
+		Double ledgerSum = attendanceMapper.selectRemainAnnualLeave(empId, today.getYear());
+		Double usedAnnual = attendanceMapper.selectUsedAnnualLeave(empId, today.getYear());
+		double remainAnnual = annualDef + (ledgerSum == null ? 0d : ledgerSum);
 
 		return AtndStatsResponse.builder()
 				.period(prd)
@@ -249,7 +255,9 @@ public class AttendanceServiceImpl implements AttendanceService {
 				.remainingOtMin(remainingOtMin)
 				.stdWorkMinWk(stdWorkMinWk)
 				.maxOtMinWk(maxOtMinWk)
-				.remainAnnualLeave(remainAnnual == null ? 0d : remainAnnual)
+				.remainAnnualLeave(remainAnnual)
+				.annualLeaveDef(annualDef)
+				.usedAnnualLeave(usedAnnual == null ? 0d : usedAnnual)
 				.build();
 	}
 
