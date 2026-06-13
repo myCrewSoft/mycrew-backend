@@ -7,6 +7,7 @@ import com.mycrewsoft.domain.messenger.dto.request.RemoveParticipantsRequest;
 import com.mycrewsoft.domain.messenger.dto.request.UpdateChatRoomRequest;
 import com.mycrewsoft.domain.messenger.dto.response.ChatMessageResponse;
 import com.mycrewsoft.domain.messenger.dto.response.ChatRoomResponse;
+import com.mycrewsoft.domain.messenger.enums.ParticipantStatus;
 import com.mycrewsoft.domain.messenger.service.MsngrService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -100,7 +101,7 @@ public class MsngrController {
     public ResponseEntity<ApiResponse<Void>> updatePtcptSttus(
             @Parameter(description = "상태 코드 (STS1: 로그인, STS2: 자리비움, STS3: 다른 업무 중, STS4: 로그아웃)", example = "STS2")
             @PathVariable String ptcptSttusCd) {
-        msngrService.updatePtcptSttus(ptcptSttusCd);
+        msngrService.updatePtcptSttus(ParticipantStatus.fromCode(ptcptSttusCd));
         return ResponseEntity.ok(ApiResponse.success());
     }
 

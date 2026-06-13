@@ -1,6 +1,7 @@
 package com.mycrewsoft.config.websocket;
 
 import com.mycrewsoft.domain.messenger.service.MsngrService;
+import com.mycrewsoft.domain.messenger.enums.ParticipantStatus;
 import com.mycrewsoft.security.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,12 +34,11 @@ public class WebSocketEventListener {
     @EventListener
     public void handleWebSocketConnected(SessionConnectedEvent event) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
-        String token = extractToken(accessor);
-        if (token == null) return;
+        Long empId = resolveEmpId(accessor);
+        if (empId == null) return;
 
-        Long empId = jwtTokenProvider.getEmpId(token);
-        msngrService.updatePtcptSttusById(empId, "STS1");
-        log.info("WebSocket 연결 - empId: {}, 상태: STS1", empId);
+        msngrService.updatePtcptSttusById(empId, ParticipantStatus.ONLINE);
+        log.info("WebSocket 연결 - empId: {}, 상태: {}", empId, ParticipantStatus.ONLINE.getCode());
     }
 
     /**
@@ -49,12 +49,20 @@ public class WebSocketEventListener {
     @EventListener
     public void handleWebSocketDisconnected(SessionDisconnectEvent event) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
-        String token = extractToken(accessor);
-        if (token == null) return;
+        Long empId = resolveEmpId(accessor);
+        if (empId == null) return;
 
-        Long empId = jwtTokenProvider.getEmpId(token);
-        msngrService.updatePtcptSttusById(empId, "STS4");
-        log.info("WebSocket 끊김 - empId: {}, 상태: STS4", empId);
+        msngrService.updatePtcptSttusById(empId, ParticipantStatus.OFFLINE);
+        log.info("WebSocket 끊김 - empId: {}, 상태: {}", empId, ParticipantStatus.OFFLINE.getCode());
+    }
+
+    private Long resolveEmpId(StompHeaderAccessor accessor) {
+        if (accessor.getUser() != null) {
+            return Long.valueOf(accessor.getUser().getName());
+        }
+
+        String token = extractToken(accessor);
+        return token == null ? null : jwtTokenProvider.getEmpId(token);
     }
 
     /**

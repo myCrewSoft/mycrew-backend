@@ -18,6 +18,7 @@ public interface MsngrDtoMapper {
     @Mapping(source = "chtrmNm",     target = "name")
     @Mapping(source = "chtrmExpln",  target = "description")
     @Mapping(source = "chtrmTypeCd", target = "type")
+    @Mapping(source = "chtrmImgAtchFileId", target = "chatRoomImageAtchFileId")
     @Mapping(source = "participantCount", target = "participantCount")
     @Mapping(target = "participants", ignore = true)
     ChatRoomResponse toRoomResponse(MsngrChtrmVO vo);
@@ -30,6 +31,7 @@ public interface MsngrDtoMapper {
     @Mapping(source = "lastTime",    target = "lastTime")
     @Mapping(source = "unreadCount", target = "unreadCount")
     @Mapping(source = "prflImgFileId", target = "prflImgFileId")
+    @Mapping(source = "chtrmImgAtchFileId", target = "chatRoomImageAtchFileId")
     @Mapping(source = "status", target = "status")
     @Mapping(source = "jobTitle", target = "jobTitle")
     @Mapping(source = "department", target = "department")
@@ -51,6 +53,7 @@ public interface MsngrDtoMapper {
 
     @Mapping(source = "chatName",        target = "chtrmNm")
     @Mapping(source = "chatDescription", target = "chtrmExpln")
+    @Mapping(source = "chatRoomImageAtchFileId", target = "chtrmImgAtchFileId")
     @Mapping(target = "chtrmId",     ignore = true)
     @Mapping(target = "chtrmTypeCd", ignore = true)
     @Mapping(target = "estblshId",   ignore = true)
@@ -61,6 +64,7 @@ public interface MsngrDtoMapper {
 
     @Mapping(source = "chatName",        target = "chtrmNm")
     @Mapping(source = "chatDescription", target = "chtrmExpln")
+    @Mapping(source = "chatRoomImageAtchFileId", target = "chtrmImgAtchFileId")
     @Mapping(target = "chtrmId",     ignore = true)
     @Mapping(target = "chtrmTypeCd", ignore = true)
     @Mapping(target = "estblshId",   ignore = true)

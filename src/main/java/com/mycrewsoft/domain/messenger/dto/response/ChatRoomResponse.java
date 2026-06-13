@@ -22,6 +22,9 @@ public class ChatRoomResponse {
     @Schema(description = "1:1 상대 프로필 이미지 첨부파일 ID", example = "10")
     private Long prflImgFileId;
 
+    @Schema(description = "채팅방 이미지 첨부파일 ID", example = "20", nullable = true)
+    private Long chatRoomImageAtchFileId;
+
     @Schema(description = "채팅방 설명", example = "프론트엔드 개발팀 채팅방")
     private String description;
 

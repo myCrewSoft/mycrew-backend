@@ -15,6 +15,7 @@ public class MsngrChtrmVO {
 	private String chtrmExpln;	// 채팅방 설명
 	private String chtrmTypeCd;	// 채팅방 타입 코드
 	private Long estblshId;		// 개설자 ID(TB_MEMBER)
+	private Long chtrmImgAtchFileId;	// 채팅방 이미지 첨부파일 ID
 	
 	private LocalDateTime creatDt;		// 개설일시
 	private LocalDateTime endDt;			// 종료일시
