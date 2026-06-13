@@ -220,6 +220,10 @@ public class AttendanceServiceImpl implements AttendanceService {
 
 		AtndStatsAggVO agg = attendanceMapper.selectStatsAgg(empId, from, to);
 
+		// 휴가 사용/반차는 신청 원천(TB_ATND_LEAVE_REQ)에서 집계 (일일 근태 중복 덮어쓰기 회피)
+		Double leaveUseDay = attendanceMapper.selectLeaveUseDayInPeriod(empId, from, to);
+		Integer halfDayCnt = attendanceMapper.selectHalfDayCntInPeriod(empId, from, to);
+
 		// 항상 '이번 주' 기준 잔여 지표
 		LocalDate weekFrom = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 		LocalDate weekTo = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
@@ -249,8 +253,8 @@ public class AttendanceServiceImpl implements AttendanceService {
 				.excessMin(nz(agg.getExcessMin()))
 				.lateCnt(nz(agg.getLateCnt()))
 				.earlyLeaveCnt(nz(agg.getEarlyLeaveCnt()))
-				.halfDayCnt(nz(agg.getHalfDayCnt()))
-				.leaveUseDay(agg.getLeaveUseDay() == null ? 0d : agg.getLeaveUseDay())
+				.halfDayCnt(nz(halfDayCnt))
+				.leaveUseDay(leaveUseDay == null ? 0d : leaveUseDay)
 				.remainingWorkMin(remainingWorkMin)
 				.remainingOtMin(remainingOtMin)
 				.stdWorkMinWk(stdWorkMinWk)

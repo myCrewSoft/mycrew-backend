@@ -123,6 +123,26 @@
 		  AND ATND_DT BETWEEN TRUNC(#{from}) AND TRUNC(#{to})
 	</select>
 
+	<!-- 휴가 사용 일수 / 반차 횟수는 신청 원천(TB_ATND_LEAVE_REQ)에서 집계한다.
+	     (일일 근태는 하루 1행이라 같은 날 중복 휴가가 덮어써질 수 있어 부정확) -->
+	<select id="selectLeaveUseDayInPeriod" resultType="double">
+		SELECT NVL(SUM(LEAVE_DAY_CNT), 0)
+		FROM TB_ATND_LEAVE_REQ
+		WHERE EMP_ID = #{empId}
+		  AND RFLCT_YN = 'Y'
+		  AND TRUNC(LEAVE_BGN_DTM) BETWEEN TRUNC(#{from}) AND TRUNC(#{to})
+	</select>
+
+	<select id="selectHalfDayCntInPeriod" resultType="int">
+		SELECT COUNT(*)
+		FROM TB_ATND_LEAVE_REQ R
+		JOIN TB_ATND_LEAVE_TYPE T ON T.LEAVE_TYPE_CD = R.LEAVE_TYPE_CD
+		WHERE R.EMP_ID = #{empId}
+		  AND R.RFLCT_YN = 'Y'
+		  AND T.HALF_DAY_CD IS NOT NULL
+		  AND TRUNC(R.LEAVE_BGN_DTM) BETWEEN TRUNC(#{from}) AND TRUNC(#{to})
+	</select>
+
 	<!-- ===================== 코드 / 연차 ===================== -->
 
 	<select id="selectStatNm" resultType="string">

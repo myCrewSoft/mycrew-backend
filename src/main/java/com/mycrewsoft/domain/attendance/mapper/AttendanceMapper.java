@@ -62,6 +62,18 @@ public interface AttendanceMapper {
 			@Param("from") LocalDate from,
 			@Param("to") LocalDate to);
 
+	/** 기간 내 승인·반영된 휴가 사용 일수(신청 원천 기준) */
+	Double selectLeaveUseDayInPeriod(
+			@Param("empId") Long empId,
+			@Param("from") LocalDate from,
+			@Param("to") LocalDate to);
+
+	/** 기간 내 승인·반영된 반차 횟수(신청 원천 기준) */
+	Integer selectHalfDayCntInPeriod(
+			@Param("empId") Long empId,
+			@Param("from") LocalDate from,
+			@Param("to") LocalDate to);
+
 	// ===== 코드/연차 =====
 
 	/** 근태 상태 코드명 조회 */
