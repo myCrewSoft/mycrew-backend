@@ -1,6 +1,7 @@
 package com.mycrewsoft.domain.notification.service;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import com.mycrewsoft.domain.notification.mapper.NotificationDtoMapper;
 import com.mycrewsoft.domain.notification.mapper.NotificationMapper;
 import com.mycrewsoft.domain.notification.vo.AlrmRcvrVO;
 import com.mycrewsoft.domain.notification.vo.AlrmVO;
+import com.mycrewsoft.domain.notification.vo.NotificationQueryVO;
 import com.mycrewsoft.security.util.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
@@ -35,10 +37,10 @@ public class NotificationServiceImpl implements NotificationService {
         Long empId = SecurityUtil.getCurrentEmpId();
 
         // 알림 조회
-        List<AlrmVO> alrmVO = notificationMapper.selectAlrmList(empId);
+        List<NotificationQueryVO> notificationList = notificationMapper.selectAlrmList(empId);
 
         // VO -> DTO 변환
-        return dtoMapper.toResponseList(alrmVO);
+        return dtoMapper.toResponseList(notificationList);
     }
 
     // 안 읽은 알림 개수 구하기
@@ -65,6 +67,7 @@ public class NotificationServiceImpl implements NotificationService {
     public void sendAlrm(AlrmVO alrmVO, List<Long> rcvrEmpIds) {
 
         // 알림 생성
+        alrmVO.setAlrmSndngDt(LocalDateTime.now());
         notificationMapper.insertAlrm(alrmVO);
 
         // 알림 대상자들에게 알림 발송
@@ -76,7 +79,7 @@ public class NotificationServiceImpl implements NotificationService {
             rcvrVO.setAlrmId(alrmVO.getAlrmId());
             rcvrVO.setRcvrEmpId(rcvrEmpId);
             notificationMapper.insertAlrmRcvr(rcvrVO);
-            NotificationResponse notificationResponse = dtoMapper.toResponse(alrmVO);
+            NotificationResponse notificationResponse = dtoMapper.toResponse(alrmVO, rcvrVO);
 
             sseEmitterService.send(rcvrEmpId, notificationResponse);
         }
