@@ -28,6 +28,7 @@ import com.mycrewsoft.domain.notification.mapper.NotificationMapper;
 import com.mycrewsoft.domain.notification.service.NotificationServiceImpl;
 import com.mycrewsoft.domain.notification.service.SseEmitterService;
 import com.mycrewsoft.domain.notification.vo.AlrmVO;
+import com.mycrewsoft.domain.notification.vo.NotificationQueryVO;
 import com.mycrewsoft.security.util.SecurityUtil;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,7 +50,10 @@ class NotificationServiceTest {
     @DisplayName("알림 목록 조회 성공")
     void readAlrmList_success() {
         Long empId = 1L;
-        List<AlrmVO> voList = List.of(new AlrmVO(), new AlrmVO());
+        List<NotificationQueryVO> voList = List.of(
+                new NotificationQueryVO(),
+                new NotificationQueryVO()
+        );
         List<NotificationResponse> responseList = List.of(
                 NotificationResponse.builder().alrmId(1L).alrmTtln("테스트1").build(),
                 NotificationResponse.builder().alrmId(2L).alrmTtln("테스트2").build()
