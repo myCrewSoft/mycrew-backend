@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.attendance.mapper.AttendanceMapper">
+
+	<!-- ===================== 근무 정책 ===================== -->
+
+	<select id="selectActivePolicy" resultType="AtndPolicyVO">
+		SELECT *
+		FROM (
+			SELECT
+				ATND_POLICY_ID, POLICY_NM, DEPT_CD, WORK_BGN_TM, WORK_END_TM,
+				BREAK_MIN, LATE_GRACE_MIN, STD_WORK_MIN_DAY, STD_WORK_DAYS_WK,
+				STD_WORK_MIN_WK, MAX_OT_MIN_WK, OT_UNIT_MIN, ANNUAL_LEAVE_DEF,
+				EFF_BGN_YMD, EFF_END_YMD, USE_YN,
+				FRST_RGTR_ID, FRST_REG_DT, LAST_MDFR_ID, LAST_MDFCN_DT
+			FROM TB_ATND_POLICY
+			WHERE DEPT_CD IS NULL
+			  AND USE_YN = 'Y'
+			  AND EFF_BGN_YMD &lt;= #{baseDate}
+			  AND (EFF_END_YMD IS NULL OR #{baseDate} &lt;= EFF_END_YMD)
+			ORDER BY EFF_BGN_YMD DESC, ATND_POLICY_ID DESC
+		)
+		WHERE ROWNUM = 1
+	</select>
+
+	<update id="closeActivePolicies">
+		UPDATE TB_ATND_POLICY
+		   SET EFF_END_YMD   = #{endYmd},
+		       USE_YN        = 'N',
+		       LAST_MDFR_ID  = #{mdfrId},
+		       LAST_MDFCN_DT = #{now}
+		 WHERE DEPT_CD IS NULL
+		   AND USE_YN = 'Y'
+	</update>
+
+	<insert id="insertPolicy">
+		<selectKey keyProperty="atndPolicyId" resultType="long" order="BEFORE">
+			SELECT SEQ_ATND_POLICY_ID.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO TB_ATND_POLICY (
+			ATND_POLICY_ID, POLICY_NM, DEPT_CD, WORK_BGN_TM, WORK_END_TM,
+			BREAK_MIN, LATE_GRACE_MIN, STD_WORK_MIN_DAY, STD_WORK_DAYS_WK,
+			STD_WORK_MIN_WK, MAX_OT_MIN_WK, OT_UNIT_MIN, ANNUAL_LEAVE_DEF,
+			EFF_BGN_YMD, EFF_END_YMD, USE_YN, FRST_RGTR_ID, FRST_REG_DT
+		) VALUES (
+			#{atndPolicyId}, #{policyNm}, #{deptCd}, #{workBgnTm}, #{workEndTm},
+			#{breakMin}, #{lateGraceMin}, #{stdWorkMinDay}, #{stdWorkDaysWk},
+			#{stdWorkMinWk}, #{maxOtMinWk}, #{otUnitMin}, #{annualLeaveDef},
+			#{effBgnYmd}, NULL, 'Y', #{frstRgtrId}, SYSDATE
+		)
+	</insert>
+
+	<!-- ===================== 일일 근태 ===================== -->
+
+	<select id="selectDaily" resultType="AtndDailyVO">
+		SELECT
+			EMP_ID, ATND_DT, TRIM(ATND_STAT_CD) AS ATND_STAT_CD, APPLY_POLICY_ID,
+			WRK_START_DTM, WRK_END_DTM, CHKIN_IP, CHKOUT_IP,
+			LATE_MIN, EARLY_LEAVE_MIN, WORK_MIN, NORMAL_WORK_MIN,
+			OT_MIN, APPROVED_OT_MIN, EXCESS_MIN, LEAVE_DAY, SRC_LEAVE_REQ_ID,
+			FRST_REG_DT, LAST_MDFCN_DT
+		FROM TB_ATND_DAILY
+		WHERE EMP_ID = #{empId}
+		  AND ATND_DT = TRUNC(#{atndDt})
+	</select>
+
+	<insert id="insertDaily">
+		INSERT INTO TB_ATND_DAILY (
+			EMP_ID, ATND_DT, ATND_STAT_CD, APPLY_POLICY_ID,
+			WRK_START_DTM, CHKIN_IP, LATE_MIN, FRST_REG_DT
+		) VALUES (
+			#{empId}, TRUNC(#{atndDt}), #{atndStatCd}, #{applyPolicyId},
+			#{wrkStartDtm}, #{chkinIp}, #{lateMin}, SYSDATE
+		)
+	</insert>
+
+	<update id="updateDaily">
+		UPDATE TB_ATND_DAILY
+		   SET ATND_STAT_CD    = #{atndStatCd},
+		       WRK_END_DTM     = #{wrkEndDtm},
+		       CHKOUT_IP       = #{chkoutIp},
+		       EARLY_LEAVE_MIN = #{earlyLeaveMin},
+		       WORK_MIN        = #{workMin},
+		       NORMAL_WORK_MIN = #{normalWorkMin},
+		       OT_MIN          = #{otMin},
+		       APPROVED_OT_MIN = #{approvedOtMin},
+		       EXCESS_MIN      = #{excessMin},
+		       LAST_MDFCN_DT   = SYSDATE
+		 WHERE EMP_ID = #{empId}
+		   AND ATND_DT = TRUNC(#{atndDt})
+	</update>
+
+	<select id="selectMyHistory" resultType="AtndHistoryResponse">
+		SELECT
+			D.ATND_DT,
+			D.WRK_START_DTM,
+			D.WRK_END_DTM,
+			D.WORK_MIN,
+			D.LATE_MIN,
+			D.OT_MIN,
+			TRIM(D.ATND_STAT_CD) AS ATND_STAT_CD,
+			SE.ATND_SE_CD_NM     AS ATND_STAT_NM
+		FROM TB_ATND_DAILY D
+		LEFT JOIN TB_ATND_SE_CD SE ON SE.ATND_SE_CD = D.ATND_STAT_CD
+		WHERE D.EMP_ID = #{empId}
+		  AND D.ATND_DT BETWEEN TRUNC(#{from}) AND TRUNC(#{to})
+		ORDER BY D.ATND_DT DESC
+	</select>
+
+	<select id="selectStatsAgg" resultType="AtndStatsAggVO">
+		SELECT
+			NVL(SUM(WORK_MIN), 0)         AS WORK_MIN,
+			NVL(SUM(NORMAL_WORK_MIN), 0)  AS NORMAL_WORK_MIN,
+			NVL(SUM(OT_MIN), 0)           AS OT_MIN,
+			NVL(SUM(APPROVED_OT_MIN), 0)  AS APPROVED_OT_MIN,
+			NVL(SUM(EXCESS_MIN), 0)       AS EXCESS_MIN,
+			NVL(SUM(CASE WHEN LATE_MIN &gt; 0 THEN 1 ELSE 0 END), 0)        AS LATE_CNT,
+			NVL(SUM(CASE WHEN EARLY_LEAVE_MIN &gt; 0 THEN 1 ELSE 0 END), 0) AS EARLY_LEAVE_CNT,
+			NVL(SUM(CASE WHEN TRIM(ATND_STAT_CD) = 'HALF' THEN 1 ELSE 0 END), 0) AS HALF_DAY_CNT,
+			NVL(SUM(LEAVE_DAY), 0)        AS LEAVE_USE_DAY
+		FROM TB_ATND_DAILY
+		WHERE EMP_ID = #{empId}
+		  AND ATND_DT BETWEEN TRUNC(#{from}) AND TRUNC(#{to})
+	</select>
+
+	<!-- ===================== 코드 / 연차 ===================== -->
+
+	<select id="selectStatNm" resultType="string">
+		SELECT ATND_SE_CD_NM
+		FROM TB_ATND_SE_CD
+		WHERE ATND_SE_CD = #{statCd}
+	</select>
+
+	<select id="selectRemainAnnualLeave" resultType="double">
+		SELECT NVL(SUM(LEAVE_DAY), 0)
+		FROM TB_ATND_LEAVE_LEDGER
+		WHERE EMP_ID = #{empId}
+		  AND BASE_YEAR = #{baseYear}
+	</select>
+
+	<select id="selectUsedAnnualLeave" resultType="double">
+		SELECT NVL(SUM(-LEAVE_DAY), 0)
+		FROM TB_ATND_LEAVE_LEDGER
+		WHERE EMP_ID = #{empId}
+		  AND BASE_YEAR = #{baseYear}
+		  AND LEDGER_SE_CD = '02'
+	</select>
+
+	<!-- ===================== 관리자 ===================== -->
+
+	<select id="selectAllAttendance" resultType="AdminAtndRowResponse">
+		SELECT
+			D.EMP_ID,
+			E.EMP_NM,
+			DEPT.DEPT_NM,
+			GRD.JOB_GRD_NM        AS JBPS_NM,
+			D.ATND_DT,
+			D.WRK_START_DTM,
+			D.WRK_END_DTM,
+			D.LATE_MIN,
+			D.WORK_MIN,
+			D.OT_MIN,
+			TRIM(D.ATND_STAT_CD)  AS ATND_STAT_CD,
+			SE.ATND_SE_CD_NM      AS ATND_STAT_NM
+		FROM TB_ATND_DAILY D
+		JOIN TB_EMPLOYEE E ON E.EMP_ID = D.EMP_ID
+		LEFT JOIN TB_DEPARTMENT DEPT ON DEPT.DEPT_CD = E.DEPT_CD
+		LEFT JOIN TB_JOB_GRADE GRD ON GRD.JOB_GRD_CD = E.JOB_GRD_CD
+		LEFT JOIN TB_ATND_SE_CD SE ON SE.ATND_SE_CD = D.ATND_STAT_CD
+		WHERE D.ATND_DT = TRUNC(#{atndDt})
+		<if test="deptCd != null and deptCd != ''">
+			AND E.DEPT_CD = #{deptCd}
+		</if>
+		<if test="keyword != null and keyword != ''">
+			AND E.EMP_NM LIKE '%' || #{keyword} || '%'
+		</if>
+		ORDER BY DEPT.DEPT_NM, E.EMP_NM
+	</select>
+
+	<!-- ===================== 휴가 ===================== -->
+
+	<select id="selectLeaveTypes" resultType="AtndLeaveTypeResponse">
+		SELECT LEAVE_TYPE_CD, LEAVE_TYPE_NM, DEDUCT_DAY, PAID_YN, HALF_DAY_CD
+		FROM TB_ATND_LEAVE_TYPE
+		WHERE USE_YN = 'Y'
+		ORDER BY SORT_ORDER, LEAVE_TYPE_CD
+	</select>
+
+	<select id="selectLeaveType" resultType="AtndLeaveTypeVO">
+		SELECT LEAVE_TYPE_CD, LEAVE_TYPE_NM, DEDUCT_DAY, PAID_YN, HALF_DAY_CD, USE_YN, SORT_ORDER
+		FROM TB_ATND_LEAVE_TYPE
+		WHERE LEAVE_TYPE_CD = #{cd}
+	</select>
+
+	<insert id="insertLeaveReq">
+		<selectKey keyProperty="leaveReqId" resultType="long" order="BEFORE">
+			SELECT SEQ_ATND_LEAVE_REQ_ID.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO TB_ATND_LEAVE_REQ (
+			LEAVE_REQ_ID, EMP_ID, LEAVE_TYPE_CD, DRFT_DOC_SN,
+			LEAVE_BGN_DTM, LEAVE_END_DTM, LEAVE_DAY_CNT, REQ_RSN,
+			APRVL_STTUS_CD, RFLCT_YN, FRST_REG_DT
+		) VALUES (
+			#{leaveReqId}, #{empId}, #{leaveTypeCd}, #{drftDocSn},
+			#{leaveBgnDtm}, #{leaveEndDtm}, #{leaveDayCnt}, #{reqRsn},
+			'01', 'N', SYSDATE
+		)
+	</insert>
+
+	<select id="selectLeaveReqByDoc" resultType="AtndLeaveReqVO">
+		SELECT
+			LEAVE_REQ_ID, EMP_ID, LEAVE_TYPE_CD, DRFT_DOC_SN,
+			LEAVE_BGN_DTM, LEAVE_END_DTM, LEAVE_DAY_CNT, REQ_RSN,
+			APRVL_STTUS_CD, RFLCT_YN, RFLCT_DT, FRST_REG_DT
+		FROM TB_ATND_LEAVE_REQ
+		WHERE DRFT_DOC_SN = #{drftDocSn}
+	</select>
+
+	<update id="updateLeaveReqReflected">
+		UPDATE TB_ATND_LEAVE_REQ
+		   SET APRVL_STTUS_CD = '02',
+		       RFLCT_YN       = 'Y',
+		       RFLCT_DT       = #{now}
+		 WHERE LEAVE_REQ_ID = #{leaveReqId}
+	</update>
+
+	<update id="mergeLeaveDaily">
+		MERGE INTO TB_ATND_DAILY t
+		USING (SELECT #{empId} AS EMP_ID, TRUNC(#{atndDt}) AS ATND_DT FROM DUAL) s
+		ON (t.EMP_ID = s.EMP_ID AND t.ATND_DT = s.ATND_DT)
+		WHEN MATCHED THEN
+			UPDATE SET
+				t.ATND_STAT_CD     = #{statCd},
+				t.LEAVE_DAY        = #{leaveDay},
+				t.SRC_LEAVE_REQ_ID = #{leaveReqId},
+				t.LAST_MDFCN_DT    = SYSDATE
+		WHEN NOT MATCHED THEN
+			INSERT (EMP_ID, ATND_DT, ATND_STAT_CD, LEAVE_DAY, SRC_LEAVE_REQ_ID, FRST_REG_DT)
+			VALUES (s.EMP_ID, s.ATND_DT, #{statCd}, #{leaveDay}, #{leaveReqId}, SYSDATE)
+	</update>
+
+	<insert id="insertLeaveLedger">
+		INSERT INTO TB_ATND_LEAVE_LEDGER (
+			LEAVE_LEDGER_ID, EMP_ID, BASE_YEAR, LEDGER_SE_CD,
+			LEAVE_DAY, SRC_LEAVE_REQ_ID, RMRK, FRST_REG_DT
+		) VALUES (
+			SEQ_ATND_LEAVE_LEDGER_ID.NEXTVAL, #{empId}, #{baseYear}, #{ledgerSeCd},
+			#{leaveDay}, #{srcLeaveReqId}, #{rmrk}, SYSDATE
+		)
+	</insert>
+
+	<select id="selectMyLeaves" resultType="MyLeaveResponse">
+		SELECT
+			R.LEAVE_REQ_ID,
+			R.DRFT_DOC_SN,
+			T.LEAVE_TYPE_NM,
+			R.LEAVE_BGN_DTM,
+			R.LEAVE_END_DTM,
+			R.LEAVE_DAY_CNT,
+			R.REQ_RSN,
+			R.APRVL_STTUS_CD,
+			R.RFLCT_YN,
+			R.FRST_REG_DT
+		FROM TB_ATND_LEAVE_REQ R
+		LEFT JOIN TB_ATND_LEAVE_TYPE T ON T.LEAVE_TYPE_CD = R.LEAVE_TYPE_CD
+		WHERE R.EMP_ID = #{empId}
+		ORDER BY R.FRST_REG_DT DESC
+	</select>
+
+	<select id="selectLeaveBalances" resultType="LeaveBalanceResponse">
+		SELECT
+			E.EMP_ID,
+			E.EMP_NM,
+			D.DEPT_NM,
+			NVL(SUM(CASE WHEN L.LEDGER_SE_CD = '01' THEN L.LEAVE_DAY ELSE 0 END), 0)  AS GRANTED_DAY,
+			NVL(SUM(CASE WHEN L.LEDGER_SE_CD = '02' THEN -L.LEAVE_DAY ELSE 0 END), 0) AS USED_DAY,
+			NVL(SUM(L.LEAVE_DAY), 0) AS REMAIN_DAY
+		FROM TB_EMPLOYEE E
+		LEFT JOIN TB_DEPARTMENT D ON D.DEPT_CD = E.DEPT_CD
+		LEFT JOIN TB_ATND_LEAVE_LEDGER L
+			ON L.EMP_ID = E.EMP_ID AND L.BASE_YEAR = #{baseYear}
+		<where>
+			<if test="keyword != null and keyword != ''">
+				E.EMP_NM LIKE '%' || #{keyword} || '%'
+			</if>
+		</where>
+		GROUP BY E.EMP_ID, E.EMP_NM, D.DEPT_NM
+		ORDER BY D.DEPT_NM, E.EMP_NM
+	</select>
+
+	<!-- ===================== 초과근무 ===================== -->
+
+	<insert id="insertOtReq">
+		<selectKey keyProperty="otReqId" resultType="long" order="BEFORE">
+			SELECT SEQ_ATND_OT_REQ_ID.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO TB_ATND_OT_REQ (
+			OT_REQ_ID, EMP_ID, OT_DT, OT_BGN_DTM, OT_END_DTM,
+			DRFT_DOC_SN, APRVL_STTUS_CD, RFLCT_YN
+		) VALUES (
+			#{otReqId}, #{empId}, TRUNC(#{otDt}), #{otBgnDtm}, #{otEndDtm},
+			#{drftDocSn}, '01', 'N'
+		)
+	</insert>
+
+	<select id="selectOtReqByDoc" resultType="AtndOtReqVO">
+		SELECT
+			OT_REQ_ID, EMP_ID, OT_DT, OT_BGN_DTM, OT_END_DTM,
+			APPROVED_MIN, DRFT_DOC_SN, APRVL_STTUS_CD, RFLCT_YN
+		FROM TB_ATND_OT_REQ
+		WHERE DRFT_DOC_SN = #{drftDocSn}
+	</select>
+
+	<update id="updateOtReqReflected">
+		UPDATE TB_ATND_OT_REQ
+		   SET APRVL_STTUS_CD = '02',
+		       RFLCT_YN       = 'Y',
+		       APPROVED_MIN   = #{approvedMin}
+		 WHERE OT_REQ_ID = #{otReqId}
+	</update>
+
+	<select id="selectApprovedOtMin" resultType="int">
+		SELECT NVL(SUM(APPROVED_MIN), 0)
+		FROM TB_ATND_OT_REQ
+		WHERE EMP_ID = #{empId}
+		  AND OT_DT = TRUNC(#{otDt})
+		  AND RFLCT_YN = 'Y'
+	</select>
+
+	<update id="updateDailyApprovedOt">
+		UPDATE TB_ATND_DAILY
+		   SET APPROVED_OT_MIN = LEAST(OT_MIN, #{approvedMin}),
+		       EXCESS_MIN      = OT_MIN - LEAST(OT_MIN, #{approvedMin}),
+		       LAST_MDFCN_DT   = SYSDATE
+		 WHERE EMP_ID = #{empId}
+		   AND ATND_DT = TRUNC(#{atndDt})
+	</update>
+
+	<select id="selectMyOts" resultType="MyOtResponse">
+		SELECT
+			OT_REQ_ID, DRFT_DOC_SN, OT_DT, OT_BGN_DTM, OT_END_DTM,
+			APPROVED_MIN, APRVL_STTUS_CD, RFLCT_YN
+		FROM TB_ATND_OT_REQ
+		WHERE EMP_ID = #{empId}
+		ORDER BY OT_DT DESC, OT_REQ_ID DESC
+	</select>
+
+</mapper>
