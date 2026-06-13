@@ -307,4 +307,15 @@
 			LAST_MDFCN_DT = SYSDATE
 		WHERE EMP_ID = #{empId}
 	</update>
+
+	<update id="updateProfileInfoByEmpId">
+		UPDATE TB_EMPLOYEE
+		SET
+			EMP_NM = #{empNm},
+			MBL_TELNO = #{mblTelno},
+			ZIP = #{zip},
+			ADDR = #{addr},
+			LAST_MDFCN_DT = SYSDATE
+		WHERE EMP_ID = #{empId}
+	</update>
 </mapper>

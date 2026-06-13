@@ -14,6 +14,7 @@ import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.employee.dto.request.ChangeEmailRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.ChangeJobDutyRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.ChangePasswordRequestDTO;
+import com.mycrewsoft.domain.employee.dto.request.ChangeProfileInfoRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeMyPageResponseDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeProfileDTO;
 import com.mycrewsoft.domain.employee.service.MyPageService;
@@ -96,5 +97,13 @@ public class EmployeeMyPageController {
             @Valid @RequestBody ChangeJobDutyRequestDTO request) {
         myPageService.changeJobDuty(request);
         return ResponseEntity.ok(ApiResponse.success("직무 변경 성공"));
+    }
+
+    @Operation(summary = "개인정보 변경", description = "로그인한 사용자의 이름, 휴대전화 번호, 주소를 변경합니다.")
+    @PatchMapping("/profile-info")
+    public ResponseEntity<ApiResponse<String>> changeProfileInfo(
+            @Valid @RequestBody ChangeProfileInfoRequestDTO request) {
+        myPageService.changeProfileInfo(request);
+        return ResponseEntity.ok(ApiResponse.success("개인정보 변경 성공"));
     }
 }

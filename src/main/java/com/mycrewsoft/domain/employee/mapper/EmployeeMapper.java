@@ -55,4 +55,11 @@ public interface EmployeeMapper {
 	int updateProfileImageByEmpId(@Param("empId") Long empId, @Param("prflImgFileId") Long prflImgFileId);
 	
 	int updateJobDutyByEmpId(@Param("empId") Long empId, @Param("jobDutyCn") String jobDutyCn);
+
+	int updateProfileInfoByEmpId(
+			@Param("empId") Long empId,
+			@Param("empNm") String empNm,
+			@Param("mblTelno") String mblTelno,
+			@Param("zip") String zip,
+			@Param("addr") String addr);
 }
