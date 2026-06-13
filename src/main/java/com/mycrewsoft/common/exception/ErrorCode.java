@@ -73,6 +73,7 @@ public enum ErrorCode {
     // BOARD
     BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지않는 게시판입니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_002", "존재하지않는 댓글입니다."),
+    
     // JOB
     RANK_NOT_FOUND(HttpStatus.NOT_FOUND, "JOB_001", "존재하지 않는 직급입니다."),
     DUPLICATE_RANK_ID(HttpStatus.CONFLICT, "JOB_002", "이미 존재하는 직급 ID입니다."),
