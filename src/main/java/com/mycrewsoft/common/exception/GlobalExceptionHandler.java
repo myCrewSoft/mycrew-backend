@@ -1,7 +1,6 @@
 package com.mycrewsoft.common.exception;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.http.ResponseEntity;

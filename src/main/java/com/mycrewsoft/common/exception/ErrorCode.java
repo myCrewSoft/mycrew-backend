@@ -135,6 +135,16 @@ public enum ErrorCode {
     STT_TRANSCRIBE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "VIDEO_007", "음성 텍스트 변환에 실패했습니다."),
     VIDEO_CONF_INVALID_DATE(HttpStatus.BAD_REQUEST, "VIDEO_008", "종료날짜는 시작날짜 이후여야 합니다."),
 	
+    // MEETING
+    MTNG_NOT_FOUND(HttpStatus.NOT_FOUND,   "MTNG_001", "존재하지 않는 회의입니다."),
+    INVALID_MTNG_TYPE_CD(HttpStatus.BAD_REQUEST, "MTNG_002", "유효하지 않은 회의 진행방식 코드입니다."),
+    MTNG_ALREADY_STARTED(HttpStatus.BAD_REQUEST, "MTNG_003", "이미 시작된 회의는 삭제할 수 없습니다."),
+    MTNG_MOM_NOT_FOUND(HttpStatus.NOT_FOUND, "MTNG_004", "존재하지 않는 회의록입니다."),
+    MTNG_MOM_NOT_EDITABLE(HttpStatus.BAD_REQUEST, "MTNG_005", "결재가 진행 중이거나 완료된 회의록은 수정할 수 없습니다."),
+    MTNG_PTCPT_FORBIDDEN(HttpStatus.FORBIDDEN, "MTNG_006", "회의 참여자만 접근할 수 있습니다."),
+    MTNG_MOM_ALREADY_REQUESTED(HttpStatus.BAD_REQUEST, "MTNG_007", "이미 결재 요청된 회의록입니다."),
+    MTNG_MOM_NO_APPROVER(HttpStatus.BAD_REQUEST, "MTNG_008", "결재자가 없습니다. 참여자를 확인해주세요."),
+
 	// TASK
 	TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "TASK_001", "존재하지 않는 업무입니다."),
 	TASK_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "TASK_002", "업무 참여자가 아닙니다."),
