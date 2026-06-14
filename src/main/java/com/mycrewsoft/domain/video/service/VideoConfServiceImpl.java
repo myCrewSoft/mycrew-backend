@@ -1,3 +1,27 @@
+package com.mycrewsoft.domain.video.service;
+
+import com.mycrewsoft.common.exception.CustomException;
+import com.mycrewsoft.common.exception.ErrorCode;
+import com.mycrewsoft.domain.mtng.enums.MtngSttus;
+import com.mycrewsoft.domain.mtng.event.MeetingEndedEvent;
+import com.mycrewsoft.domain.mtng.mapper.MtngMapper;
+import com.mycrewsoft.domain.mtng.service.MtngMomService;
+import com.mycrewsoft.domain.mtng.vo.MtngDetailVO;
+import com.mycrewsoft.domain.mtng.vo.MtngPtcptDetailVO;
+import com.mycrewsoft.domain.video.config.LiveKitTokenProvider;
+import com.mycrewsoft.domain.video.dto.response.VideoTokenResponse;
+import com.mycrewsoft.domain.video.mapper.VideoConfMapper;
+import com.mycrewsoft.domain.video.vo.VideoPtcptLogVO;
+import com.mycrewsoft.domain.video.vo.VideoRcrdgVO;
+import com.mycrewsoft.security.util.SecurityUtil;
+import java.time.LocalDateTime;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
