@@ -10,6 +10,7 @@ import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.employee.dto.request.ChangeEmailRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.ChangeJobDutyRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.ChangePasswordRequestDTO;
+import com.mycrewsoft.domain.employee.dto.request.ChangeProfileInfoRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeMyPageResponseDTO;
 import com.mycrewsoft.domain.employee.dto.response.EmployeeProfileDTO;
 import com.mycrewsoft.domain.employee.event.PasswordChangedEvent;
@@ -100,5 +101,21 @@ public class MyPageServiceImpl implements MyPageService {
 	public void changeJobDuty(ChangeJobDutyRequestDTO request) {
 		Long empId = SecurityUtil.getCurrentEmpId();
 		int updatedCount = employeeMapper.updateJobDutyByEmpId(empId, request.getJobDutyCn());
+	}
+
+	@Override
+	@Transactional
+	public void changeProfileInfo(ChangeProfileInfoRequestDTO request) {
+		Long empId = SecurityUtil.getCurrentEmpId();
+		employeeMapper.updateProfileInfoByEmpId(
+				empId,
+				request.getEmpNm(),
+				emptyToNull(request.getMblTelno()),
+				emptyToNull(request.getZip()),
+				emptyToNull(request.getAddr()));
+	}
+
+	private String emptyToNull(String value) {
+		return (value == null || value.isBlank()) ? null : value.trim();
 	}
 }
