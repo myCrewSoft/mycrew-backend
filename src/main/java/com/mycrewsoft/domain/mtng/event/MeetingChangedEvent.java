@@ -1,4 +1,4 @@
-package com.mycrewsoft.domain.video.event;
+package com.mycrewsoft.domain.mtng.event;
 
 import java.time.LocalDateTime;
 import java.util.List;

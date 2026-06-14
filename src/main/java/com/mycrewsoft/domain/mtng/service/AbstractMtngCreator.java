@@ -5,10 +5,10 @@ import java.util.List;
 
 import org.springframework.context.ApplicationEventPublisher;
 
+import com.mycrewsoft.domain.mtng.event.MeetingInvitedEvent;
 import com.mycrewsoft.domain.mtng.mapper.MtngMapper;
 import com.mycrewsoft.domain.reservation.dto.request.ReservationCreateRequest;
 import com.mycrewsoft.domain.reservation.service.ReservationService;
-import com.mycrewsoft.domain.video.event.MeetingInvitedEvent;
 
 import lombok.RequiredArgsConstructor;
 

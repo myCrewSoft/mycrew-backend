@@ -4,13 +4,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import com.mycrewsoft.domain.mtng.event.MeetingInvitedEvent;
 import com.mycrewsoft.domain.project.event.ProjectCreatedEvent;
 import com.mycrewsoft.domain.schedule.dto.command.MeetingScheduleCreateCommand;
 import com.mycrewsoft.domain.schedule.dto.command.ProjectScheduleCreateCommand;
 import com.mycrewsoft.domain.schedule.dto.command.TaskScheduleCreateCommand;
 import com.mycrewsoft.domain.schedule.service.ScheduleService;
 import com.mycrewsoft.domain.task.event.TaskAssignedEvent;
-import com.mycrewsoft.domain.video.event.MeetingInvitedEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
