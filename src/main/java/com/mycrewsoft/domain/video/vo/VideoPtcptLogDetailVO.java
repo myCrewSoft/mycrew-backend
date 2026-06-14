@@ -1,15 +1,14 @@
 package com.mycrewsoft.domain.video.vo;
 
 import java.time.LocalDateTime;
-
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class VideoPtcptDetailVO {
+public class VideoPtcptLogDetailVO {
 
-    private Long vconfPtcptId;
+    private Long ptcptLogId;
     private Long vconfId;
     private Long empId;
     private LocalDateTime joinDt;
