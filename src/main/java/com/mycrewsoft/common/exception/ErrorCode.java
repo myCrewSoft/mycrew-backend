@@ -150,7 +150,7 @@ public enum ErrorCode {
 	TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "TASK_001", "존재하지 않는 업무입니다."),
 	TASK_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "TASK_002", "업무 참여자가 아닙니다."),
 	TASK_NOT_OWNER(HttpStatus.FORBIDDEN, "TASK_003", "해당 업무에 대한 권한이 없습니다."),
-
+	TASK_INVALID_STAT_TRANSITION(HttpStatus.BAD_REQUEST, "TASK_004", "해당 상태에서는 정보를 변경할 수 없습니다."),
 
 	// ATTENDANCE
 	ATND_POLICY_NOT_FOUND(HttpStatus.NOT_FOUND, "ATND_001", "적용 가능한 근무 정책이 없습니다. 관리자에게 문의하세요."),

@@ -177,6 +177,11 @@ public class TaskServiceImpl implements TaskService {
         TaskDetailVO existing = taskMapper.selectTaskDetail(taskId);
         if (existing == null) throw new CustomException(ErrorCode.TASK_NOT_FOUND);
 
+        // 완료, 중지된 업무는 수정 불가
+        if ("02".equals(existing.getTaskStatCd()) || "04".equals(existing.getTaskStatCd())) {
+        	throw new CustomException(ErrorCode.TASK_INVALID_STAT_TRANSITION);
+        }
+        
         // 해당 업무의 담당자거나 프로젝트장인지 확인
         validateTaskManagerOrProjectLeader(currentEmpId, projId, existing);
 
