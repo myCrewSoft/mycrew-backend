@@ -1,6 +1,9 @@
 package com.mycrewsoft.domain.board.dto.response;
 
 import java.time.LocalDateTime;
+import java.util.List;
+
+import com.mycrewsoft.domain.board.vo.BoardCommentVO;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -30,7 +33,11 @@ public class BoardResponse {
     private String boardCn;              
 	
 	@Schema(description = "최초 등록자 사원 ID" , example = "2")
-    private Long frstRgtrId;             
+    private Long frstRgtrId;       
+	
+	@Schema(description = "사원명" , example = "자바")
+	private String empNm;
+	
 	@Schema(description = "최초 등록 일시" , example = "2026-05-28T10:22:50")
     private LocalDateTime frstRegDt;      
     
@@ -44,7 +51,14 @@ public class BoardResponse {
     private String deptCd;                
     
 	@Schema(description = "프로젝트 ID", example = "15")
-    private Long projId;                 
+    private Long projId;
+	
+	
+	@Schema(description = "프로젝트명", example = "마이크루소프트 차세대 시스템 구축")
+	private String projNm;
+
+	@Schema(description = "프로젝트 상태코드", example = "01")
+	private String projStatCd;
     
 	@Schema(description = "중요 공지 여부 (Y / N)", example = "N")
     private String imprtntYn;         
@@ -53,5 +67,14 @@ public class BoardResponse {
     private String cmntUseYn;            
     
 	@Schema(description = "게시글 조회수", example = "142")
-    private Integer viewCnt;             
+    private Integer viewCnt;     
+	
+	@Schema(description = "댓글 목록")
+    private List<BoardCommentVO> commentList; 
+    
+	@Schema(description = "게시글 총 좋아요 수", example = "10")
+	private Integer likeCnt;
+	
+    @Schema(description = "현재 사용자 좋아요 여부")
+    private Boolean isLiked;
 }

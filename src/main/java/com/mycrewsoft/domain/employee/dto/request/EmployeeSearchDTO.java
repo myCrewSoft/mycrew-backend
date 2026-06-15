@@ -18,7 +18,7 @@ public class EmployeeSearchDTO {
 	@Schema(description = "검색어", example = "홍길동")
     private String keyword;
 	
-	@Schema(description = "부서코드", example = "DEPT_01")
+	@Schema(description = "부서코드", example = "DEPT_001")
     private String deptCd;
 	
 	@Schema(description = "직원상태", example = "EMP_ACTIVITY")

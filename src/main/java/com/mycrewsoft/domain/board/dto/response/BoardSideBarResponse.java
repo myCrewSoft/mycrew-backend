@@ -22,6 +22,9 @@ public class BoardSideBarResponse {
 
 	@Schema(description = "게시판 이름", example = "자유게시판")
 	private String boardName;
+
+	@Schema(description = "부서 코드 (부서게시판 하위 항목)", example = "DEV")
+	private String deptCd;
 	
 	@Schema(description = "하위 부서/팀 게시판 목록", example = "null 또는 하위 리스트 객체")
 	private List<BoardSideBarResponse> underlevel;

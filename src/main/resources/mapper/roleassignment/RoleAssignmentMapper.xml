@@ -78,4 +78,12 @@
               AND RA.SCOPE_ID = #{scopeId}
         )
     </insert>
+
+    <update id="repointDeptScope">
+        UPDATE TB_ROLE_ASSIGNMENT
+           SET SCOPE_ID = #{newDeptCd}
+         WHERE EMP_ID = #{empId}
+           AND SCOPE_TYPE_CD = 'DEPT'
+           AND SCOPE_ID = #{oldDeptCd}
+    </update>
 </mapper>

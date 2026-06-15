@@ -11,7 +11,7 @@ public class MsngrMsgVO {
 	private Long msgId;				// 메시지 ID - PK
 	private Long chtrmId;			// 채팅방 ID(MSNGR_CHTRM) - FK
 	
-	private Long sndrId;			// 발신자 ID(TB_MEMBER)
+	private Long sndrId;			// 발신자 ID(TB_MEMBER) - 논리 FK
 	
 	private String msgCn;			// 발신 내용
 	

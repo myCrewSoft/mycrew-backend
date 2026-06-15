@@ -1,6 +1,7 @@
 package com.mycrewsoft.domain.drive.dto;
 
-import java.util.List;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -8,30 +9,65 @@ import lombok.Data;
 @Data
 @Schema(description = "드라이브 응답 DTO")
 public class DriveResponseDto {
-	@Schema(description = "드라이브아이템ID", example = "1")
+
+    @Schema(description = "드라이브 아이템 ID")
     private Long driveItemId;
 
-    @Schema(description = "상위드라이브아이템ID", example = "1")
+    @Schema(description = "부모 드라이브 아이템 ID")
     private Long prntDriveItemId;
 
-    @Schema(description = "아이템유형 (01:폴더 / 02:파일)", example = "01")
+    @Schema(description = "최초 등록자 ID")
+    private Long frstRgtrId;
+
+    @Schema(description = "최종 수정자 ID")
+    private Long lastMdfrId;
+
+    @Schema(description = "아이템 유형 코드 (01:폴더, 02:파일)")
     private String itemTypeCd;
 
-    @Schema(description = "즐겨찾기여부", example = "Y")
+    @Schema(description = "즐겨찾기 여부")
     private String bookmarkYn;
 
-    @Schema(description = "폴더/파일명", example = "프로젝트 자료")
+    @Schema(description = "아이템명")
     private String itemNm;
 
-    @Schema(description = "최초등록일시", example = "2024-05-07 14:30:00")
+    @Schema(description = "생성일시")
     private String frstRegDt;
 
-    @Schema(description = "최종수정일시", example = "2024-05-07 14:30:00")
+    @Schema(description = "수정일시")
     private String lastMdfcnDt;
 
-    @Schema(description = "등록 후 경과 시간", example = "3분 전")
-    private String timeAgo;
+    @Schema(description = "삭제 여부")
+    private String delYn;
+
+    @Schema(description = "삭제일시")
+    private String delDt;
+
+    @Schema(description = "삭제자 ID")
+    private Long deltrMbrId;
+
+    @Schema(description = "드라이브 범위 코드 (01:개인, 02:프로젝트)")
+    private String driveScopeCd;
+
+    @Schema(description = "프로젝트 ID")
+    private Long projId;
+
+    // 조회용 추가 필드
+    @Schema(description = "파일 크기")
+    private String fileSz;
+
+    @Schema(description = "원본 파일명")
+    private String orgnlFileNm;
+
+    @Schema(description = "하위 아이템 개수")
+    private Integer childCnt; 
     
-    private Long fileSz;
-    private String orgnFileNm;
+    @Schema(description = "삭제자 이름")
+    private String deltrMbrNm;  // 삭제자 이름
+    
+    @Schema(description = "최초생성자 이름")
+    private String frstRgtrNm;  // 생성자 이름
+    
+    @Schema(description = "최종수정자 이름")
+    private String lastMdfrNm;  // 수정자 이름
 }

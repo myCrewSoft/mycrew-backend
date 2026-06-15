@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.room.mapper.RoomMapper">
+
+	<resultMap type="ConfRmVO" id="ConfRmMap" autoMapping="true">
+	    <id property="confRmId" column="CONF_RM_ID"/>
+	    <collection property="confRmRsrvList" ofType="ConfRmRsrvVO" autoMapping="true">
+	        <id property="rsrvId" column="RSRV_ID"/>
+	    </collection>
+	</resultMap>
+	
+	<select id="selectConfRmList" resultType="com.mycrewsoft.domain.room.vo.ConfRmVO">
+		SELECT
+			CONF_RM_ID
+			, CONF_RM_NM
+			, CONF_RM_HO
+			, CONF_RM_FLR
+			, CONF_RM_COLOR
+		FROM TB_CONF_RM
+		WHERE USE_YN = 'Y'
+		ORDER BY CONF_RM_ID DESC
+	</select>
+	
+	<select id="selectConfRm" resultType="com.mycrewsoft.domain.room.vo.ConfRmVO">
+		SELECT
+			CONF_RM_ID
+			, CONF_RM_NM
+			, CONF_RM_HO
+			, CONF_RM_FLR
+			, CONF_RM_MNGR_ID
+			, USE_YN
+			, CONF_RM_COLOR
+		FROM TB_CONF_RM
+		WHERE CONF_RM_ID = #{confRmId}
+	</select>
+
+	<insert id="insertConfRm">
+		<selectKey keyProperty="confRmId" resultType="long" order="BEFORE">
+	        SELECT SEQ_CONF_RM_ID.NEXTVAL FROM DUAL
+	    </selectKey>
+		INSERT INTO TB_CONF_RM (
+			CONF_RM_ID
+			, CONF_RM_NM
+			, CONF_RM_HO
+			, CONF_RM_FLR
+			, CONF_RM_MNGR_ID
+			, USE_YN
+			, CONF_RM_COLOR
+		) VALUES (
+			#{confRmId}
+			, #{confRmNm}
+			, #{confRmHo}
+			, #{confRmFlr}
+			, #{confRmMngrId}
+			, 'Y'
+			, #{confRmColor}
+		)
+	</insert>
+
+	<update id="updateConfRm">
+		UPDATE TB_CONF_RM
+		   SET CONF_RM_NM = #{confRmNm},
+			   CONF_RM_HO = #{confRmHo},
+			   CONF_RM_FLR = #{confRmFlr},
+			   CONF_RM_MNGR_ID = #{confRmMngrId},
+			   USE_YN = #{useYn},
+			   CONF_RM_COLOR = #{confRmColor}
+		WHERE CONF_RM_ID = #{confRmId}
+	</update>
+
+	<delete id="deleteConfRm">
+		DELETE FROM TB_CONF_RM
+		WHERE CONF_RM_ID = #{confRmId}
+	</delete>
+
+</mapper>

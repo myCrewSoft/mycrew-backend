@@ -4,13 +4,16 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.catalina.mapper.Mapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.mycrewsoft.common.constant.PermissionCode;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.employee.mapper.EmployeeMapper;
+import com.mycrewsoft.domain.schedule.dto.command.MeetingScheduleCreateCommand;
+import com.mycrewsoft.domain.schedule.dto.command.ProjectScheduleCreateCommand;
+import com.mycrewsoft.domain.schedule.dto.command.TaskScheduleCreateCommand;
 import com.mycrewsoft.domain.schedule.dto.request.ScheduleRequestDto;
 import com.mycrewsoft.domain.schedule.dto.response.ScheduleResponseDto;
 import com.mycrewsoft.domain.schedule.mapper.IntgSchdMapper;
@@ -21,8 +24,6 @@ import com.mycrewsoft.domain.schedule.vo.SchdSearchVO;
 import com.mycrewsoft.domain.schedule.vo.SchdTargetDetailVO;
 import com.mycrewsoft.domain.schedule.vo.SchdTargetVO;
 import com.mycrewsoft.security.authz.AuthorizationService;
-import com.mycrewsoft.security.authz.PermissionCode;
-import com.mycrewsoft.security.authz.PermissionScopeSet;
 import com.mycrewsoft.security.authz.ResourceContext;
 import com.mycrewsoft.security.authz.ResourceType;
 import com.mycrewsoft.security.util.SecurityUtil;
@@ -39,6 +40,7 @@ public class ScheduleServiceImpl implements ScheduleService{
 	private final EmployeeMapper employeeMapper;
 	private final AuthorizationService authorizationService;
 	
+	// 사용자가 직접 등록
 	@Override
 	@Transactional
 	public Long createSchd(ScheduleRequestDto dto) {
@@ -46,29 +48,152 @@ public class ScheduleServiceImpl implements ScheduleService{
 		// 사용자 정보 조회
 		Long empId = SecurityUtil.getCurrentEmpId();
 		
-		// 권한 체크
-		if(dto.getSchdClsfCd().equals("C001") || dto.getSchdClsfCd().equals("C003")) {
-			if(!SecurityUtil.isCurrentExec()) {
-				throw new CustomException(ErrorCode.ACCESS_DENIED);
-			}
-		} else {
-			ResourceContext resource = buildResourceContext(dto);
-			authorizationService.assertCurrentUserPermission(PermissionCode.SCHEDULE_CREATE, resource);			
-		}
+		// 자동 생성 검증
+		validateManualScheduleType(dto.getSchdClsfCd());
 		
+		// 권한 체크
+	
 		// DTO -> VO 변환
 		IntgSchdVO schdVO = scheduleMapper.toVo(dto, empId);
 						
 		// 일정 등록
-		intgSchdMapper.insertIntgSchd(schdVO);
+		Long schdId = insertSchedule(schdVO);
 		
 		// 타겟 목록 구성 및 등록
-		List<SchdTargetVO> targets = buildTargetList(dto, schdVO.getSchdId());
-		if(!targets.isEmpty()) schdTargetMapper.insertSchdTargetList(targets);
+		saveScheduleTargets(dto, schdId);
 		
-		return schdVO.getSchdId();
+		return schdId;
 	}
 
+	// 프로젝트 일정 자동 생성
+	@Override
+	@Transactional
+	public Long createProjectSchedule(ProjectScheduleCreateCommand command) {
+
+		if (command.getProjId() == null) {
+	        throw new CustomException(ErrorCode.PROJECT_NOT_FOUND);
+	    }
+		
+		if (command.getProjBgngYmd() == null || command.getProjEndYmd() == null) {
+		    throw new CustomException(ErrorCode.PROJECT_INVALID_DATE);
+		}
+		
+	    IntgSchdVO schdVO = new IntgSchdVO();
+
+	    // 일정 기본 정보
+	    schdVO.setSchdNm("[프로젝트] " + command.getProjNm());
+	    schdVO.setSchdDetailCn(command.getProjNm() + " 프로젝트 일정입니다.");
+	    schdVO.setSchdClsfCd("C005"); // 프로젝트 일정 코드 - 실제 공통코드에 맞게 변경
+	    schdVO.setAllDayYn("Y");
+	    schdVO.setBeginDt(command.getProjBgngYmd().atStartOfDay());
+	    schdVO.setEndDt(command.getProjEndYmd().atTime(23, 59, 59));
+	    schdVO.setSchdWrtrId(command.getCrtrId());
+	    schdVO.setDelYn("N");
+	    schdVO.setReptYn("N");
+
+	    // 일정 등록
+	    Long schdId = insertSchedule(schdVO);
+
+	    // 프로젝트 일정 타겟 등록
+	    List<SchdTargetVO> targets = List.of(
+	        SchdTargetVO.builder()
+	            .schdId(schdId)
+	            .targetTypeCd("05")
+	            .targetId(String.valueOf(command.getProjId()))
+	            .build()
+	    );
+
+	    saveScheduleTargets(targets);
+
+	    return schdId;
+	}
+	
+	// 업무 일정 자동 생성
+	@Override
+	@Transactional
+	public Long createTaskSchedule(TaskScheduleCreateCommand command) {
+
+	    if (command.getTaskId() == null) {
+	        throw new CustomException(ErrorCode.TASK_NOT_FOUND);
+	    }
+
+	    if (command.getTaskBgngYmd() == null || command.getTaskEndYmd() == null) {
+	        throw new CustomException(ErrorCode.TASK_INVALID_DATE);
+	    }
+	    
+	    IntgSchdVO schdVO = new IntgSchdVO();
+
+	    // 일정 기본 정보
+	    schdVO.setSchdNm("[업무] " + command.getTaskNm());
+	    schdVO.setSchdDetailCn(command.getTaskNm() + " 업무 일정입니다.");
+	    schdVO.setSchdClsfCd("C006");
+	    schdVO.setAllDayYn("Y");
+	    schdVO.setBeginDt(command.getTaskBgngYmd());
+	    schdVO.setEndDt(command.getTaskEndYmd());
+	    schdVO.setSchdWrtrId(command.getCrtrId());
+	    schdVO.setDelYn("N");
+	    schdVO.setReptYn("N");
+
+	    // 일정 등록
+	    Long schdId = insertSchedule(schdVO);
+
+	    // 업무 일정 타겟 등록
+	    List<SchdTargetVO> targets = List.of(
+	        SchdTargetVO.builder()
+	            .schdId(schdId)
+	            .targetTypeCd("06")
+	            .targetId(String.valueOf(command.getTaskId()))
+	            .build()
+	    );
+
+	    saveScheduleTargets(targets);
+
+	    return schdId;
+	}
+	
+	// 화상회의 일정 자동 생성
+	@Override
+	@Transactional
+	public Long createMeetingSchedule(MeetingScheduleCreateCommand command) {
+
+	    if (command.getMeetingId() == null) {
+	        throw new CustomException(ErrorCode.VIDEO_CONF_NOT_FOUND);
+	    }
+
+	    if (command.getBeginDt() == null || command.getEndDt() == null) {
+	        throw new CustomException(ErrorCode.VIDEO_CONF_INVALID_DATE);
+	    }
+	    
+	    IntgSchdVO schdVO = new IntgSchdVO();
+
+	    // 일정 기본 정보
+	    schdVO.setSchdNm("[회의] " + command.getMeetingNm());
+	    schdVO.setSchdDetailCn(command.getMeetingNm() + " 회의 일정입니다.");
+	    schdVO.setSchdClsfCd("C007");
+	    schdVO.setAllDayYn("N");
+	    schdVO.setBeginDt(command.getBeginDt());
+	    schdVO.setEndDt(command.getEndDt());
+	    schdVO.setSchdWrtrId(command.getCrtrId());
+	    schdVO.setDelYn("N");
+	    schdVO.setReptYn("N");
+
+	    // 일정 등록
+	    Long schdId = insertSchedule(schdVO);
+
+	    // 회의 일정 타겟 등록
+	    List<SchdTargetVO> targets = List.of(
+	        SchdTargetVO.builder()
+	            .schdId(schdId)
+	            .targetTypeCd("07")
+	            .targetId(String.valueOf(command.getMeetingId()))
+	            .build()
+	    );
+
+	    saveScheduleTargets(targets);
+
+	    return schdId;
+	}
+	
 	@Override
 	@Transactional
 	public ScheduleResponseDto readSchd(Long schdId) {
@@ -138,6 +263,9 @@ public class ScheduleServiceImpl implements ScheduleService{
 		IntgSchdVO schdVO = intgSchdMapper.selectIntgSchd(schdId);
 		if (schdVO == null) throw new CustomException(ErrorCode.SCHEDULE_NOT_FOUND);
 		
+		// 자동 생성 검증
+		validateManualScheduleType(dto.getSchdClsfCd());
+		
 		// 권한 체크
 		Long currentEmpId = SecurityUtil.getCurrentEmpId();
 		if(currentEmpId == null || !currentEmpId.equals(schdVO.getSchdWrtrId())) {
@@ -155,10 +283,7 @@ public class ScheduleServiceImpl implements ScheduleService{
 	    // 5. 공유 대상 수정 (기존 전체 삭제 → 재등록)
 	    schdTargetMapper.deleteSchdTarget(schdId);
 	    
-	    List<SchdTargetVO> targets = buildTargetList(dto, schdId);
-	    if (!targets.isEmpty()) {
-	        schdTargetMapper.insertSchdTargetList(targets);
-	    }
+	    saveScheduleTargets(dto, schdId);
 	}
 
 	@Override
@@ -183,12 +308,12 @@ public class ScheduleServiceImpl implements ScheduleService{
 	}
 	
 	//일정 참여자 목록 생성
-	private List<SchdTargetVO> buildTargetList(ScheduleRequestDto dto, Long schdId) {
+	private List<SchdTargetVO> buildScheduleTargets(ScheduleRequestDto dto, Long schdId) {
 
 	    List<SchdTargetVO> targets = new ArrayList<>();
 	    Long empId = SecurityUtil.getCurrentEmpId();
 
-	    // 전사 일정 - 타겟 행 하나로 전체 의미
+	    // 전사 일정 - 타겟 행 하나로 전체 의미(대상자 null)
 	    if ("C001".equals(dto.getSchdClsfCd())) {
 	        targets.add(SchdTargetVO.builder()
 	                .schdId(schdId).targetTypeCd("01").targetId("0").build());
@@ -196,18 +321,14 @@ public class ScheduleServiceImpl implements ScheduleService{
 	    	// 개인 일정 - 본인 사번 자동 추가
 	        targets.add(SchdTargetVO.builder()
 	                .schdId(schdId).targetTypeCd("02").targetId(String.valueOf(empId)).build());
+	    } else if ("C003".equals(dto.getSchdClsfCd())) {
+	    	// 간부 일정 - 타겟 하나로 간부 전체 의미(대상자 null)
+	        targets.add(SchdTargetVO.builder()
+	                .schdId(schdId).targetTypeCd("03").targetId("0").build());
 	    } else if ("C004".equals(dto.getSchdClsfCd())) {
-	    	// 부서 일정
+	    	// 부서 일정(타겟은 부서 Cd)
 	    	targets.add(SchdTargetVO.builder()
 	    			.schdId(schdId).targetTypeCd("04").targetId(dto.getDeptCd()).build());
-	    } else if ("C005".equals(dto.getSchdClsfCd())) {
-	    	// 프로젝트 일정
-	    	targets.add(SchdTargetVO.builder()
-	    			.schdId(schdId).targetTypeCd("05").targetId(String.valueOf(dto.getProjId())).build());
-	    } else if ("C006".equals(dto.getSchdClsfCd())) {
-	    	// 업무 일정
-	    	targets.add(SchdTargetVO.builder()
-	    			.schdId(schdId).targetTypeCd("06").targetId(String.valueOf(dto.getTaskId())).build());
 	    }
 	    
 	    // 프론트에서 선택한 targets 그대로 사용
@@ -218,22 +339,47 @@ public class ScheduleServiceImpl implements ScheduleService{
 	    return targets;
 	}
 	
-	// 권한 ResourceContext 체크
-	private ResourceContext buildResourceContext(ScheduleRequestDto dto) {
+	// 일정 생성 insert문 메서드
+	private Long insertSchedule(IntgSchdVO schdVO) {
+	    intgSchdMapper.insertIntgSchd(schdVO);
 
-	    ResourceContext.ResourceContextBuilder builder = ResourceContext.builder()
-	            .resourceType(ResourceType.SCHEDULE);
-	    
-	    if ("C002".equals(dto.getSchdClsfCd())) {
-	    	builder.ownerEmpId(SecurityUtil.getCurrentEmpId());
-	    } else if ("C004".equals(dto.getSchdClsfCd())) {
-	        builder.deptCd(dto.getDeptCd());
-	    } else if ("C005".equals(dto.getSchdClsfCd())) {
-	        builder.projId(String.valueOf(dto.getProjId()));
-	    } else if ("C006".equals(dto.getSchdClsfCd())) {
-	        builder.projId(String.valueOf(dto.getTaskId()));
-	    } 
-	    
-	    return builder.build();
+	    Long schdId = schdVO.getSchdId();
+
+	    if (schdId == null) {
+	        throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+	    }
+
+	    return schdId;
 	}
+	
+	// 일정 대상자 insert 메서드
+	private void saveScheduleTargets(ScheduleRequestDto dto, Long schdId) {
+	    List<SchdTargetVO> targets = buildScheduleTargets(dto, schdId);
+
+	    if (targets.isEmpty()) {
+	        return;
+	    }
+
+	    schdTargetMapper.insertSchdTargetList(targets);
+	}
+	
+	// 자동 일정 대상 등록
+	private void saveScheduleTargets(List<SchdTargetVO> targets) {
+	    if (targets == null || targets.isEmpty()) {
+	        return;
+	    }
+
+	    schdTargetMapper.insertSchdTargetList(targets);
+	}
+	
+	// 자동생성 검증
+	private void validateManualScheduleType(String schdClsfCd) {
+	    if ("C005".equals(schdClsfCd)
+	            || "C006".equals(schdClsfCd)
+	            || "C007".equals(schdClsfCd)
+	            || "C008".equals(schdClsfCd)) {
+	        throw new CustomException(ErrorCode.ACCESS_DENIED);
+	    }
+	}
+	
 }

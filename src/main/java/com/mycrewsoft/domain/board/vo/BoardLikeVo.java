@@ -1,5 +1,7 @@
 package com.mycrewsoft.domain.board.vo;
 
+import java.time.LocalDateTime;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -7,8 +9,8 @@ import lombok.Setter;
 @Setter 
 public class BoardLikeVo {
 
-	private Integer boardId; //게시판분석결과ID
-	private Integer empId; //사원idoOOOOO
-	private Integer frstRegDt; //최초 등록일시
+	private Long boardId; 
+	private Long empId; 
+	private LocalDateTime frstRegDt; 
 
 }

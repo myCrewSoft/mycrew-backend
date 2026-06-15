@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.domain.employee.mapper.EmployeeLookupMapper">
+
+    <select id="selectEmployeesForLookup" parameterType="EmployeeLookupRequest" resultType="EmployeeLookupVo">
+        SELECT
+            E.EMP_ID,
+            E.EMP_NM,
+            D.DEPT_NM,
+            JG.JOB_GRD_NM,
+            JP.JOB_PSTN_NM,
+            <!-- PRFL_IMG_FILE_ID 는 프로필 업로드 시 저장되는 첨부파일상세ID(ATCH_FILE_DTL_ID)이며,
+                 이미지 서빙(/api/files/images/{atchFileDtlId})에 그대로 사용한다. -->
+            CASE
+                WHEN E.PRFL_IMG_FILE_ID IS NOT NULL
+                THEN '/api/files/images/' || E.PRFL_IMG_FILE_ID
+            END AS PROFILE_IMAGE_URL
+        FROM TB_EMPLOYEE E
+        LEFT JOIN TB_DEPARTMENT D
+            ON D.DEPT_CD = E.DEPT_CD
+        LEFT JOIN TB_JOB_GRADE JG
+            ON JG.JOB_GRD_CD = E.JOB_GRD_CD
+        LEFT JOIN TB_JOB_POSITION JP
+            ON JP.JOB_PSTN_CD = E.JOB_PSTN_CD
+        WHERE E.ENABLED = 'Y'
+        <if test="excludeEmpId != null">
+		    AND E.EMP_ID <![CDATA[ <> ]]> #{excludeEmpId}
+		</if>
+        <if test="keyword != null and keyword != ''">
+            AND (
+                E.EMP_NM LIKE '%' || #{keyword} || '%'
+                OR D.DEPT_NM LIKE '%' || #{keyword} || '%'
+                OR JG.JOB_GRD_NM LIKE '%' || #{keyword} || '%'
+            )
+        </if>
+        <if test="deptCd != null and deptCd != ''">
+            AND E.DEPT_CD = #{deptCd}
+        </if>
+        <if test="fixedDeptCd != null and fixedDeptCd != ''">
+            AND E.DEPT_CD = #{fixedDeptCd}
+        </if>
+        <if test="projId != null">
+            AND E.EMP_ID IN (
+                SELECT EMP_ID
+                FROM TB_PROJ_MEMBER
+                WHERE PROJ_ID = #{projId}
+            )
+        </if>
+        <if test="excludeProjId != null">
+            AND E.EMP_ID NOT IN (
+                SELECT EMP_ID
+                FROM TB_PROJ_MEMBER
+                WHERE PROJ_ID = #{excludeProjId}
+            )
+        </if>
+        ORDER BY D.DEPT_NM ASC, E.EMP_NM ASC
+        FETCH FIRST 50 ROWS ONLY
+    </select>
+
+	<select id="selectAllEmpIds" resultType="long">
+	    SELECT EMP_ID
+	    FROM TB_EMPLOYEE
+	    WHERE ENABLED = 'Y'
+	</select>
+</mapper>

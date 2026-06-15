@@ -9,9 +9,11 @@ import lombok.Setter;
 @Setter
 public class AlrmRcvrVO {
 	
-	private Long alrmRcvrId;			// 알림 수신자 ID(TB_MEMBER) - PK
+	private Long alrmRcvrId;			// 알림 수신 ID - PK
     private Long alrmId;				// 알림 ID - FK
 
+    private Long rcvrEmpId;             // 알림 수신자 ID(TB_MEMBER) - 논리 FK
+    
     private LocalDateTime alrmCfmtnDt;	// 알림 확인 일시
     
     private String alrmDelYn;			// 알림 삭제 여부

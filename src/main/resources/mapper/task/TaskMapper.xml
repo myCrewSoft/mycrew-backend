@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.task.mapper.TaskMapper">
+
+    <!-- 업무 목록 조회 공통 컬럼 -->
+    <sql id="taskListColumns">
+        T.TASK_ID,
+        T.PROJ_ID,
+        T.TASK_NM,
+        T.TASK_TYPE_CD,
+        T.TASK_MNGR_ID,
+        E.EMP_NM      AS TASK_MNGR_NM,
+        T.TASK_STAT_CD,
+        T.TASK_PRIORITY_CD,
+        T.TASK_IMPRTNC_CD,
+        T.TASK_PRGRS_SMRY,
+        T.TASK_END_DT
+    </sql>
+
+    <!-- 업무 상세 조회 공통 컬럼 -->
+    <sql id="taskDetailColumns">
+        T.TASK_ID,
+        T.PROJ_ID,
+        T.TASK_NM,
+        T.TASK_CN,
+        T.TASK_TYPE_CD,
+        T.TASK_MNGR_ID,
+        E.EMP_NM      AS TASK_MNGR_NM,
+        T.TASK_STAT_CD,
+        T.TASK_PRIORITY_CD,
+        T.TASK_IMPRTNC_CD,
+        T.TASK_PRGRS_SMRY,
+        T.TASK_BGNG_DT,
+        T.TASK_END_DT,
+        T.FRST_REG_DT,
+        T.FRST_RGTR_ID,
+        T.LAST_MDFCN_DT
+    </sql>
+
+    <!-- 참여자 조회 공통 컬럼 -->
+    <sql id="ptcptColumns">
+        TP.TASK_PTCPT_ID,
+	    TP.EMP_ID,
+	    ME.EMP_NM,
+	    ME.PRFL_IMG_FILE_ID,
+	    D.DEPT_NM,
+	    JP.JOB_PSTN_NM,
+	    JG.JOB_GRD_NM,
+	    TP.JOIN_DT
+    </sql>
+
+    <!-- TB_TASK + 담당자 공통 JOIN -->
+    <sql id="taskBaseJoin">
+        FROM TB_TASK T
+        LEFT JOIN TB_EMPLOYEE E ON T.TASK_MNGR_ID = E.EMP_ID
+    </sql>
+
+    <!-- 업무 상세 조회용 resultMap (참여자 목록 collection 포함) -->
+    <resultMap id="TaskDetailResultMap" type="TaskDetailVO" autoMapping="true">
+	    <id property="taskId" column="TASK_ID"/>
+	    <collection property="ptcptList" ofType="TaskPtcptDetailVO" autoMapping="true">
+	        <id property="taskPtcptId" column="TASK_PTCPT_ID"/>
+	    </collection>
+	</resultMap>
+
+    <!-- 프로젝트 ID로 업무 목록 조회 (담당자명 JOIN, 삭제된 업무 제외, 등록일 최신순) -->
+    <select id="selectTaskList" resultType="TaskListVO">
+        SELECT
+            <include refid="taskListColumns"/>
+        <include refid="taskBaseJoin"/>
+        WHERE T.PROJ_ID = #{projId}
+          AND T.DEL_YN  = 'N'
+        ORDER BY T.FRST_REG_DT DESC
+    </select>
+
+    <!-- 업무 ID로 업무 상세 조회 (담당자·참여자·부서 JOIN, 삭제된 업무 제외) -->
+    <select id="selectTaskDetail" resultMap="TaskDetailResultMap">
+        SELECT
+            <include refid="taskDetailColumns"/>,
+            <include refid="ptcptColumns"/>
+        <include refid="taskBaseJoin"/>
+        LEFT JOIN TB_TASK_PTCPT TP ON T.TASK_ID   = TP.TASK_ID
+        LEFT JOIN TB_EMPLOYEE ME   ON TP.EMP_ID    = ME.EMP_ID
+        LEFT JOIN TB_DEPARTMENT D  ON ME.DEPT_CD   = D.DEPT_CD
+        LEFT JOIN TB_JOB_POSITION JP ON ME.JOB_PSTN_CD = JP.JOB_PSTN_CD
+        LEFT JOIN TB_JOB_GRADE JG    ON ME.JOB_GRD_CD  = JG.JOB_GRD_CD
+        WHERE T.TASK_ID = #{taskId}
+          AND T.DEL_YN  = 'N'
+    </select>
+
+    <!-- 업무 1건 등록 (시퀀스로 PK 채번, 진척률 기본값 0, DEL_YN 기본값 N) -->
+    <insert id="insertTask">
+        <selectKey keyProperty="taskId" resultType="long" order="BEFORE">
+            SELECT SEQ_TASK_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_TASK (
+            TASK_ID,
+            PROJ_ID,
+            CHTRM_ID,
+            TASK_TYPE_CD,
+            TASK_MNGR_ID,
+            TASK_STAT_CD,
+            TASK_PRIORITY_CD,
+            TASK_IMPRTNC_CD,
+            TASK_NM,
+            TASK_CN,
+            TASK_PRGRS_SMRY,
+            TASK_BGNG_DT,
+            TASK_END_DT,
+            FRST_REG_DT,
+            FRST_RGTR_ID,
+            LAST_MDFCN_DT,
+            LAST_MDFR_ID,
+            DEL_YN
+        ) VALUES (
+            #{taskId},
+            #{projId},
+            #{chtrmId},
+            #{taskTypeCd},
+            #{taskMngrId},
+            #{taskStatCd},
+            #{taskPriorityCd},
+            #{taskImprtncCd},
+            #{taskNm},
+            #{taskCn},
+            0,
+            #{taskBgngDt},
+            #{taskEndDt},
+            SYSDATE,
+            #{frstRgtrId},
+            SYSDATE,
+            #{frstRgtrId},
+            'N'
+        )
+    </insert>
+
+    <!-- 업무 참여자 1명 등록 (시퀀스로 PK 채번, 참여일시 SYSDATE) -->
+    <insert id="insertTaskPtcpt">
+        <selectKey keyProperty="taskPtcptId" resultType="long" order="BEFORE">
+            SELECT SEQ_TASK_PTCPT_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_TASK_PTCPT (
+            TASK_PTCPT_ID,
+            TASK_ID,
+            EMP_ID,
+            JOIN_DT
+        ) VALUES (
+            #{taskPtcptId},
+            #{taskId},
+            #{empId},
+            SYSDATE
+        )
+    </insert>
+
+    <!-- 업무 정보 수정 (null 필드는 UPDATE 제외, 최종수정일시 SYSDATE 자동 기록) -->
+	<update id="updateTask">
+	    UPDATE TB_TASK
+	    <set>
+	        LAST_MDFCN_DT = SYSDATE,
+	        LAST_MDFR_ID  = #{task.lastMdfrId},
+	        <if test="task.taskNm != null and task.taskNm != ''">
+	            TASK_NM = #{task.taskNm},
+	        </if>
+	        <if test="task.taskCn != null">
+	            TASK_CN = #{task.taskCn},
+	        </if>
+	        <if test="task.taskMngrId != null">
+	            TASK_MNGR_ID = #{task.taskMngrId},
+	        </if>
+	        <if test="task.taskStatCd != null and task.taskStatCd != ''">
+	            TASK_STAT_CD = #{task.taskStatCd},
+	        </if>
+	        <if test="task.taskPriorityCd != null and task.taskPriorityCd != ''">
+	            TASK_PRIORITY_CD = #{task.taskPriorityCd},
+	        </if>
+	        <if test="task.taskImprtncCd != null and task.taskImprtncCd != ''">
+	            TASK_IMPRTNC_CD = #{task.taskImprtncCd},
+	        </if>
+	        <if test="task.taskPrgrsSmry != null">
+	            TASK_PRGRS_SMRY = #{task.taskPrgrsSmry},
+	        </if>
+	        <if test="task.taskBgngDt != null">
+	            TASK_BGNG_DT = #{task.taskBgngDt},
+	        </if>
+	        <if test="task.taskEndDt != null">
+	            TASK_END_DT = #{task.taskEndDt},
+	        </if>
+	    </set>
+	    WHERE TASK_ID = #{taskId}
+	</update>
+
+    <!-- 업무 담당자 변경 (단일 컬럼 업데이트, 최종수정일시 SYSDATE 자동 기록) -->
+    <update id="updateTaskManager">
+        UPDATE TB_TASK
+        SET TASK_MNGR_ID  = #{taskMngrId},
+            LAST_MDFCN_DT = SYSDATE,
+            LAST_MDFR_ID  = #{lastMdfrId}
+        WHERE TASK_ID     = #{taskId}
+          AND DEL_YN      = 'N'
+    </update>
+
+    <!-- 업무 참여자 전체 삭제 (수정 시 DELETE → INSERT 패턴에 사용) -->
+    <delete id="deleteTaskPtcpts">
+        DELETE FROM TB_TASK_PTCPT
+        WHERE TASK_ID = #{taskId}
+    </delete>
+
+    <!-- 업무 참여자 1명 삭제 (taskId + empId로 특정) -->
+    <delete id="deleteTaskPtcpt">
+        DELETE FROM TB_TASK_PTCPT
+        WHERE TASK_ID = #{taskId}
+          AND EMP_ID  = #{empId}
+    </delete>
+
+    <!-- 업무 논리 삭제 (DEL_YN = Y, 삭제자 ID · 삭제일시 기록) -->
+    <update id="deleteTask">
+        UPDATE TB_TASK
+        SET DEL_YN       = 'Y',
+            DEL_DT       = SYSDATE,
+            DELTR_MBR_ID = #{deltrMbrId}
+        WHERE TASK_ID    = #{taskId}
+    </update>
+
+    <select id="selectTasksDueTomorrow" resultType="TaskDeadlineVO">
+        SELECT
+            T.TASK_ID,
+            T.TASK_NM,
+            P.EMP_ID AS RCVR_EMP_IDS
+        FROM TB_TASK T
+        JOIN TB_TASK_PTCPT P ON T.TASK_ID = P.TASK_ID
+        WHERE TRUNC(T.TASK_END_DT) = TRUNC(SYSDATE + 1)
+        AND T.DEL_YN = 'N'
+    </select>
+</mapper>

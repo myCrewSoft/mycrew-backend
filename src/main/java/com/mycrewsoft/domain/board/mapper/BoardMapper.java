@@ -9,33 +9,114 @@ import org.apache.ibatis.annotations.Param; // 💡 반드시 org.apache.ibatis.
 import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
 import com.mycrewsoft.domain.board.dto.response.BoardResponse;
 import com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse;
+import com.mycrewsoft.domain.board.vo.BoardCommentVO;
+import com.mycrewsoft.domain.board.vo.BoardLikeVo;
+import com.mycrewsoft.domain.board.vo.BoardVO;
+
 
 @Mapper
 public interface BoardMapper {
-    
-    long countBoard(@Param("condition") BoardSearchRequest condition);
+
+	/**
+	 *  전체 카운트 및  리스트 
+	 * @param searchRequest
+	 * @return
+	 */
+	int countBoard(
+		    @Param("searchRequest") BoardSearchRequest searchRequest,
+		    @Param("boardTypeCd") String boardTypeCd,
+		    @Param("deptCd") String deptCd
+		);
+
+	/**
+	 * 권한 스코프와 페이징 처리가 결합된 통합 게시글 목록 조회
+	 */
+	List<BoardResponse> getBoardList(
+			@Param("getOffset") long getOffset,
+			@Param("getPageSize") int getPageSize,
+			@Param("searchRequest") BoardSearchRequest searchRequest,
+			@Param("boardTypeCd")String boardTypeCd,
+			@Param("deptCd")String deptCd
+			);
 	
-    /**
-     * 권한 스코프와 페이징 처리가 결합된 통합 게시글 목록 조회
-     */
-//    List<BoardResponse> selectBoard(
-//        @Param("condition") BoardSearchRequest condition,
-//        @Param("currentEmpId") Long currentEmpId, 
-//        @Param("myDeptCd") String myDeptCd,
-//        @Param("global") boolean global,
-//        @Param("deptScopeIds") Set<String> deptScopeIds,
-//        @Param("projectScopeIds") Set<String> projectScopeIds,
-//        @Param("offset") int offset,
-//        @Param("size") int size
-//    );
+	
+	
+	/**
+	 *   프로젝트 목록 조회
+	 */
+	
+	List<BoardResponse>	getProjList(
+			@Param("getOffset") long getOffset,
+			@Param("getPageSize") int getPageSize,
+			@Param("searchRequest") BoardSearchRequest searchRequest,
+			@Param("projId") Long projId
+			
+			);
+	
+	int countProjBoard(
+			@Param("searchRequest")BoardSearchRequest searchRequest,
+			@Param("projId") Long projId
+			
+			);
+	
 
 	/**
 	 *   사이드바 목록 조회
 	 */
 	List<BoardSideBarResponse> getSideBar(
-		@Param("myDeptCd")	String myDeptCd,
-		@Param("empId") Long currentEmpId,
-		@Param("hasGlobal")	boolean hasGlobal, 
-		@Param("departmentScopeIds") Set<String> departmentScopeIds
-	);
+			@Param("myDeptCd")	String myDeptCd,
+			@Param("empId") Long currentEmpId,
+			@Param("hasGlobal")	boolean hasGlobal, 
+			@Param("departmentScopeIds") Set<String> departmentScopeIds
+			);
+
+	// 게시판 조회 
+	BoardVO readBoard(@Param("boardId") Long boardId);
+	
+	//게시판 댓글 조회
+	List<BoardCommentVO>  readCommentList(@Param("boardId") Long boardId);
+	
+	//게시판 댓글 작성자 아이디 조회
+	Long readCmWrterEmpId(@Param("commentId") Long commentId);
+	
+	
+
+	//게시판 조회수 증가
+	 int updateViewCount(@Param("boardId") Long boardId);
+	 
+	
+	//게시판 좋아요 읽기
+	BoardLikeVo readLikeStatus(
+			@Param("boardId") Long boardId,
+			@Param("empId")  Long empId);
+	
+	 // 좋아요 수 
+	 int  readLikeCount(@Param("boardId") Long boardId);
+	 
+	 //게시글 좋아요 등록
+	 void insertLike(BoardLikeVo likeVo);
+	 
+	 //게시글 좋아요 취소
+	 int deleteLike(@Param("boardId")Long boardId,
+			 @Param("empId")Long empId);
+	 
+	 
+	 // 게시글 생성
+	 void createBoard(BoardVO boardVo);
+	 
+	 // 게시글 수정
+	  int updateBoardDetails(BoardVO updateBoardDetails);
+	 
+	  //게시글 삭제
+	  int deleteBoardDetail(Long boardId);
+	  
+	  //게시글 댓글 생성
+	  void insertComment(BoardCommentVO commentVo);
+	  
+	  //게시글 댓글 수정
+	  int updateComment(BoardCommentVO updateComment);
+	  
+	  //게시글 댓글 삭제
+	  int deleteComment(@Param("commentId") Long commentId);
+	  
 }

@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.project.mapper.ProjectMapper">
+<insert id="insertProject">
+	<selectKey keyProperty="projId" resultType="long" order="BEFORE">
+		SELECT SEQ_PROJ_ID.NEXTVAL FROM DUAL
+	</selectKey>
+	INSERT INTO TB_PROJECT (
+		PROJ_ID,
+		CHTRM_ID,
+		PROJ_NM,
+		PROJ_CN,
+		PROJ_BGNG_YMD,
+		PROJ_END_YMD,
+		PROJ_STAT_CD,
+		PROJ_CREAT_DT,
+		PROJ_LDR_EMP_ID,
+		PROJ_PRGRS_RT
+	) VALUES (
+		#{projId},
+        #{chtrmId},
+        #{projNm},
+        #{projCn},
+        #{projBgngYmd},
+        #{projEndYmd},
+        '01',
+        SYSDATE,
+        #{projLdrEmpId},
+        0
+	)
+</insert>
+
+<select id="selectProjectList" resultType="com.mycrewsoft.domain.project.vo.ProjectVO">
+	SELECT
+	    P.PROJ_ID,
+	    P.PROJ_NM,
+	    P.PROJ_BGNG_YMD,
+	    P.PROJ_END_YMD,
+	    CASE
+	        WHEN P.PROJ_STAT_CD = '01'
+	         AND P.PROJ_BGNG_YMD &lt;= TRUNC(SYSDATE)
+	        THEN '02'
+	        ELSE P.PROJ_STAT_CD
+	    END AS PROJ_STAT_CD,
+	    E.EMP_NM AS PROJ_LDR_NM,
+	    P.PROJ_PRGRS_RT
+	FROM TB_PROJECT P
+	JOIN TB_PROJ_MEMBER PM
+	    ON PM.PROJ_ID   = P.PROJ_ID
+	   AND PM.EMP_ID    = #{empId}
+	   AND PM.LEAVE_DT IS NULL
+	JOIN TB_EMPLOYEE E
+	    ON E.EMP_ID = P.PROJ_LDR_EMP_ID
+	ORDER BY P.PROJ_CREAT_DT DESC
+</select>
+
+<update id="updateProjStateToInProgress">
+	UPDATE TB_PROJECT
+	SET 
+		PROJ_STAT_CD = '02',
+		PROJ_STAT_CHG_DT = SYSDATE
+	WHERE PROJ_STAT_CD = '01'
+	  AND TRUNC(PROJ_BGNG_YMD) &lt;= TRUNC(SYSDATE)
+</update>
+
+	<select id="selectProjectLeaderId" resultType="long">
+	    SELECT PROJ_LDR_MBR_ID
+	    FROM TB_PROJECT
+	    WHERE PROJ_ID = #{projId}
+	</select>
+
+<resultMap id="ProjectVOMap" type="com.mycrewsoft.domain.project.vo.ProjectVO">
+    <id     property="projId"       column="PROJ_ID"/>
+    <result property="projNm"       column="PROJ_NM"/>
+    <result property="projCn"       column="PROJ_CN"/>
+    <result property="projBgngYmd"  column="PROJ_BGNG_YMD"/>
+    <result property="projEndYmd"   column="PROJ_END_YMD"/>
+    <result property="projStatCd"   column="PROJ_STAT_CD"/>
+    <result property="projLdrEmpId" column="PROJ_LDR_EMP_ID"/>
+    <result property="projLdrNm"    column="PROJ_LDR_NM"/>
+    <result property="projPrgrsRt"  column="PROJ_PRGRS_RT"/>
+
+    <collection property="projMemberList" ofType="com.mycrewsoft.domain.projectmember.vo.ProjectMemberVO">
+        <result property="empId"  column="EMP_ID"/>
+        <result property="empNm"  column="EMP_NM"/>
+        <result property="deptNm" column="DEPT_NM"/>
+    </collection>
+</resultMap>
+
+<select id="selectProject" resultMap="ProjectVOMap">
+	SELECT 
+	   P.PROJ_ID,
+       P.PROJ_NM,
+       P.PROJ_CN,
+       P.CHTRM_ID,
+       P.PROJ_BGNG_YMD,
+       P.PROJ_END_YMD,
+       CASE
+	        WHEN P.PROJ_STAT_CD = '01'
+	         AND P.PROJ_BGNG_YMD &lt;= TRUNC(SYSDATE)
+	        THEN '02'
+	        ELSE P.PROJ_STAT_CD
+	    END AS PROJ_STAT_CD,
+       P.PROJ_LDR_EMP_ID,
+       P.PROJ_PRGRS_RT,
+       LDR.EMP_NM    AS PROJ_LDR_NM,
+       PM.EMP_ID,
+       E.EMP_NM,
+       D.DEPT_NM
+	FROM   TB_PROJECT     P
+	JOIN   TB_EMPLOYEE    LDR ON LDR.EMP_ID  = P.PROJ_LDR_EMP_ID
+	JOIN   TB_PROJ_MEMBER PM  ON PM.PROJ_ID  = P.PROJ_ID AND PM.LEAVE_DT IS NULL
+	JOIN   TB_EMPLOYEE    E   ON E.EMP_ID    = PM.EMP_ID
+	JOIN   TB_DEPARTMENT  D   ON D.DEPT_CD   = E.DEPT_CD
+	WHERE  P.PROJ_ID = #{projId}
+	  AND  EXISTS (
+	           SELECT 1 FROM TB_PROJ_MEMBER
+	           WHERE  PROJ_ID  = #{projId}
+	             AND  EMP_ID   = #{empId}
+	             AND  LEAVE_DT IS NULL
+	       )
+</select>
+
+<update id="updateProject">
+	UPDATE TB_PROJECT
+    <set>
+        <if test="projNm != null">
+            PROJ_NM = #{projNm},
+        </if>
+        <if test="projCn != null">
+            PROJ_CN = #{projCn},
+        </if>
+        <if test="projBgngYmd != null">
+            PROJ_BGNG_YMD = #{projBgngYmd},
+        </if>
+        <if test="projEndYmd != null">
+            PROJ_END_YMD = #{projEndYmd},
+        </if>
+        <if test="projStatCd != null">
+            PROJ_STAT_CD = #{projStatCd},
+            PROJ_STAT_CHG_DT = SYSDATE,
+        </if>
+        PROJ_MDFCN_DT = SYSDATE,
+    </set>
+    WHERE PROJ_ID = #{projId}
+</update>
+
+<update id="updateLeaveDt">
+	UPDATE TB_PROJ_MEMBER
+	SET LEAVE_DT = SYSDATE
+	WHERE PROJ_ID = #{projId}
+	   AND EMP_ID = #{empId}
+	   AND LEAVE_DT IS NULL
+</update>
+	
+	
+	<!-- 프로젝트 진척률 = sum(업무진척률 * 업무중요도 가중치) / sum(가중치) -->
+	<update id="updateProjectPrgrsRtd">
+	    UPDATE TB_PROJECT
+	    SET PROJ_PRGRS_RT = (
+	        SELECT ROUND(
+	            NVL(
+	                SUM(T.TASK_PRGRS_SMRY * CASE T.TASK_IMPRTNC_CD
+	                                            WHEN '01' THEN 1
+	                                            WHEN '02' THEN 2
+	                                            WHEN '03' THEN 3
+	                                        END)
+	                /
+	                NULLIF(SUM(CASE T.TASK_IMPRTNC_CD
+	                               WHEN '01' THEN 1
+	                               WHEN '02' THEN 2
+	                               WHEN '03' THEN 3
+	                           END), 0) * 100
+	            , 0)
+	        )
+	        FROM TB_TASK T
+	        WHERE T.PROJ_ID = #{projId}
+	          AND T.DEL_YN  = 'N'
+	    )
+	    WHERE PROJ_ID = #{projId}
+	</update>
+
+	<resultMap id="projectDeadlineResultMap" type="ProjectDeadlineVO">
+		<id property="projId" column="PROJ_ID"/>
+		<result property="projNm" column="PROJ_NM"/>
+		<collection property="empIds" ofType="long" columnPrefix="M_">
+			<result column="EMP_ID"/>
+		</collection>
+	</resultMap>
+
+	<select id="selectProjectsDueTomorrow" resultMap="projectDeadlineResultMap">
+		SELECT
+			P.PROJ_ID,
+			P.PROJ_NM,
+			PM.EMP_ID AS M_EMP_ID
+		FROM TB_PROJECT P
+		JOIN TB_PROJ_MEMBER PM ON PM.PROJ_ID = P.PROJ_ID
+							AND PM.LEAVE_DT IS NULL
+		WHERE P.PROJ_STAT_CD = '02'
+		AND TRUNC(P.PROJ_END_YMD) = TRUNC(SYSDATE + 1)
+	</select>
+	
+	<update id="updateProjectChtrmId">
+	    UPDATE TB_PROJECT
+	    SET CHTRM_ID = #{chtrmId}
+	    WHERE PROJ_ID = #{projId}
+	</update>
+</mapper>
