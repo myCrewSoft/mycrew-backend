@@ -24,4 +24,10 @@ public interface MtngMomMapper {
 
     // 회의록 수정 이력 단건 등록
     void createMtngMomHist(MtngMomHistVO vo);
+    
+	 // drftDocSn으로 회의록 조회 (결재 완료 시 역추적용)
+	 MtngMomVO selectMomByDrftDocSn(@Param("drftDocSn") Long drftDocSn);
+	
+	 // 회의록 상태 변경 (결재 완료 시 04:확정으로)
+	 void updateMtngMomSttus(@Param("momId") Long momId, @Param("momSttusCd") String momSttusCd);
 }

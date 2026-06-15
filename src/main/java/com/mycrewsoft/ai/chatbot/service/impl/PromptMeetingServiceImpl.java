@@ -51,7 +51,7 @@ public class PromptMeetingServiceImpl implements PromptService {
             <meta charset="UTF-8">
             <style>
               body { font-family: 'Malgun Gothic', sans-serif; font-size: 13px; color: #1e293b; margin: 40px; }
-              h1 { font-size: 20px; text-align: center; font-weight: bold; margin-bottom: 24px; border-bottom: 2px solid #334155; padding-bottom: 12px; }
+              h1 { font-size: 20px; text-align: center; font-weight: bold; margin-bottom: 24px; border-bottom: 2px solid #334155; padding-bottom: 12px; overflow: hidden;}
               .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
               .info-table td { border: 1px solid #334155; padding: 6px 12px; }
               .info-table td:first-child { background: #f1f5f9; font-weight: bold; width: 100px; text-align: center; }

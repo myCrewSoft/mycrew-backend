@@ -77,4 +77,18 @@
         )
     </insert>
 
+	<select id="selectMomByDrftDocSn" resultType="MtngMomVO">
+	    SELECT MOM_ID, MTNG_ID, MOM_CN, MOM_STTUS_CD, EDTR_ID,
+	           REVW_REQ_DT, CNFRM_DT, CREAT_DT, DEL_DT, DRFT_DOC_SN
+	    FROM TB_MTNG_MOM
+	    WHERE DRFT_DOC_SN = #{drftDocSn}
+	    AND DEL_DT IS NULL
+	</select>
+	
+	<update id="updateMtngMomSttus">
+	    UPDATE TB_MTNG_MOM
+	    SET MOM_STTUS_CD = #{momSttusCd},
+	        CNFRM_DT     = SYSDATE
+	    WHERE MOM_ID = #{momId}
+	</update>
 </mapper>
