@@ -16,6 +16,7 @@ import com.mycrewsoft.common.util.DateUtil;
 import com.mycrewsoft.common.util.DtoMapper;
 import com.mycrewsoft.common.util.FileUtil;
 import com.mycrewsoft.domain.drive.dto.DriveFolderCreateRequestDto;
+import com.mycrewsoft.domain.drive.dto.DriveRenameRequestDto;
 import com.mycrewsoft.domain.drive.dto.DriveResponseDto;
 import com.mycrewsoft.domain.drive.dto.DriveSearchRequestDto;
 import com.mycrewsoft.domain.drive.mapper.DriveMapper;
@@ -64,7 +65,7 @@ public class ProjectDriveServiceImpl implements ProjectDriveService{
 	@Override
 	@Transactional
 	public Page<DriveResponseDto> getProjectDriveList(Long projId, DriveSearchRequestDto reqDto) {
-		//권한 체크
+//		//권한 체크
 		authorizationService.assertCurrentUserPermission(
 				PermissionCode.PROJECT_DRIVE_READ, buildProjectContext(projId));
 		
@@ -139,6 +140,49 @@ public class ProjectDriveServiceImpl implements ProjectDriveService{
 		
 		int result = mapper.insertDriveItem(vo);
 		if(result == 0) throw new CustomException(ErrorCode.DRIVE_INSERT_FAILED);
+	}
+
+	/**
+	 * 프로젝트 드라이브 폴더명 수정
+	 */
+	@Override
+	public void renameItem(Long driveItemId, DriveRenameRequestDto reqDto) {
+		//해당 아이템이 존재하는지 확인
+		DriveVo vo = mapper.selectDriveItemById(driveItemId);
+		if(vo == null) throw new CustomException(ErrorCode.DRIVE_ITEM_NOT_FOUND);
+		Long currentProjId = vo.getProjId();
+		
+		//권한체크
+		authorizationService.assertCurrentUserPermission(
+				PermissionCode.PROJECT_DRIVE_UPDATE, buildProjectContext(currentProjId));
+		
+		//프로젝트 참여자인지 검증
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
+		validateProjectParticipant(currentProjId, currentEmpId);
+		
+		//폴더가 아니면 수정할 수 없음
+		if(!"01".equals(vo.getItemTypeCd())) throw new CustomException(ErrorCode.DRIVE_RENAME_NOT_ALLOWED);
+		
+		//폴더명 수정
+		mapper.updateFolderName(driveItemId, reqDto.getItemNm(), currentEmpId);
+	}
+
+	/**
+	 * 프로젝트 드라이브 아이템 즐겨찾기 등록/해제
+	 */
+	@Override
+	public void toggleBookmark(Long driveItemId) {
+		//아이템 존재 여부 확인
+		DriveVo vo = mapper.selectDriveItemById(driveItemId);
+		if(vo == null) throw new CustomException(ErrorCode.DRIVE_ITEM_NOT_FOUND);
+		Long currentProjId = vo.getProjId();
+		
+		//로그인한 사용자가 프로젝트 참여자인지 확인
+		validateProjectParticipant(currentProjId, SecurityUtil.getCurrentEmpId());
+		
+		//즐겨찾기 등록/해제
+		String newBookmarkYn = "N".equals(vo.getBookmarkYn()) ? "Y" : "N";
+		mapper.updateBookmarkYn(driveItemId, newBookmarkYn, SecurityUtil.getCurrentEmpId());
 	}
 
 }

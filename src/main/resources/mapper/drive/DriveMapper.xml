@@ -255,7 +255,9 @@
                 D.DRIVE_ITEM_ID,
                 D.PRNT_DRIVE_ITEM_ID,
                 D.FRST_RGTR_ID,
+                REG.EMP_NM       AS FRST_RGTR_NM,
                 D.LAST_MDFR_ID,
+                MOD.EMP_NM       AS LAST_MDFR_NM,
                 D.ITEM_TYPE_CD,
                 D.BOOKMARK_YN,
                 D.ITEM_NM,
@@ -269,6 +271,10 @@
             FROM TB_DRIVE D
             LEFT JOIN TB_CMMN_ATCH_FILE_DTL DTL
                 ON D.DRIVE_ATCH_FILE_ID = DTL.ATCH_FILE_DTL_ID
+            LEFT JOIN TB_EMPLOYEE REG
+                ON D.FRST_RGTR_ID = REG.EMP_ID
+            LEFT JOIN TB_EMPLOYEE MOD
+                ON D.LAST_MDFR_ID = MOD.EMP_ID
             WHERE D.PROJ_ID = #{projId}
               AND D.DRIVE_SCOPE_CD = '02'
               AND D.DEL_YN = 'N'
