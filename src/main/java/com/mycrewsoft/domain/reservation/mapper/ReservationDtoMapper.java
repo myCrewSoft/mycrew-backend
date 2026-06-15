@@ -35,7 +35,7 @@ public interface ReservationDtoMapper {
     @Mapping(source = "endDateTime",   target = "endDt")
     @Mapping(target = "rsrvId",        ignore = true)
     @Mapping(target = "rsrvEmpId",     ignore = true)
-    @Mapping(target = "rsrvSttusCd",   ignore = true)
+    @Mapping(target = "delYn",   ignore = true)
     ConfRmRsrvVO toVo(ReservationCreateRequest request);
 
     @Mapping(source = "roomId",        target = "confRmId")
@@ -44,6 +44,6 @@ public interface ReservationDtoMapper {
     @Mapping(source = "endDateTime",   target = "endDt")
     @Mapping(target = "rsrvId",        ignore = true)
     @Mapping(target = "rsrvEmpId",     ignore = true)
-    @Mapping(target = "rsrvSttusCd",   ignore = true)
+    @Mapping(target = "delYn",   ignore = true)
     ConfRmRsrvVO toVo(ReservationUpdateRequest request);
 }

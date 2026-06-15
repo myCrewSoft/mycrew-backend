@@ -23,9 +23,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.FileUtil;
+import com.mycrewsoft.domain.mtng.mapper.MtngMapper;
+import com.mycrewsoft.domain.mtng.vo.MtngDetailVO;
 import com.mycrewsoft.domain.video.mapper.VideoConfMapper;
 import com.mycrewsoft.domain.video.vo.VideoChatLogVO;
-import com.mycrewsoft.domain.video.vo.VideoConfListVO;
 import com.mycrewsoft.security.util.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
@@ -40,6 +41,7 @@ public class VideoSttServiceImpl implements VideoSttService {
     private final VideoConfMapper videoConfMapper;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final MtngMapper mtngMapper;
 
     @Value("${openai.api-key}")
     private String openAiApiKey;
@@ -56,12 +58,12 @@ public class VideoSttServiceImpl implements VideoSttService {
         Long empId = SecurityUtil.getCurrentEmpId();
 
         // 회의 존재 여부 확인
-        VideoConfListVO confVO = videoConfMapper.selectConfById(vconfId);
-        if (confVO == null) throw new CustomException(ErrorCode.VIDEO_CONF_NOT_FOUND);
+        MtngDetailVO detailVO = mtngMapper.selectMtngDetailByVconfId(vconfId);
+        if (detailVO == null) throw new CustomException(ErrorCode.VIDEO_CONF_NOT_FOUND);
 
         // 참여자만 STT 요청 가능
-        boolean isPtcpt = confVO.getVideoPtcpt().stream()
-                .anyMatch(p -> p.getEmpId().equals(empId));
+        boolean isPtcpt = mtngMapper.selectMtngPtcptDetailList(detailVO.getMtngId()).stream()
+            .anyMatch(p -> p.getEmpId().equals(empId));
         if (!isPtcpt) throw new CustomException(ErrorCode.VIDEO_ACCESS_DENIED);
 
         // 프론트에서 받은 5초 청크 파일을 서버 임시 경로에 저장
