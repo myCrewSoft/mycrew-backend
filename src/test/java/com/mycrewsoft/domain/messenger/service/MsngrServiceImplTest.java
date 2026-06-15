@@ -35,6 +35,7 @@ import com.mycrewsoft.domain.messenger.dto.response.ParticipantChangedResponse;
 import com.mycrewsoft.domain.messenger.dto.response.ParticipantStatusResponse;
 import com.mycrewsoft.domain.messenger.dto.response.ReadChangedResponse;
 import com.mycrewsoft.domain.messenger.enums.ChatEventType;
+import com.mycrewsoft.domain.messenger.enums.ParticipantStatus;
 import com.mycrewsoft.domain.messenger.mapper.MsngrDtoMapper;
 import com.mycrewsoft.domain.messenger.mapper.MsngrMapper;
 import com.mycrewsoft.domain.messenger.vo.MsngrChtrmListVO;
@@ -136,8 +137,8 @@ class MsngrServiceImplTest {
 
         try (MockedStatic<SecurityUtil> securityUtil = mockStatic(SecurityUtil.class)) {
             securityUtil.when(SecurityUtil::getCurrentEmpId).thenReturn(empId);
-            when(msngrMapper.selectPtcptSttus(empId)).thenReturn("STS1");
-            when(msngrMapper.selectPtcptSttus(2001L)).thenReturn("STS4");
+            when(msngrMapper.selectPtcptSttus(empId)).thenReturn(ParticipantStatus.ONLINE.getCode());
+            when(msngrMapper.selectPtcptSttus(2001L)).thenReturn(ParticipantStatus.OFFLINE.getCode());
             when(msngrMapper.selectPtcptSttus(2002L)).thenReturn(null);
             when(msngrDtoMapper.toChtrmVO(request)).thenReturn(chtrmVO);
             doAnswer(invocation -> {
@@ -152,7 +153,7 @@ class MsngrServiceImplTest {
             assertThat(chtrmVO.getChtrmTypeCd()).isEqualTo("M2");
             assertThat(chtrmVO.getEstblshId()).isEqualTo(empId);
             verify(msngrMapper).insertChtrm(chtrmVO);
-            verify(msngrMapper).updatePtcptSttus(empId, "STS1");
+            verify(msngrMapper).updatePtcptSttus(empId, ParticipantStatus.ONLINE.getCode());
             verify(msngrMapper, org.mockito.Mockito.times(3)).insertPtcpt(any(MsngrChtrmPtcptVO.class));
         }
     }
@@ -234,14 +235,18 @@ class MsngrServiceImplTest {
         try (MockedStatic<SecurityUtil> securityUtil = mockStatic(SecurityUtil.class)) {
             securityUtil.when(SecurityUtil::getCurrentEmpId).thenReturn(empId);
             when(msngrMapper.selectChtrmById(chtrmId)).thenReturn(chtrm);
-            when(msngrMapper.selectPtcptSttus(2001L)).thenReturn("STS4");
-            when(msngrMapper.selectPtcptSttus(2002L)).thenReturn("STS1");
+            when(msngrMapper.selectPtcptSttus(2001L)).thenReturn(ParticipantStatus.OFFLINE.getCode());
+            when(msngrMapper.selectPtcptSttus(2002L)).thenReturn(ParticipantStatus.ONLINE.getCode());
             when(msngrMapper.selectPtcptByChtrmIdAndEmpId(chtrmId, 2001L)).thenReturn(leftPtcpt(chtrmId, 2001L));
             when(msngrMapper.selectPtcptByChtrmIdAndEmpId(chtrmId, 2002L)).thenReturn(null);
 
             msngrService.addChtrmPtcpt(chtrmId, request);
 
-            verify(msngrMapper).rejoinPtcpt(chtrmId, 2001L, "STS4");
+            verify(msngrMapper).rejoinPtcpt(
+                    chtrmId,
+                    2001L,
+                    ParticipantStatus.OFFLINE.getCode()
+            );
             verify(msngrMapper).insertPtcpt(any(MsngrChtrmPtcptVO.class));
             verify(msngrMapper, never()).selectPtcptSttus(2003L);
 
@@ -322,18 +327,24 @@ class MsngrServiceImplTest {
     @Test
     void updatePtcptSttus_updatesStatusAndSendsStatusEvent() {
         Long empId = 1001L;
+        Long chtrmId = 1L;
 
         try (MockedStatic<SecurityUtil> securityUtil = mockStatic(SecurityUtil.class)) {
             securityUtil.when(SecurityUtil::getCurrentEmpId).thenReturn(empId);
+            when(msngrMapper.selectActiveChtrmIdsByEmpId(empId)).thenReturn(List.of(chtrmId));
 
-            msngrService.updatePtcptSttus("STS2");
+            msngrService.updatePtcptSttus(ParticipantStatus.AWAY);
 
-            verify(msngrMapper).updatePtcptSttus(empId, "STS2");
+            verify(msngrMapper).updatePtcptSttus(empId, ParticipantStatus.AWAY.getCode());
             ChatEventResponse<?> event = captureEvent("/topic/chats/status");
             assertThat(event.getEventType()).isEqualTo(ChatEventType.PARTICIPANT_STATUS_CHANGED);
             ParticipantStatusResponse data = (ParticipantStatusResponse) event.getData();
             assertThat(data.getEmpId()).isEqualTo(empId);
-            assertThat(data.getPtcptSttusCd()).isEqualTo("STS2");
+            assertThat(data.getPtcptSttusCd()).isEqualTo(ParticipantStatus.AWAY.getCode());
+            verify(messagingTemplate).convertAndSend(
+                    eq("/topic/chats/" + chtrmId + "/events"),
+                    any(ChatEventResponse.class)
+            );
         }
     }
 
@@ -381,7 +392,7 @@ class MsngrServiceImplTest {
         MsngrChtrmPtcptVO ptcpt = new MsngrChtrmPtcptVO();
         ptcpt.setChtrmId(chtrmId);
         ptcpt.setEmpId(empId);
-        ptcpt.setPtcptSttusCd("STS1");
+        ptcpt.setPtcptSttusCd(ParticipantStatus.ONLINE.getCode());
         return ptcpt;
     }
 

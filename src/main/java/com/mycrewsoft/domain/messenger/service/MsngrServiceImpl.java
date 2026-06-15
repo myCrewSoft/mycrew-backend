@@ -16,6 +16,7 @@ import com.mycrewsoft.domain.messenger.dto.response.ParticipantChangedResponse;
 import com.mycrewsoft.domain.messenger.dto.response.ParticipantStatusResponse;
 import com.mycrewsoft.domain.messenger.dto.response.ReadChangedResponse;
 import com.mycrewsoft.domain.messenger.enums.ChatEventType;
+import com.mycrewsoft.domain.messenger.enums.ParticipantStatus;
 import com.mycrewsoft.domain.messenger.mapper.MsngrDtoMapper;
 import com.mycrewsoft.domain.messenger.mapper.MsngrMapper;
 import com.mycrewsoft.domain.messenger.vo.MsngrChtrmListVO;
@@ -123,10 +124,10 @@ public class MsngrServiceImpl implements MsngrService {
         Long empId = getCurrentEmpIdOrThrow();
 
         // 현재 사용자의 상태값 조회
-        String currentSttus = msngrMapper.selectPtcptSttus(empId);
-
-        // 기존 채팅방이 없으면 STS1이 기본값
-        if (currentSttus == null) currentSttus = "STS1";
+        ParticipantStatus currentStatus = ParticipantStatus.fromCodeOrDefault(
+                msngrMapper.selectPtcptSttus(empId),
+                ParticipantStatus.ONLINE
+        );
         // dto -> vo 변환
         MsngrChtrmVO chtrmVO = msngrDtoMapper.toChtrmVO(request);
         chtrmVO.setChtrmTypeCd(chtrmTypeCd);
@@ -139,23 +140,25 @@ public class MsngrServiceImpl implements MsngrService {
         MsngrChtrmPtcptVO myPtcpt = new MsngrChtrmPtcptVO();
         myPtcpt.setChtrmId(chtrmVO.getChtrmId());
         myPtcpt.setEmpId(empId);
-        myPtcpt.setPtcptSttusCd("STS4");
+        myPtcpt.setPtcptSttusCd(ParticipantStatus.OFFLINE.getCode());
         msngrMapper.insertPtcpt(myPtcpt);
 
         // 요청한 참가자 생성
         for (Long participantId : request.getParticipantIds()) {
-            String ptcptSttus = msngrMapper.selectPtcptSttus(participantId);
-            if (ptcptSttus == null) ptcptSttus = "STS4"; // 기존 채팅방 없으면 로그아웃 기본값
+            ParticipantStatus participantStatus = ParticipantStatus.fromCodeOrDefault(
+                    msngrMapper.selectPtcptSttus(participantId),
+                    ParticipantStatus.OFFLINE
+            );
 
             MsngrChtrmPtcptVO ptcptVO = new MsngrChtrmPtcptVO();
             ptcptVO.setChtrmId(chtrmVO.getChtrmId());
             ptcptVO.setEmpId(participantId);
-            ptcptVO.setPtcptSttusCd(ptcptSttus);
+            ptcptVO.setPtcptSttusCd(participantStatus.getCode());
             msngrMapper.insertPtcpt(ptcptVO);
         }
 
         // 본인의 현재 상태로 전체 채팅방 동기화
-        msngrMapper.updatePtcptSttus(empId, currentSttus);
+        msngrMapper.updatePtcptSttus(empId, currentStatus.getCode());
 
         // 채팅방 ID 반환
         return chtrmVO.getChtrmId();
@@ -220,18 +223,20 @@ public class MsngrServiceImpl implements MsngrService {
             if (isActiveParticipant(chtrm, participantId)) continue;
 
             // 참여자 상태 확인
-            String ptcptSttus = msngrMapper.selectPtcptSttus(participantId);
-            if (ptcptSttus == null) ptcptSttus = "STS4";
+            ParticipantStatus participantStatus = ParticipantStatus.fromCodeOrDefault(
+                    msngrMapper.selectPtcptSttus(participantId),
+                    ParticipantStatus.OFFLINE
+            );
 
             MsngrChtrmPtcptVO existingPtcpt = msngrMapper.selectPtcptByChtrmIdAndEmpId(chtrmId, participantId);
             if (existingPtcpt == null) {
                 MsngrChtrmPtcptVO ptcptVO = new MsngrChtrmPtcptVO();
                 ptcptVO.setChtrmId(chtrmId);
                 ptcptVO.setEmpId(participantId);
-                ptcptVO.setPtcptSttusCd(ptcptSttus);
+                ptcptVO.setPtcptSttusCd(participantStatus.getCode());
                 msngrMapper.insertPtcpt(ptcptVO);
             } else {
-                msngrMapper.rejoinPtcpt(chtrmId, participantId, ptcptSttus);
+                msngrMapper.rejoinPtcpt(chtrmId, participantId, participantStatus.getCode());
             }
 
             // 참여자 목록 추가
@@ -286,21 +291,18 @@ public class MsngrServiceImpl implements MsngrService {
     // 사용자 상태 변경
     @Override
     @Transactional
-    public void updatePtcptSttus(String ptcptSttusCd) {
+    public void updatePtcptSttus(ParticipantStatus status) {
         // 사용자 확인
         Long empId = getCurrentEmpIdOrThrow();
-        
-        // 상태 변경
-        msngrMapper.updatePtcptSttus(empId, ptcptSttusCd);
-        sendParticipantStatusChangedEvent(empId, ptcptSttusCd);
+
+        updateParticipantStatus(empId, status);
     }
 
     // 사용자 상태 변경 - 리스너용
     @Override
     @Transactional
-    public void updatePtcptSttusById(Long empId, String ptcptSttusCd) {
-        msngrMapper.updatePtcptSttus(empId, ptcptSttusCd);
-        sendParticipantStatusChangedEvent(empId, ptcptSttusCd);
+    public void updatePtcptSttusById(Long empId, ParticipantStatus status) {
+        updateParticipantStatus(empId, status);
     }
 
     // 마지막 메시지 확인
@@ -401,7 +403,7 @@ public class MsngrServiceImpl implements MsngrService {
             MsngrChtrmPtcptVO ptcptVO = new MsngrChtrmPtcptVO();
             ptcptVO.setChtrmId(chtrmId);
             ptcptVO.setEmpId(empId);
-            ptcptVO.setPtcptSttusCd("STS4");
+            ptcptVO.setPtcptSttusCd(ParticipantStatus.OFFLINE.getCode());
 
             msngrMapper.insertPtcpt(ptcptVO);
         }
@@ -427,16 +429,15 @@ public class MsngrServiceImpl implements MsngrService {
             .toList();
 
         for (Long empId : distinctEmpIds) {
-            String ptcptSttus = msngrMapper.selectPtcptSttus(empId);
-
-            if (ptcptSttus == null) {
-                ptcptSttus = "STS4";
-            }
+            ParticipantStatus participantStatus = ParticipantStatus.fromCodeOrDefault(
+                    msngrMapper.selectPtcptSttus(empId),
+                    ParticipantStatus.OFFLINE
+            );
 
             MsngrChtrmPtcptVO ptcptVO = new MsngrChtrmPtcptVO();
             ptcptVO.setChtrmId(chtrmId);
             ptcptVO.setEmpId(empId);
-            ptcptVO.setPtcptSttusCd(ptcptSttus);
+            ptcptVO.setPtcptSttusCd(participantStatus.getCode());
 
             msngrMapper.mergeProjectPtcpt(ptcptVO);
         }
@@ -567,10 +568,19 @@ public class MsngrServiceImpl implements MsngrService {
         );
     }
 
-    private void sendParticipantStatusChangedEvent(Long empId, String ptcptSttusCd) {
+    private void updateParticipantStatus(Long empId, ParticipantStatus status) {
+        if (status == null) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        msngrMapper.updatePtcptSttus(empId, status.getCode());
+        sendParticipantStatusChangedEvent(empId, status);
+    }
+
+    private void sendParticipantStatusChangedEvent(Long empId, ParticipantStatus status) {
         ParticipantStatusResponse response = ParticipantStatusResponse.builder()
                 .empId(empId)
-                .ptcptSttusCd(ptcptSttusCd)
+                .ptcptSttusCd(status.getCode())
                 .build();
 
         ChatEventResponse<ParticipantStatusResponse> event =
@@ -580,5 +590,12 @@ public class MsngrServiceImpl implements MsngrService {
                         .build();
 
         messagingTemplate.convertAndSend("/topic/chats/status", event);
+
+        msngrMapper.selectActiveChtrmIdsByEmpId(empId).forEach(chtrmId ->
+                messagingTemplate.convertAndSend(
+                        "/topic/chats/" + chtrmId + "/events",
+                        event
+                )
+        );
     }
 }

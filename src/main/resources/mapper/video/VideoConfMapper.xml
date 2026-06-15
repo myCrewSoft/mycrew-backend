@@ -1,31 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.mycrewsoft.domain.video.mapper.VideoConfMapper">
-
-    <resultMap type="VideoConfListVO" id="confResultMap" autoMapping="true">
-	    <id property="vconfId" column="VCONF_ID"/>
-	    <collection property="videoPtcpt" ofType="VideoPtcptDetailVO" autoMapping="true">
-	        <id property="vconfPtcptId" column="VCONF_PTCPT_ID"/>
-	        <result property="jbgdNm" column="JOB_GRD_NM"/>
-	    </collection>
-	</resultMap>
-
-    <resultMap type="VideoMomVO" id="momResultMap" autoMapping="true">
-        <id property="momId" column="MOM_ID"/>
-        <collection property="videoMomAprvl" ofType="VideoMomAprvlVO" autoMapping="true">
-            <id     property="aprvlId"      column="APRVL_ID"/>
-            <result property="creatDt"      column="APRVL_CREAT_DT"/>
-            <result property="aprvlRoundNo" column="APRVL_APRVL_ROUND_NO"/>
-        </collection>
-        <collection property="videoMomHist" ofType="VideoMomHistVO" autoMapping="true">
-            <id     property="histId"  column="HIST_ID"/>
-            <result property="momId"   column="HIST_MOM_ID"/>
-            <result property="momCn"   column="HIST_MOM_CN"/>
-            <result property="edtrId"  column="HIST_EDTR_ID"/>
-        </collection>
-    </resultMap>
 
     <resultMap id="meetingReminderResultMap" type="MeetingReminderVO">
         <id property="vconfId" column="VCONF_ID"/>
@@ -35,63 +13,14 @@
         </collection>
     </resultMap>
 
-    <sql id="confColumns">
-        C.VCONF_ID, C.VCONF_NM, C.ROOM_NM, C.CRTR_ID, C.CONF_STTUS_CD,
-	    C.BEGIN_DT, C.END_DT, C.CREAT_DT,
-	    E.EMP_NM AS CRTR_NM,
-	    M.MOM_STTUS_CD
-    </sql>
-
-    <sql id="ptcptColumns">
-        P.VCONF_PTCPT_ID, P.VCONF_ID, P.EMP_ID, P.JOIN_DT, P.LEAV_DT,
-	    PE.EMP_NM,
-	    D.DEPT_NM,
-	    G.JOB_GRD_NM AS JBGD_NM
-    </sql>
-
-    <sql id="momColumns">
-        M.MOM_ID, M.VCONF_ID, M.MOM_CN, M.MOM_STTUS_CD, M.EDTR_ID,
-        M.REVW_REQ_DT, M.CNFRM_DT, M.CREAT_DT, M.APRVL_ROUND_NO
-    </sql>
-
-    <sql id="aprvlColumns">
-        A.APRVL_ID, A.MOM_ID, A.PTCPT_ID, A.APRVL_STTUS_CD, A.APRVL_DT,
-        A.CREAT_DT       AS APRVL_CREAT_DT,
-        A.APRVL_ROUND_NO AS APRVL_APRVL_ROUND_NO
-    </sql>
-
-    <sql id="histColumns">
-        H.HIST_ID,
-        H.MOM_ID         AS HIST_MOM_ID,
-        H.MOM_CN         AS HIST_MOM_CN,
-        H.EDTR_ID        AS HIST_EDTR_ID,
-        H.EDIT_DT
-    </sql>
-
-    <!-- 화상회의 -->
-
-    <insert id="insertConf">
+    <insert id="createVideoConf" parameterType="VideoConfVO">
         <selectKey keyProperty="vconfId" resultType="Long" order="BEFORE">
             SELECT SEQ_VCONF_ID.NEXTVAL FROM DUAL
         </selectKey>
         INSERT INTO TB_VIDEO_CONF (
-            VCONF_ID
-            , VCONF_NM
-            , ROOM_NM
-            , CRTR_ID
-            , CONF_STTUS_CD
-            , BEGIN_DT
-            , END_DT
-            , CREAT_DT
+            VCONF_ID, MTNG_ID, VCONF_NM, ROOM_NM, CRTR_ID, CREAT_DT
         ) VALUES (
-            #{vconfId},
-            #{vconfNm},
-            #{roomNm},
-            #{crtrId},
-            '01',
-            #{beginDt},
-            #{endDt},
-            SYSDATE
+            #{vconfId}, #{mtngId}, #{vconfNm}, #{roomNm}, #{crtrId}, #{creatDt}
         )
     </insert>
 
@@ -101,206 +30,69 @@
         WHERE VCONF_ID = #{vconfId}
     </update>
 
-    <select id="selectConfById" resultMap="confResultMap">
-	    SELECT
-	        <include refid="confColumns"/>,
-	        <include refid="ptcptColumns"/>
-	    FROM TB_VIDEO_CONF C
-	    LEFT JOIN TB_EMPLOYEE E         ON C.CRTR_ID = E.EMP_ID
-	    LEFT JOIN TB_VIDEO_MOM M        ON C.VCONF_ID = M.VCONF_ID AND M.DEL_DT IS NULL
-	    LEFT JOIN TB_VIDEO_PTCPT P      ON C.VCONF_ID = P.VCONF_ID
-	    LEFT JOIN TB_EMPLOYEE PE        ON P.EMP_ID = PE.EMP_ID
-	    LEFT JOIN TB_DEPARTMENT D       ON PE.DEPT_CD = D.DEPT_CD
-	    LEFT JOIN TB_JOB_GRADE G        ON PE.JOB_GRD_CD = G.JOB_GRD_CD
-	    WHERE C.VCONF_ID = #{vconfId}
-	</select>
-
-    <select id="selectConfList" resultMap="confResultMap">
-	    SELECT
-	        <include refid="confColumns"/>,
-	        <include refid="ptcptColumns"/>
-	    FROM TB_VIDEO_CONF C
-	    LEFT JOIN TB_EMPLOYEE E         ON C.CRTR_ID = E.EMP_ID
-	    LEFT JOIN TB_VIDEO_MOM M        ON C.VCONF_ID = M.VCONF_ID AND M.DEL_DT IS NULL
-	    LEFT JOIN TB_VIDEO_PTCPT P      ON C.VCONF_ID = P.VCONF_ID
-	    LEFT JOIN TB_EMPLOYEE PE        ON P.EMP_ID = PE.EMP_ID
-	    LEFT JOIN TB_DEPARTMENT D       ON PE.DEPT_CD = D.DEPT_CD
-	    LEFT JOIN TB_JOB_GRADE G        ON PE.JOB_GRD_CD = G.JOB_GRD_CD
-	    WHERE C.VCONF_ID IN (
-	        SELECT VCONF_ID FROM TB_VIDEO_PTCPT WHERE EMP_ID = #{empId}
-	    )
-	    ORDER BY C.BEGIN_DT DESC
-	</select>
-
-    <update id="updateConfSttus">
-        UPDATE TB_VIDEO_CONF
-        SET CONF_STTUS_CD = #{confSttusCd}
-        WHERE VCONF_ID = #{vconfId}
-    </update>
-
-    <!-- 참여자 -->
-
-    <insert id="insertPtcpt">
-        <selectKey keyProperty="vconfPtcptId" resultType="Long" order="BEFORE">
-            SELECT SEQ_VCONF_PTCPT_ID.NEXTVAL FROM DUAL
+    <insert id="insertPtcptLog" parameterType="VideoPtcptLogVO">
+        <selectKey keyProperty="ptcptLogId" resultType="Long" order="BEFORE">
+            SELECT SEQ_VIDEO_PTCPT_LOG_ID.NEXTVAL FROM DUAL
         </selectKey>
-        INSERT INTO TB_VIDEO_PTCPT (VCONF_PTCPT_ID, VCONF_ID, EMP_ID)
-        VALUES (#{vconfPtcptId}, #{vconfId}, #{empId})
+        INSERT INTO TB_VIDEO_PTCPT_LOG (PTCPT_LOG_ID, VCONF_ID, EMP_ID, JOIN_DT)
+        VALUES (#{ptcptLogId}, #{vconfId}, #{empId}, SYSDATE)
     </insert>
 
-    <update id="updatePtcptJoinDt">
-        UPDATE TB_VIDEO_PTCPT
+    <update id="updatePtcptLogJoinDt">
+        UPDATE TB_VIDEO_PTCPT_LOG
         SET JOIN_DT = SYSDATE
-        WHERE VCONF_PTCPT_ID = #{vconfPtcptId}
+        WHERE PTCPT_LOG_ID = #{ptcptLogId}
     </update>
 
-    <!-- 회의록 -->
+    <update id="updatePtcptLogLeavDt">
+        UPDATE TB_VIDEO_PTCPT_LOG
+        SET LEAV_DT = SYSDATE
+        WHERE PTCPT_LOG_ID = #{ptcptLogId}
+    </update>
 
-    <insert id="insertMom">
-        <selectKey keyProperty="momId" resultType="Long" order="BEFORE">
-            SELECT SEQ_MOM_ID.NEXTVAL FROM DUAL
-        </selectKey>
-        INSERT INTO TB_VIDEO_MOM (
-            MOM_ID
-            , VCONF_ID
-            , MOM_CN
-            , MOM_STTUS_CD
-            , EDTR_ID
-            , CREAT_DT
-            , APRVL_ROUND_NO
-        ) VALUES (
-            #{momId},
-            #{vconfId},
-            #{momCn},
-            '01',
-            #{edtrId},
-            SYSDATE,
-            0
-        )
-    </insert>
-
-    <select id="selectMomByVconfId" resultMap="momResultMap">
-        SELECT
-            <include refid="momColumns"/>,
-            <include refid="aprvlColumns"/>,
-            <include refid="histColumns"/>
-        FROM TB_VIDEO_MOM M
-        LEFT JOIN TB_VIDEO_MOM_APRVL A ON M.MOM_ID = A.MOM_ID
-        LEFT JOIN TB_VIDEO_MOM_HIST  H ON M.MOM_ID = H.MOM_ID
-        WHERE M.VCONF_ID = #{vconfId}
-        AND M.DEL_DT IS NULL
+    <select id="selectLatestOpenPtcptLogId" resultType="Long">
+        SELECT PTCPT_LOG_ID
+        FROM TB_VIDEO_PTCPT_LOG
+        WHERE VCONF_ID = #{vconfId}
+            AND EMP_ID = #{empId}
+            AND LEAV_DT IS NULL
+        ORDER BY JOIN_DT DESC
+        FETCH FIRST 1 ROWS ONLY
     </select>
 
-    <update id="updateMom">
-        UPDATE TB_VIDEO_MOM
-        SET MOM_CN       = #{momCn},
-            MOM_STTUS_CD = #{momSttusCd},
-            EDTR_ID      = #{edtrId}
-        WHERE MOM_ID = #{momId}
-    </update>
-
-    <!-- 회의록 수정 이력 -->
-
-    <insert id="insertMomHist">
-        <selectKey keyProperty="histId" resultType="Long" order="BEFORE">
-            SELECT SEQ_HIST_ID.NEXTVAL FROM DUAL
-        </selectKey>
-        INSERT INTO TB_VIDEO_MOM_HIST (
-            HIST_ID
-            , MOM_ID
-            , MOM_CN
-            , EDTR_ID
-            , EDIT_DT
-        ) VALUES (
-            #{histId},
-            #{momId},
-            #{momCn},
-            #{edtrId},
-            SYSDATE
-        )
-    </insert>
-
-    <!-- 회의록 결재 -->
-
-    <select id="selectAprvlListByMomId" resultType="VideoMomAprvlVO">
-        SELECT APRVL_ID, MOM_ID, PTCPT_ID, APRVL_STTUS_CD,
-               APRVL_DT, CREAT_DT, APRVL_ROUND_NO
-        FROM TB_VIDEO_MOM_APRVL
-        WHERE MOM_ID = #{momId}
-    </select>
-
-    <insert id="insertAprvlList">
-        INSERT ALL
-        <foreach collection="list" item="item">
-            INTO TB_VIDEO_MOM_APRVL (
-                APRVL_ID, MOM_ID, PTCPT_ID, APRVL_STTUS_CD, CREAT_DT, APRVL_ROUND_NO
-            ) VALUES (
-                SEQ_APRVL_ID.NEXTVAL,
-                #{item.momId},
-                #{item.ptcptId},
-                '01',
-                SYSDATE,
-                #{item.aprvlRoundNo}
-            )
-        </foreach>
-        SELECT 1 FROM DUAL
-    </insert>
-
-    <update id="updateAprvl">
-        UPDATE TB_VIDEO_MOM_APRVL
-        SET APRVL_STTUS_CD = #{aprvlSttusCd},
-            APRVL_DT       = SYSDATE
-        WHERE APRVL_ID = #{aprvlId}
-    </update>
-
-    <!-- 대화 로그 -->
-
-    <insert id="insertChatLog">
+    <insert id="insertChatLog" parameterType="VideoChatLogVO">
         <selectKey keyProperty="chatLogId" resultType="Long" order="BEFORE">
             SELECT SEQ_CHAT_LOG_ID.NEXTVAL FROM DUAL
         </selectKey>
-        INSERT INTO TB_VIDEO_CHAT_LOG (
-            CHAT_LOG_ID
-            , VCONF_ID
-            , MBR_ID
-            , SPKNG_CN
-            , CREAT_DT
-        ) VALUES (
-            #{chatLogId},
-            #{vconfId},
-            #{mbrId},
-            #{spkngCn},
-            SYSDATE
-        )
+        INSERT INTO TB_VIDEO_CHAT_LOG (CHAT_LOG_ID, VCONF_ID, MBR_ID, SPKNG_CN, CREAT_DT)
+        VALUES (#{chatLogId}, #{vconfId}, #{mbrId}, #{spkngCn}, SYSDATE)
     </insert>
 
-    <!-- 녹취록 -->
-
-    <insert id="insertRcrdg">
+    <insert id="insertRcrdg" parameterType="VideoRcrdgVO">
         <selectKey keyProperty="rcrdgId" resultType="Long" order="BEFORE">
             SELECT SEQ_RCRDG_ID.NEXTVAL FROM DUAL
         </selectKey>
-        INSERT INTO TB_VIDEO_RCRDG (
-            RCRDG_ID
-            , VCONF_ID
-            , RCRDG_ATCH_FILE_ID
-            , CREAT_DT
-        ) VALUES (
-            #{rcrdgId},
-            #{vconfId},
-            #{rcrdgAtchFileId},
-            SYSDATE
-        )
+        INSERT INTO TB_VIDEO_RCRDG (RCRDG_ID, VCONF_ID, RCRDG_ATCH_FILE_ID, CREAT_DT)
+        VALUES (#{rcrdgId}, #{vconfId}, #{rcrdgAtchFileId}, SYSDATE)
     </insert>
 
     <select id="selectConfsStartingSoon" resultMap="meetingReminderResultMap">
         SELECT
-            C.VCONF_ID,
-            C.VCONF_NM,
+            V.VCONF_ID,
+            V.VCONF_NM,
             P.EMP_ID AS P_EMP_ID
-        FROM TB_VIDEO_CONF C
-        JOIN TB_VIDEO_PTCPT P ON P.VCONF_ID = C.VCONF_ID
-        WHERE C.CONF_STTUS_CD = '01'
-        AND BEGIN_DT BETWEEN SYSDATE AND SYSDATE + (10/1440)
+        FROM TB_VIDEO_CONF V
+        JOIN TB_MTNG M ON M.MTNG_ID = V.MTNG_ID
+        JOIN TB_MTNG_PTCPT P ON P.MTNG_ID = M.MTNG_ID
+        WHERE M.DEL_YN = 'N'
+        AND M.BEGIN_DT BETWEEN SYSDATE AND SYSDATE + (10/1440)
     </select>
+
+    <select id="selectChatLogsByVconfId" resultType="VideoChatLogVO">
+        SELECT CHAT_LOG_ID, VCONF_ID, MBR_ID, SPKNG_CN, CREAT_DT, END_DT
+        FROM TB_VIDEO_CHAT_LOG
+        WHERE VCONF_ID = #{vconfId}
+        ORDER BY CREAT_DT ASC
+    </select>
+
 </mapper>
