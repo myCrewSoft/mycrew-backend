@@ -174,6 +174,7 @@
 			E.EMP_NM,
 			DEPT.DEPT_NM,
 			GRD.JOB_GRD_NM        AS JBPS_NM,
+			E.PRFL_IMG_FILE_ID,
 			D.ATND_DT,
 			D.WRK_START_DTM,
 			D.WRK_END_DTM,
@@ -195,6 +196,62 @@
 			AND E.EMP_NM LIKE '%' || #{keyword} || '%'
 		</if>
 		ORDER BY DEPT.DEPT_NM, E.EMP_NM
+	</select>
+
+	<select id="selectAttendanceStats" resultType="AdminAtndStatResponse">
+		SELECT
+			E.EMP_ID,
+			E.EMP_NM,
+			DEPT.DEPT_NM,
+			GRD.JOB_GRD_NM        AS JBPS_NM,
+			E.PRFL_IMG_FILE_ID,
+			NVL(SUM(CASE WHEN D.WRK_START_DTM IS NOT NULL THEN 1 ELSE 0 END), 0) AS PRESENT_DAYS,
+			NVL(SUM(D.WORK_MIN), 0)  AS WORK_MIN,
+			NVL(SUM(D.OT_MIN), 0)    AS OT_MIN,
+			NVL(SUM(CASE WHEN D.LATE_MIN &gt; 0 THEN 1 ELSE 0 END), 0)        AS LATE_CNT,
+			NVL(SUM(CASE WHEN D.EARLY_LEAVE_MIN &gt; 0 THEN 1 ELSE 0 END), 0) AS EARLY_LEAVE_CNT,
+			NVL(SUM(D.LEAVE_DAY), 0) AS LEAVE_DAYS
+		FROM TB_EMPLOYEE E
+		LEFT JOIN TB_DEPARTMENT DEPT ON DEPT.DEPT_CD = E.DEPT_CD
+		LEFT JOIN TB_JOB_GRADE GRD ON GRD.JOB_GRD_CD = E.JOB_GRD_CD
+		LEFT JOIN TB_ATND_DAILY D
+			ON D.EMP_ID = E.EMP_ID
+			AND D.ATND_DT BETWEEN TRUNC(#{from}) AND TRUNC(#{to})
+		<where>
+			<if test="deptCd != null and deptCd != ''">
+				AND E.DEPT_CD = #{deptCd}
+			</if>
+			<if test="keyword != null and keyword != ''">
+				AND E.EMP_NM LIKE '%' || #{keyword} || '%'
+			</if>
+		</where>
+		GROUP BY E.EMP_ID, E.EMP_NM, DEPT.DEPT_NM, GRD.JOB_GRD_NM, E.PRFL_IMG_FILE_ID
+		ORDER BY DEPT.DEPT_NM, E.EMP_NM
+	</select>
+
+	<select id="selectEmployeeAttendance" resultType="AdminAtndRowResponse">
+		SELECT
+			D.EMP_ID,
+			E.EMP_NM,
+			DEPT.DEPT_NM,
+			GRD.JOB_GRD_NM        AS JBPS_NM,
+			E.PRFL_IMG_FILE_ID,
+			D.ATND_DT,
+			D.WRK_START_DTM,
+			D.WRK_END_DTM,
+			D.LATE_MIN,
+			D.WORK_MIN,
+			D.OT_MIN,
+			TRIM(D.ATND_STAT_CD)  AS ATND_STAT_CD,
+			SE.ATND_SE_CD_NM      AS ATND_STAT_NM
+		FROM TB_ATND_DAILY D
+		JOIN TB_EMPLOYEE E ON E.EMP_ID = D.EMP_ID
+		LEFT JOIN TB_DEPARTMENT DEPT ON DEPT.DEPT_CD = E.DEPT_CD
+		LEFT JOIN TB_JOB_GRADE GRD ON GRD.JOB_GRD_CD = E.JOB_GRD_CD
+		LEFT JOIN TB_ATND_SE_CD SE ON SE.ATND_SE_CD = D.ATND_STAT_CD
+		WHERE D.EMP_ID = #{empId}
+		  AND D.ATND_DT BETWEEN TRUNC(#{from}) AND TRUNC(#{to})
+		ORDER BY D.ATND_DT DESC
 	</select>
 
 	<!-- ===================== 휴가 ===================== -->
@@ -292,6 +349,7 @@
 			E.EMP_ID,
 			E.EMP_NM,
 			D.DEPT_NM,
+			E.PRFL_IMG_FILE_ID,
 			NVL(SUM(CASE WHEN L.LEDGER_SE_CD = '01' THEN L.LEAVE_DAY ELSE 0 END), 0)  AS GRANTED_DAY,
 			NVL(SUM(CASE WHEN L.LEDGER_SE_CD = '02' THEN -L.LEAVE_DAY ELSE 0 END), 0) AS USED_DAY,
 			NVL(SUM(L.LEAVE_DAY), 0) AS REMAIN_DAY
@@ -304,7 +362,7 @@
 				E.EMP_NM LIKE '%' || #{keyword} || '%'
 			</if>
 		</where>
-		GROUP BY E.EMP_ID, E.EMP_NM, D.DEPT_NM
+		GROUP BY E.EMP_ID, E.EMP_NM, D.DEPT_NM, E.PRFL_IMG_FILE_ID
 		ORDER BY D.DEPT_NM, E.EMP_NM
 	</select>
 

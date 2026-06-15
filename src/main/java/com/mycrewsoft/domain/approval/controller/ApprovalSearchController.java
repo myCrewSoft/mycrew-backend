@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.approval.dto.response.ApprovalDocumentDetailResponse;
+import com.mycrewsoft.domain.approval.dto.response.ApprovalDraftCountResponse;
 import com.mycrewsoft.domain.approval.dto.response.ApprovalDraftSummaryResponse;
 import com.mycrewsoft.domain.approval.service.ApprovalConstants;
 import com.mycrewsoft.domain.approval.service.ApprovalSearchService;
@@ -28,6 +29,13 @@ import lombok.RequiredArgsConstructor;
 public class ApprovalSearchController {
 
     private final ApprovalSearchService approvalSearchService;
+
+    @Operation(summary = "전자결재 함별 기안서 건수 조회",
+            description = "서브 사이드바 표시용으로 로그인한 사용자의 상신함(진행/완료/반려/임시저장)과 수신함(요청/내역/완료) 기안서 건수를 한 번에 조회합니다.")
+    @GetMapping("/counts")
+    public ResponseEntity<ApiResponse<ApprovalDraftCountResponse>> readMyDraftCounts() {
+        return ResponseEntity.ok(ApiResponse.success(approvalSearchService.readMyDraftCounts()));
+    }
 
     @Operation(summary = "내 기안서 목록 조회", description = "문서 상태와 검색어 조건으로 로그인한 사용자의 기안서 목록을 페이지 단위로 조회합니다.")
     @GetMapping("/drafts")

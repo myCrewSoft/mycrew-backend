@@ -27,6 +27,9 @@ public class AdminAtndRowResponse {
 	@Schema(description = "직급명", example = "대리")
 	private String jbpsNm;
 
+	@Schema(description = "프로필 이미지 파일 ID", example = "14")
+	private Long prflImgFileId;
+
 	@Schema(description = "근무 일자", example = "2026-06-12")
 	private LocalDate atndDt;
 

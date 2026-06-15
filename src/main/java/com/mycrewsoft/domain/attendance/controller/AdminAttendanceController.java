@@ -10,10 +10,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.web.bind.annotation.PathVariable;
+
 import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.attendance.dto.request.AtndPolicySaveRequest;
 import com.mycrewsoft.domain.attendance.dto.request.LeaveGrantRequest;
 import com.mycrewsoft.domain.attendance.dto.response.AdminAtndRowResponse;
+import com.mycrewsoft.domain.attendance.dto.response.AdminAtndStatResponse;
 import com.mycrewsoft.domain.attendance.dto.response.AtndPolicyResponse;
 import com.mycrewsoft.domain.attendance.dto.response.LeaveBalanceResponse;
 import com.mycrewsoft.domain.attendance.service.AttendanceLeaveService;
@@ -58,6 +61,27 @@ public class AdminAttendanceController {
 			@RequestParam(name = "keyword", required = false) String keyword) {
 		return ResponseEntity.ok(ApiResponse.success(
 				attendanceService.getAllAttendance(date, deptCd, keyword)));
+	}
+
+	@Operation(summary = "기간별 사원 근태 집계", description = "지정 기간(from~to) 동안 사원별 근무/지각/휴가 등을 집계해 조회합니다. ATTENDANCE_VIEW_ALL 권한이 필요합니다.")
+	@GetMapping("/stats")
+	public ResponseEntity<ApiResponse<List<AdminAtndStatResponse>>> getAttendanceStats(
+			@RequestParam(name = "from", required = false) String from,
+			@RequestParam(name = "to", required = false) String to,
+			@RequestParam(name = "deptCd", required = false) String deptCd,
+			@RequestParam(name = "keyword", required = false) String keyword) {
+		return ResponseEntity.ok(ApiResponse.success(
+				attendanceService.getAttendanceStats(from, to, deptCd, keyword)));
+	}
+
+	@Operation(summary = "사원 기간 근태 상세", description = "특정 사원의 기간 일자별 근태를 조회합니다. ATTENDANCE_VIEW_ALL 권한이 필요합니다.")
+	@GetMapping("/employee/{empId}")
+	public ResponseEntity<ApiResponse<List<AdminAtndRowResponse>>> getEmployeeAttendance(
+			@PathVariable("empId") Long empId,
+			@RequestParam(name = "from", required = false) String from,
+			@RequestParam(name = "to", required = false) String to) {
+		return ResponseEntity.ok(ApiResponse.success(
+				attendanceService.getEmployeeAttendance(empId, from, to)));
 	}
 
 	// ===== 연차 부여 =====
