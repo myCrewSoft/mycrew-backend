@@ -14,6 +14,8 @@ public interface GoogleGmailClient {
 
     void markRead(MailAccountVO account, String externalMessageId);
 
+    void markUnread(MailAccountVO account, String externalMessageId);
+
     void updateImportant(MailAccountVO account, String externalMessageId, boolean important);
 
     void trashMessage(MailAccountVO account, String externalMessageId);

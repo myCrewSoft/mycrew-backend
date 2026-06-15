@@ -13,7 +13,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
 
 import com.mycrewsoft.common.constant.PermissionCode;
 import com.mycrewsoft.common.exception.CustomException;
@@ -21,7 +23,13 @@ import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.file.dto.FileUploadRequestDto;
 import com.mycrewsoft.domain.file.service.FileService;
 import com.mycrewsoft.domain.mail.dto.request.MailImportantUpdateRequest;
+import com.mycrewsoft.domain.mail.dto.request.MailBulkRequest;
+import com.mycrewsoft.domain.mail.dto.request.MailDraftRequest;
 import com.mycrewsoft.domain.mail.dto.request.MailSendRequest;
+import com.mycrewsoft.domain.mail.dto.response.MailAccountStatusResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailAttachmentDownload;
+import com.mycrewsoft.domain.mail.dto.response.MailAttachmentResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailBulkResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailDetailResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailMutationResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSendResponse;
@@ -56,13 +64,41 @@ public class MailServiceImpl implements MailService {
     private static final String SCOPE_GMAIL_MODIFY = "https://www.googleapis.com/auth/gmail.modify";
     private static final String SCOPE_GMAIL_FULL_ACCESS = "https://mail.google.com/";
     private static final String MAIL_ATTACHMENT_BIZ_CD = "05";
-    private static final Set<String> MAILBOX_TYPES = Set.of("inbox", "sent", "all", "self", "tome");
+    private static final String TOKEN_STATUS_ACTIVE = "ACTIVE";
+    private static final String TOKEN_STATUS_INVALID = "INVALID";
+    private static final String TOKEN_STATUS_REVOKED = "REVOKED";
+    private static final String ACCOUNT_STATUS_NONE = "NONE";
+    private static final String ACCOUNT_STATUS_ACTIVE = "ACTIVE";
+    private static final String ACCOUNT_STATUS_TOKEN_INVALID = "TOKEN_INVALID";
+    private static final String CONTENT_RENDER_MODE_SANDBOX_IFRAME = "SANDBOX_IFRAME";
+    private static final Set<String> MAILBOX_TYPES = Set.of("inbox", "sent", "all", "self", "tome", "important", "unread", "draft");
+    private static final Set<String> BULK_ACTIONS = Set.of("read", "unread", "trash", "important");
     private static final List<String> SYSTEM_LABELS = List.of("INBOX", "SENT", "TRASH", "UNREAD", "IMPORTANT");
 
     private final AuthorizationService authorizationService;
     private final MailMapper mailMapper;
     private final GoogleGmailClient googleGmailClient;
     private final FileService fileService;
+    private final TransactionTemplate transactionTemplate;
+
+    @Override
+    @Transactional(readOnly = true)
+    public MailAccountStatusResponse getAccountStatus() {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        assertPermission(PermissionCode.MAIL_READ, empId);
+        MailAccountVO account = mailMapper.selectActiveMailAccount(empId);
+        if (account == null) {
+            return new MailAccountStatusResponse(false, ACCOUNT_STATUS_NONE, null, null, false);
+        }
+        String tokenStatus = normalizeTokenStatus(account);
+        boolean reconnectRequired = isReconnectRequired(account);
+        return new MailAccountStatusResponse(
+                true,
+                reconnectRequired ? ACCOUNT_STATUS_TOKEN_INVALID : ACCOUNT_STATUS_ACTIVE,
+                account.getEmailAddr(),
+                tokenStatus,
+                reconnectRequired);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -90,7 +126,6 @@ public class MailServiceImpl implements MailService {
     }
 
     @Override
-    @Transactional
     public MailSendResponse sendMail(MailSendRequest request, List<MultipartFile> attachments) {
         Long empId = SecurityUtil.getCurrentEmpId();
         assertPermission(PermissionCode.MAIL_SEND, empId);
@@ -106,32 +141,63 @@ public class MailServiceImpl implements MailService {
         List<String> bcc = normalizeEmails(request.getBcc());
         List<MultipartFile> uploadFiles = attachments == null ? List.of() : attachments;
 
+        String subject = request.getSubject().trim();
+        String content = request.getContent();
+
         GmailSendCommand command = new GmailSendCommand();
         command.setFromEmail(account.getEmailAddr());
         command.setTo(to);
         command.setCc(cc);
         command.setBcc(bcc);
-        command.setSubject(request.getSubject().trim());
-        command.setContent(request.getContent());
+        command.setSubject(subject);
+        command.setContent(content);
         command.setAttachments(uploadFiles);
+
+        // 답장/회신 대상이 있으면 동일 스레드로 연결 (In-Reply-To/References + threadId)
+        if (request.getInReplyToMailId() != null) {
+            MailMessageRow original = mailMapper.selectMailRow(empId, request.getInReplyToMailId());
+            if (original != null) {
+                command.setThreadId(original.getThreadId());
+                if (original.getMessageIdHeader() != null && !original.getMessageIdHeader().isBlank()) {
+                    command.setInReplyTo(original.getMessageIdHeader());
+                    command.setReferences(original.getMessageIdHeader());
+                }
+            }
+        }
 
         GmailSendResult result = googleGmailClient.sendMessage(account, command);
         if (result == null || result.getExternalMessageId() == null) {
             throw new CustomException(ErrorCode.MAIL_SEND_FAILED);
         }
 
+        LocalDateTime sentAt = result.getSentAt() == null ? LocalDateTime.now() : result.getSentAt();
+        return transactionTemplate.execute(status -> persistSentMail(
+                empId,
+                account,
+                subject,
+                content,
+                to,
+                cc,
+                bcc,
+                uploadFiles,
+                result,
+                sentAt));
+    }
+
+    private MailSendResponse persistSentMail(Long empId, MailAccountVO account, String subject, String content,
+            List<String> to, List<String> cc, List<String> bcc, List<MultipartFile> uploadFiles,
+            GmailSendResult result, LocalDateTime sentAt) {
         ensureSystemLabels(empId);
 
         Long mailId = mailMapper.selectNextMailMessageId();
-        LocalDateTime sentAt = result.getSentAt() == null ? LocalDateTime.now() : result.getSentAt();
         MailMessageRow row = new MailMessageRow();
         row.setMailId(mailId);
         row.setEmpId(empId);
         row.setExternalMessageId(result.getExternalMessageId());
         row.setThreadId(result.getThreadId());
-        row.setSubject(request.getSubject().trim());
-        row.setContent(request.getContent());
-        row.setSnippet(buildSnippet(request.getContent()));
+        row.setSubject(subject);
+        row.setContent(content);
+        row.setSnippet(buildSnippet(content));
         row.setFromEmail(account.getEmailAddr());
         row.setToSummary(buildToSummary(to));
         row.setSentAt(sentAt);
@@ -162,7 +228,6 @@ public class MailServiceImpl implements MailService {
     }
 
     @Override
-    @Transactional
     public MailDetailResponse getMail(Long mailId) {
         Long empId = SecurityUtil.getCurrentEmpId();
         assertPermission(PermissionCode.MAIL_READ, empId);
@@ -175,7 +240,8 @@ public class MailServiceImpl implements MailService {
             if (content == null) {
                 throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
             }
-            mailMapper.updateMailBody(empId, mailId, content.getContent(), content.getSnippet());
+            transactionTemplate.executeWithoutResult(status ->
+                    mailMapper.updateMailBody(empId, mailId, content.getContent(), content.getSnippet()));
         }
 
         MailDetailResponse detail = mailMapper.selectMailDetail(empId, mailId);
@@ -185,11 +251,11 @@ public class MailServiceImpl implements MailService {
         detail.setParticipants(mailMapper.selectParticipants(empId, mailId));
         detail.setAttachments(mailMapper.selectAttachments(empId, mailId));
         detail.setLabels(mailMapper.selectLabelTypes(empId, mailId));
+        applyRenderPolicy(detail);
         return detail;
     }
 
     @Override
-    @Transactional
     public MailMutationResponse moveToTrash(Long mailId) {
         Long empId = SecurityUtil.getCurrentEmpId();
         assertPermission(PermissionCode.MAIL_DELETE, empId);
@@ -198,13 +264,14 @@ public class MailServiceImpl implements MailService {
         MailMessageRow row = loadMailRow(empId, mailId);
 
         googleGmailClient.trashMessage(account, row.getExternalMessageId());
-        ensureSystemLabels(empId);
-        addLabel(empId, mailId, "TRASH");
+        transactionTemplate.executeWithoutResult(status -> {
+            ensureSystemLabels(empId);
+            addLabel(empId, mailId, "TRASH");
+        });
         return new MailMutationResponse(mailId, "TRASHED");
     }
 
     @Override
-    @Transactional
     public MailMutationResponse markRead(Long mailId) {
         Long empId = SecurityUtil.getCurrentEmpId();
         assertPermission(PermissionCode.MAIL_READ, empId);
@@ -213,12 +280,28 @@ public class MailServiceImpl implements MailService {
         MailMessageRow row = loadMailRow(empId, mailId);
 
         googleGmailClient.markRead(account, row.getExternalMessageId());
-        mailMapper.deleteLabelMapByType(empId, mailId, "UNREAD");
+        transactionTemplate.executeWithoutResult(status ->
+                mailMapper.deleteLabelMapByType(empId, mailId, "UNREAD"));
         return new MailMutationResponse(mailId, "READ");
     }
 
     @Override
-    @Transactional
+    public MailMutationResponse markUnread(Long mailId) {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        assertPermission(PermissionCode.MAIL_READ, empId);
+        MailAccountVO account = loadAccount(empId);
+        requireScope(account, SCOPE_GMAIL_MODIFY);
+        MailMessageRow row = loadMailRow(empId, mailId);
+
+        googleGmailClient.markUnread(account, row.getExternalMessageId());
+        transactionTemplate.executeWithoutResult(status -> {
+            ensureSystemLabels(empId);
+            addLabel(empId, mailId, "UNREAD");
+        });
+        return new MailMutationResponse(mailId, "UNREAD");
+    }
+
+    @Override
     public MailMutationResponse updateImportant(Long mailId, MailImportantUpdateRequest request) {
         Long empId = SecurityUtil.getCurrentEmpId();
         assertPermission(PermissionCode.MAIL_READ, empId);
@@ -230,12 +313,14 @@ public class MailServiceImpl implements MailService {
         }
 
         googleGmailClient.updateImportant(account, row.getExternalMessageId(), request.getImportant());
-        ensureSystemLabels(empId);
-        if (Boolean.TRUE.equals(request.getImportant())) {
-            addLabel(empId, mailId, "IMPORTANT");
-        } else {
-            mailMapper.deleteLabelMapByType(empId, mailId, "IMPORTANT");
-        }
+        transactionTemplate.executeWithoutResult(status -> {
+            ensureSystemLabels(empId);
+            if (Boolean.TRUE.equals(request.getImportant())) {
+                addLabel(empId, mailId, "IMPORTANT");
+            } else {
+                mailMapper.deleteLabelMapByType(empId, mailId, "IMPORTANT");
+            }
+        });
         return new MailMutationResponse(mailId, "IMPORTANT_UPDATED");
     }
 
@@ -254,7 +339,6 @@ public class MailServiceImpl implements MailService {
     }
 
     @Override
-    @Transactional
     public MailTrashClearResponse clearTrash() {
         Long empId = SecurityUtil.getCurrentEmpId();
         assertPermission(PermissionCode.MAIL_DELETE, empId);
@@ -270,12 +354,12 @@ public class MailServiceImpl implements MailService {
         for (MailMessageRow row : trashRows) {
             googleGmailClient.deleteMessage(account, row.getExternalMessageId());
         }
-        mailMapper.markMessagesDeleted(empId, trashRows.stream().map(MailMessageRow::getMailId).toList());
+        transactionTemplate.executeWithoutResult(status ->
+                mailMapper.markMessagesDeleted(empId, trashRows.stream().map(MailMessageRow::getMailId).toList()));
         return new MailTrashClearResponse(trashRows.size());
     }
 
     @Override
-    @Transactional
     public MailMutationResponse restore(Long mailId) {
         Long empId = SecurityUtil.getCurrentEmpId();
         assertPermission(PermissionCode.MAIL_READ, empId);
@@ -284,24 +368,35 @@ public class MailServiceImpl implements MailService {
         MailMessageRow row = loadMailRow(empId, mailId);
 
         googleGmailClient.untrashMessage(account, row.getExternalMessageId());
-        mailMapper.deleteLabelMapByType(empId, mailId, "TRASH");
+        transactionTemplate.executeWithoutResult(status ->
+                mailMapper.deleteLabelMapByType(empId, mailId, "TRASH"));
         return new MailMutationResponse(mailId, "RESTORED");
     }
 
     @Override
-    @Transactional
     public MailSyncResponse syncMails(int maxResults) {
         Long empId = SecurityUtil.getCurrentEmpId();
         assertPermission(PermissionCode.MAIL_READ, empId);
         MailAccountVO account = loadAccount(empId);
+        return syncAccount(account, maxResults);
+    }
+
+    @Override
+    public MailSyncResponse syncAccount(MailAccountVO account, int maxResults) {
+        Long empId = account.getEmpId();
         requireAnyScope(account, SCOPE_GMAIL_READONLY, SCOPE_GMAIL_MODIFY);
 
         int limit = normalizeSyncLimit(maxResults);
-        ensureSystemLabels(empId);
         GmailSyncResult result = googleGmailClient.syncMessages(account, account.getGoogleHistoryId(), limit);
         if (result == null) {
             throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
         }
+        return transactionTemplate.execute(status -> persistSyncResult(account, result));
+    }
+
+    private MailSyncResponse persistSyncResult(MailAccountVO account, GmailSyncResult result) {
+        Long empId = account.getEmpId();
+        ensureSystemLabels(empId);
         List<GmailSyncedMessage> messages = result.getMessages() == null
                 ? List.of()
                 : result.getMessages();
@@ -350,6 +445,202 @@ public class MailServiceImpl implements MailService {
                 LocalDateTime.now());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public MailAttachmentDownload downloadAttachment(Long mailId, Long attachmentId) {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        assertPermission(PermissionCode.MAIL_READ, empId);
+        if (mailId == null || attachmentId == null) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        MailAttachmentResponse meta = mailMapper.selectAttachmentMeta(empId, mailId, attachmentId);
+        if (meta == null) {
+            throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+        }
+        Resource resource = fileService.download(attachmentId);
+        return new MailAttachmentDownload(resource, meta.getOriginalFileName(), meta.getContentType());
+    }
+
+    @Override
+    public MailBulkResponse bulkAction(MailBulkRequest request) {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        if (request == null || request.getMailIds() == null || request.getMailIds().isEmpty()
+                || request.getAction() == null || request.getAction().isBlank()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        String action = request.getAction().trim().toLowerCase(Locale.ROOT);
+        if (!BULK_ACTIONS.contains(action)) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        PermissionCode permission = "trash".equals(action)
+                ? PermissionCode.MAIL_DELETE
+                : PermissionCode.MAIL_READ;
+        assertPermission(permission, empId);
+        MailAccountVO account = loadAccount(empId);
+        requireScope(account, SCOPE_GMAIL_MODIFY);
+
+        boolean important = Boolean.TRUE.equals(request.getImportant());
+        int processed = 0;
+        int failed = 0;
+        for (Long mailId : request.getMailIds()) {
+            try {
+                applyBulkAction(empId, account, mailId, action, important);
+                processed++;
+            } catch (Exception e) {
+                log.warn("Bulk mail action failed. action={}, mailId={}", action, mailId, e);
+                failed++;
+            }
+        }
+        return new MailBulkResponse(processed, failed);
+    }
+
+    private void applyBulkAction(Long empId, MailAccountVO account, Long mailId, String action, boolean important) {
+        MailMessageRow row = loadMailRow(empId, mailId);
+        applyBulkGmailAction(account, row, action, important);
+        transactionTemplate.executeWithoutResult(status ->
+                applyBulkLocalAction(empId, mailId, action, important));
+    }
+
+    private void applyBulkGmailAction(MailAccountVO account, MailMessageRow row, String action, boolean important) {
+        switch (action) {
+            case "read" -> {
+                googleGmailClient.markRead(account, row.getExternalMessageId());
+            }
+            case "unread" -> {
+                googleGmailClient.markUnread(account, row.getExternalMessageId());
+            }
+            case "trash" -> {
+                googleGmailClient.trashMessage(account, row.getExternalMessageId());
+            }
+            case "important" -> {
+                googleGmailClient.updateImportant(account, row.getExternalMessageId(), important);
+            }
+            default -> throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private void applyBulkLocalAction(Long empId, Long mailId, String action, boolean important) {
+        switch (action) {
+            case "read" -> mailMapper.deleteLabelMapByType(empId, mailId, "UNREAD");
+            case "unread" -> {
+                ensureSystemLabels(empId);
+                addLabel(empId, mailId, "UNREAD");
+            }
+            case "trash" -> {
+                ensureSystemLabels(empId);
+                addLabel(empId, mailId, "TRASH");
+            }
+            case "important" -> {
+                ensureSystemLabels(empId);
+                if (important) {
+                    addLabel(empId, mailId, "IMPORTANT");
+                } else {
+                    mailMapper.deleteLabelMapByType(empId, mailId, "IMPORTANT");
+                }
+            }
+            default -> throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    @Override
+    @Transactional
+    public Long saveDraft(MailDraftRequest request) {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        assertPermission(PermissionCode.MAIL_SEND, empId);
+        MailAccountVO account = loadAccount(empId);
+        if (request == null) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        List<String> to = normalizeEmails(request.getTo());
+        List<String> cc = normalizeEmails(request.getCc());
+        List<String> bcc = normalizeEmails(request.getBcc());
+        String subject = request.getSubject() == null ? "" : request.getSubject().trim();
+        String content = request.getContent() == null ? "" : request.getContent();
+        LocalDateTime now = LocalDateTime.now();
+
+        Long mailId = request.getMailId();
+        if (mailId == null) {
+            mailId = mailMapper.selectNextMailMessageId();
+            mailMapper.insertMailMessage(buildDraftRow(empId, mailId, account, subject, content, to, now, null, null, null));
+        } else {
+            MailMessageRow existing = mailMapper.selectMailRow(empId, mailId);
+            if (existing == null || !"Y".equals(existing.getDraftYn())) {
+                throw new CustomException(ErrorCode.MAIL_NOT_FOUND);
+            }
+            mailMapper.updateMailMessage(buildDraftRow(empId, mailId, account, subject, content, to, now,
+                    existing.getExternalMessageId(), existing.getThreadId(), existing.getMessageIdHeader()));
+            mailMapper.deleteParticipantsByMail(empId, mailId);
+        }
+
+        for (String email : to) {
+            insertParticipant(empId, mailId, email, "TO");
+        }
+        for (String email : cc) {
+            insertParticipant(empId, mailId, email, "CC");
+        }
+        for (String email : bcc) {
+            insertParticipant(empId, mailId, email, "BCC");
+        }
+        return mailId;
+    }
+
+    private MailMessageRow buildDraftRow(Long empId, Long mailId, MailAccountVO account, String subject,
+            String content, List<String> to, LocalDateTime now,
+            String externalMessageId, String threadId, String messageIdHeader) {
+        MailMessageRow row = new MailMessageRow();
+        row.setMailId(mailId);
+        row.setEmpId(empId);
+        row.setExternalMessageId(externalMessageId);
+        row.setThreadId(threadId);
+        row.setMessageIdHeader(messageIdHeader);
+        row.setSubject(subject);
+        row.setContent(content);
+        row.setSnippet(buildSnippet(content));
+        row.setFromEmail(account.getEmailAddr());
+        row.setToSummary(buildToSummary(to));
+        row.setSentAt(now);
+        row.setInternalDate(now);
+        row.setDraftYn("Y");
+        row.setBodySyncYn("Y");
+        row.setDelYn("N");
+        return row;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MailDetailResponse getDraft(Long mailId) {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        assertPermission(PermissionCode.MAIL_READ, empId);
+        MailMessageRow row = mailMapper.selectMailRow(empId, mailId);
+        if (row == null || !"Y".equals(row.getDraftYn())) {
+            throw new CustomException(ErrorCode.MAIL_NOT_FOUND);
+        }
+        MailDetailResponse detail = mailMapper.selectMailDetail(empId, mailId);
+        if (detail == null) {
+            throw new CustomException(ErrorCode.MAIL_NOT_FOUND);
+        }
+        detail.setParticipants(mailMapper.selectParticipants(empId, mailId));
+        detail.setAttachments(List.of());
+        detail.setLabels(List.of());
+        applyRenderPolicy(detail);
+        return detail;
+    }
+
+    @Override
+    @Transactional
+    public void deleteDraft(Long mailId) {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        assertPermission(PermissionCode.MAIL_SEND, empId);
+        MailMessageRow row = mailMapper.selectMailRow(empId, mailId);
+        if (row == null || !"Y".equals(row.getDraftYn())) {
+            throw new CustomException(ErrorCode.MAIL_NOT_FOUND);
+        }
+        mailMapper.deleteParticipantsByMail(empId, mailId);
+        mailMapper.deleteLabelMapsByMail(empId, mailId);
+        mailMapper.markMessagesDeleted(empId, List.of(mailId));
+    }
+
     private void assertPermission(PermissionCode permissionCode, Long empId) {
         authorizationService.assertCurrentUserPermission(
                 permissionCode,
@@ -364,7 +655,27 @@ public class MailServiceImpl implements MailService {
         if (account == null) {
             throw new CustomException(ErrorCode.MAIL_ACCOUNT_NOT_FOUND);
         }
+        if (isReconnectRequired(account)) {
+            throw new CustomException(ErrorCode.MAIL_TOKEN_INVALID);
+        }
         return account;
+    }
+
+    private String normalizeTokenStatus(MailAccountVO account) {
+        String tokenStatus = account.getTokenStatusCd();
+        if (tokenStatus == null || tokenStatus.isBlank()) {
+            return TOKEN_STATUS_ACTIVE;
+        }
+        return tokenStatus.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private boolean isReconnectRequired(MailAccountVO account) {
+        String tokenStatus = normalizeTokenStatus(account);
+        return TOKEN_STATUS_INVALID.equals(tokenStatus) || TOKEN_STATUS_REVOKED.equals(tokenStatus);
+    }
+
+    private void applyRenderPolicy(MailDetailResponse detail) {
+        detail.setContentRenderMode(CONTENT_RENDER_MODE_SANDBOX_IFRAME);
     }
 
     private MailMessageRow loadMailRow(Long empId, Long mailId) {

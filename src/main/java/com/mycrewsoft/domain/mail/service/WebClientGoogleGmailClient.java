@@ -33,7 +33,6 @@ import com.mycrewsoft.domain.mail.gmail.GmailSendResult;
 import com.mycrewsoft.domain.mail.gmail.GmailSyncResult;
 import com.mycrewsoft.domain.mail.gmail.GmailSyncedAttachment;
 import com.mycrewsoft.domain.mail.gmail.GmailSyncedMessage;
-import com.mycrewsoft.domain.mail.mapper.MailMapper;
 import com.mycrewsoft.domain.mail.vo.MailAccountVO;
 
 import lombok.RequiredArgsConstructor;
@@ -53,7 +52,7 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
 
     private final WebClient.Builder webClientBuilder;
     private final GoogleOAuthProperties properties;
-    private final MailMapper mailMapper;
+    private final MailAccountTokenService mailAccountTokenService;
 
     @Override
     public GmailSendResult sendMessage(MailAccountVO account, GmailSendCommand command) {
@@ -62,12 +61,18 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
                     .withoutPadding()
                     .encodeToString(buildMimeMessage(command).getBytes(StandardCharsets.UTF_8));
 
+            java.util.Map<String, Object> requestBody = new java.util.HashMap<>();
+            requestBody.put("raw", raw);
+            if (command.getThreadId() != null && !command.getThreadId().isBlank()) {
+                requestBody.put("threadId", command.getThreadId());
+            }
+
             Map<?, ?> response = webClient()
                     .post()
                     .uri(GMAIL_API + "/send")
                     .headers(headers -> headers.setBearerAuth(accessToken(account)))
                     .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(Map.of("raw", raw))
+                    .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block();
@@ -116,6 +121,11 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
     @Override
     public void markRead(MailAccountVO account, String externalMessageId) {
         modifyLabels(account, externalMessageId, List.of(), List.of("UNREAD"));
+    }
+
+    @Override
+    public void markUnread(MailAccountVO account, String externalMessageId) {
+        modifyLabels(account, externalMessageId, List.of("UNREAD"), List.of());
     }
 
     @Override
@@ -524,31 +534,40 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
             return account.getAccessToken();
         }
         if (account.getRefreshToken() == null || account.getRefreshToken().isBlank()) {
-            throw new CustomException(ErrorCode.INVALID_TOKEN);
+            mailAccountTokenService.markInvalid(account);
+            throw new CustomException(ErrorCode.MAIL_TOKEN_INVALID);
         }
 
-        GoogleTokenResponse response = webClient()
-                .post()
-                .uri(TOKEN_URI)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromFormData("refresh_token", account.getRefreshToken())
-                        .with("client_id", properties.getClientId())
-                        .with("client_secret", properties.getClientSecret())
-                        .with("grant_type", "refresh_token"))
-                .retrieve()
-                .bodyToMono(GoogleTokenResponse.class)
-                .block();
+        GoogleTokenResponse response;
+        try {
+            response = webClient()
+                    .post()
+                    .uri(TOKEN_URI)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(BodyInserters.fromFormData("refresh_token", account.getRefreshToken())
+                            .with("client_id", properties.getClientId())
+                            .with("client_secret", properties.getClientSecret())
+                            .with("grant_type", "refresh_token"))
+                    .retrieve()
+                    .bodyToMono(GoogleTokenResponse.class)
+                    .block();
+        } catch (WebClientResponseException e) {
+            logGmailApiFailure("refresh-token", e);
+            if (e.getStatusCode().is4xxClientError()) {
+                mailAccountTokenService.markInvalid(account);
+                throw new CustomException(ErrorCode.MAIL_TOKEN_INVALID);
+            }
+            throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
+        }
 
         if (response == null || response.getAccessToken() == null) {
-            mailMapper.updateMailAccountTokens(account.getEmpId(), account.getAccessToken(), account.getTokenExprDt(), "INVALID");
-            throw new CustomException(ErrorCode.INVALID_TOKEN);
+            mailAccountTokenService.markInvalid(account);
+            throw new CustomException(ErrorCode.MAIL_TOKEN_INVALID);
         }
 
         LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(
                 response.getExpiresIn() == null ? 3600 : response.getExpiresIn());
-        mailMapper.updateMailAccountTokens(account.getEmpId(), response.getAccessToken(), expiresAt, "ACTIVE");
-        account.setAccessToken(response.getAccessToken());
-        account.setTokenExprDt(expiresAt);
+        mailAccountTokenService.updateActive(account, response.getAccessToken(), expiresAt);
         return response.getAccessToken();
     }
 
@@ -607,6 +626,12 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
             appendHeader(builder, "Bcc", String.join(", ", command.getBcc()));
         }
         appendHeader(builder, "Subject", command.getSubject());
+        if (command.getInReplyTo() != null && !command.getInReplyTo().isBlank()) {
+            appendHeader(builder, "In-Reply-To", command.getInReplyTo());
+        }
+        if (command.getReferences() != null && !command.getReferences().isBlank()) {
+            appendHeader(builder, "References", command.getReferences());
+        }
         return builder;
     }
 

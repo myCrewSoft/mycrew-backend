@@ -31,4 +31,7 @@ public class MailSendRequest {
     @NotBlank(message = "본문은 필수입니다.")
     @Schema(description = "메일 본문. HTML을 허용합니다.", example = "<p>자료 확인 부탁드립니다.</p>")
     private String content;
+
+    @Schema(description = "답장/회신 대상 원본 메일 ID. 지정 시 같은 스레드로 연결됩니다.", example = "1001")
+    private Long inReplyToMailId;
 }

@@ -21,12 +21,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.SimpleTransactionStatus;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.mycrewsoft.common.constant.PermissionCode;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.file.service.FileService;
 import com.mycrewsoft.domain.mail.dto.response.MailDetailResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailAccountStatusResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailMutationResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSyncResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailTrashClearResponse;
@@ -59,7 +65,12 @@ class MailServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new MailServiceImpl(new AuthorizationService(), mailMapper, googleGmailClient, fileService);
+        service = new MailServiceImpl(
+                new AuthorizationService(),
+                mailMapper,
+                googleGmailClient,
+                fileService,
+                testTransactionTemplate());
     }
 
     @AfterEach
@@ -99,6 +110,37 @@ class MailServiceImplTest {
     }
 
     @Test
+    void getAccountStatusReturnsReconnectRequiredWhenTokenIsInvalid() {
+        authenticate(PermissionCode.MAIL_READ);
+        MailAccountVO account = account("https://www.googleapis.com/auth/gmail.readonly");
+        account.setTokenStatusCd("INVALID");
+        when(mailMapper.selectActiveMailAccount(EMP_ID)).thenReturn(account);
+
+        MailAccountStatusResponse response = service.getAccountStatus();
+
+        assertThat(response.isAccountLinked()).isTrue();
+        assertThat(response.isReconnectRequired()).isTrue();
+        assertThat(response.getStatus()).isEqualTo("TOKEN_INVALID");
+        assertThat(response.getEmailAddr()).isEqualTo("user@example.com");
+    }
+
+    @Test
+    void getMailsThrowsTokenInvalidWhenLinkedAccountTokenIsInvalid() {
+        authenticate(PermissionCode.MAIL_READ);
+        MailAccountVO account = account("https://www.googleapis.com/auth/gmail.readonly");
+        account.setTokenStatusCd("INVALID");
+        when(mailMapper.selectActiveMailAccount(EMP_ID)).thenReturn(account);
+
+        assertThatThrownBy(() -> service.getMails("inbox", null, org.springframework.data.domain.PageRequest.of(0, 20)))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.MAIL_TOKEN_INVALID);
+
+        verify(mailMapper, never()).countMails(any(), any(), any(), any());
+        verifyNoInteractions(googleGmailClient);
+    }
+
+    @Test
     void getMailFetchesBodyFromGmailWhenBodyIsNotSynced() {
         authenticate(PermissionCode.MAIL_READ);
         MailAccountVO account = account("https://www.googleapis.com/auth/gmail.readonly");
@@ -118,6 +160,7 @@ class MailServiceImplTest {
         MailDetailResponse response = service.getMail(10L);
 
         assertThat(response.getLabels()).containsExactly("INBOX");
+        assertThat(response.getContentRenderMode()).isEqualTo("SANDBOX_IFRAME");
         InOrder inOrder = inOrder(googleGmailClient, mailMapper);
         inOrder.verify(googleGmailClient).getMessage(account, "gmail-10");
         inOrder.verify(mailMapper).updateMailBody(EMP_ID, 10L, "<p>본문</p>", "본문");
@@ -177,6 +220,25 @@ class MailServiceImplTest {
     }
 
     @Test
+    void syncMailsCallsGmailBeforeLocalDbPreparation() {
+        authenticate(PermissionCode.MAIL_READ);
+        MailAccountVO account = account("https://www.googleapis.com/auth/gmail.readonly");
+        GmailSyncResult syncResult = new GmailSyncResult();
+        syncResult.setMessages(List.of());
+        syncResult.setLatestHistoryId("history-empty");
+
+        when(mailMapper.selectActiveMailAccount(EMP_ID)).thenReturn(account);
+        when(googleGmailClient.syncMessages(account, null, 50)).thenReturn(syncResult);
+        when(mailMapper.selectNextMailLabelId()).thenReturn(1L, 2L, 3L, 4L, 5L);
+
+        service.syncMails(50);
+
+        InOrder inOrder = inOrder(googleGmailClient, mailMapper);
+        inOrder.verify(googleGmailClient).syncMessages(account, null, 50);
+        inOrder.verify(mailMapper).selectNextMailLabelId();
+    }
+
+    @Test
     void clearTrashRequiresFullMailScopeBeforeCallingGmailDelete() {
         authenticate(PermissionCode.MAIL_DELETE);
         MailAccountVO account = account("https://www.googleapis.com/auth/gmail.modify");
@@ -223,6 +285,23 @@ class MailServiceImplTest {
                 List.of(ScopedPermission.of(permissionCode.getCode(), 1L, "role", ScopeType.GLOBAL, null)));
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(principal, null, List.of()));
+    }
+
+    private TransactionTemplate testTransactionTemplate() {
+        return new TransactionTemplate(new PlatformTransactionManager() {
+            @Override
+            public TransactionStatus getTransaction(TransactionDefinition definition) {
+                return new SimpleTransactionStatus();
+            }
+
+            @Override
+            public void commit(TransactionStatus status) {
+            }
+
+            @Override
+            public void rollback(TransactionStatus status) {
+            }
+        });
     }
 
     private MailAccountVO account(String scopes) {
