@@ -68,6 +68,9 @@ public interface MsngrMapper {
     // 사용자 상태 조회
     String selectPtcptSttus(@Param("empId") Long empId);
 
+    // 사용자가 현재 참여 중인 채팅방 ID 조회
+    List<Long> selectActiveChtrmIdsByEmpId(@Param("empId") Long empId);
+
     // 마지막 읽은 메시지 갱신
     int updateLastCfmtnMsgId(@Param("chtrmId") Long chtrmId,
                              @Param("empId") Long empId,

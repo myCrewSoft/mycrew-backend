@@ -8,6 +8,7 @@ import com.mycrewsoft.domain.messenger.dto.request.RemoveParticipantsRequest;
 import com.mycrewsoft.domain.messenger.dto.request.UpdateChatRoomRequest;
 import com.mycrewsoft.domain.messenger.dto.response.ChatMessageResponse;
 import com.mycrewsoft.domain.messenger.dto.response.ChatRoomResponse;
+import com.mycrewsoft.domain.messenger.enums.ParticipantStatus;
 
 public interface MsngrService {
     
@@ -20,9 +21,9 @@ public interface MsngrService {
 
     Long createChtrm(CreateChatRoomRequest request);
 
-    void updatePtcptSttus(String ptcptSttusCd);
+    void updatePtcptSttus(ParticipantStatus status);
 
-    void updatePtcptSttusById(Long empId, String ptcptSttusCd);
+    void updatePtcptSttusById(Long empId, ParticipantStatus status);
 
     void updateLastCfmtnMsgId(Long chtrmId, Long msgId);
 
