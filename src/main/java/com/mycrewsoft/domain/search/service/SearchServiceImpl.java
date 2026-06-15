@@ -26,17 +26,16 @@ public class SearchServiceImpl implements SearchService {
     
     @Override
     @Transactional
-    public List<SearchResponse> search(String keyword, SearchType type) {
+    public List<SearchResponse> search(String keyword) {
         if (!StringUtils.hasText(keyword)) {
             return List.of();
         }
         
         Long empId = getCurrentEmpIdOrThrow();
-        String typeStr = (type != null) ? type.name() : null;
 
         saveSearchHist(keyword, empId);
 
-        return searchMapper.search(keyword, typeStr, empId)
+        return searchMapper.search(keyword, empId)
                 .stream()
                 .map(searchDtoMapper::toResponse)
                 .toList();

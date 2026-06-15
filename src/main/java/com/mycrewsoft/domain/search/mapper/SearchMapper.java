@@ -14,7 +14,6 @@ public interface SearchMapper {
 	// 키워드 + 타입으로 검색
 	List<SearchVO> search(
 		@Param("keyword") String keyword,
-        @Param("type") String type,
         @Param("empId") Long empId
     );
 

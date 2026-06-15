@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface SearchService {
 
-    List<SearchResponse> search(String keyword, SearchType type);
+    List<SearchResponse> search(String keyword);
 
     List<SearchHistVO> readSearchHist();
 
