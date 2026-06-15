@@ -28,7 +28,7 @@ public interface AttendanceService {
 	AtndTodayResponse getMyToday();
 
 	/** 기간(DAY/WEEK/MONTH/YEAR)별 본인 통계 지표 조회 */
-	AtndStatsResponse getMyStats(String period);
+	AtndStatsResponse getMyStats(String period, String baseDate);
 
 	/** 본인 근태 이력 조회(최근 N건) */
 	List<AtndHistoryResponse> getMyHistory(int days);
