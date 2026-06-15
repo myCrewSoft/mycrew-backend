@@ -36,6 +36,9 @@ public interface ApprovalDraftMapper {
 
     void deleteApprovalStepsByDocSn(@Param("drftDocSn") Long drftDocSn);
 
+    /** 임시저장 기안서(원본 문서) 하드 삭제 */
+    int deleteApprovalDocByDocSn(@Param("drftDocSn") Long drftDocSn);
+
     ApprovalDocVO selectApprovalDocByDocSn(@Param("drftDocSn") Long drftDocSn);
 
     ApprovalDocVO selectApprovalDocByDocSnForUpdate(@Param("drftDocSn") Long drftDocSn);

@@ -56,6 +56,13 @@ public class ApprovalServiceSupport {
                 .build();
         authorizationService.assertCurrentUserPermission(PermissionCode.APPROVAL_DRAFT_UPDATE, resource);
     }
+    public void assertDeletePermission(Long empId) {
+        ResourceContext resource = ResourceContext.builder()
+                .resourceType(ResourceType.APPROVAL)
+                .ownerEmpId(empId)
+                .build();
+        authorizationService.assertCurrentUserPermission(PermissionCode.APPROVAL_DRAFT_DELETE, resource);
+    }
     public void assertTemplateCreatePermission() {
     	ResourceContext resource = ResourceContext.builder()
     			.resourceType(ResourceType.APPROVAL)
@@ -263,6 +270,11 @@ public class ApprovalServiceSupport {
             List<ApprovalStepStatusResponse> steps) {
         String html = detail.getAprvlFullCn();
         if (!StringUtils.hasText(html) || !html.contains("{{")) {
+            return;
+        }
+        // 임시저장 문서는 아직 결재 전이므로 서명란 토큰을 그대로 보존한다.
+        // (수정 모달에서 다시 불러와 저장할 때 {{SIGN:n}} 토큰이 유실되지 않도록 함)
+        if (ApprovalConstants.DOC_STATUS_TEMPORARY.equals(detail.getAprvlDocSttsCd())) {
             return;
         }
 
