@@ -24,6 +24,7 @@ public class ApprovalDraftWriteServiceImpl implements ApprovalDraftWriteService 
     private final ApprovalDraftMapper approvalDraftMapper;
 
     @Transactional
+    @Override
     public Long saveTemporaryDraft(ApprovalDraftRequestDTO request) {
         support.assertCreatePermission();
 
@@ -56,6 +57,7 @@ public class ApprovalDraftWriteServiceImpl implements ApprovalDraftWriteService 
     }
 
     @Transactional
+    @Override
     public void saveApprovalLine(Long drftDocSn, List<ApprovalStepRequestDTO> approvalSteps) {
         Long empId = SecurityUtil.getCurrentEmpId();
         ApprovalDocVO savedDoc = support.requireDocForUpdate(drftDocSn);
@@ -66,6 +68,7 @@ public class ApprovalDraftWriteServiceImpl implements ApprovalDraftWriteService 
     }
 
     @Transactional
+    @Override
     public void deleteTemporaryDraft(Long drftDocSn) {
         Long empId = SecurityUtil.getCurrentEmpId();
         ApprovalDocVO savedDoc = support.requireDocForUpdate(drftDocSn);

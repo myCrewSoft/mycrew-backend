@@ -26,6 +26,7 @@ public class ApprovalSearchServiceImpl implements ApprovalSearchService {
     private final ApprovalDraftMapper approvalDraftMapper;
 
     @Transactional(readOnly = true)
+    @Override
     public ApprovalDocumentDetailResponse readApprovalDocument(Long drftDocSn) {
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
         ApprovalDocumentDetailResponse detail = support.requireDetail(drftDocSn);
@@ -37,6 +38,7 @@ public class ApprovalSearchServiceImpl implements ApprovalSearchService {
     }
 
     @Transactional(readOnly = true)
+    @Override
     public ApprovalDocumentDetailResponse readDraftApprovalStatus(Long drftDocSn) {
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
         ApprovalDocumentDetailResponse detail = support.requireDetail(drftDocSn);
@@ -48,6 +50,7 @@ public class ApprovalSearchServiceImpl implements ApprovalSearchService {
     }
 
     @Transactional(readOnly = true)
+    @Override
     public ApprovalDraftCountResponse readMyDraftCounts() {
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
         return ApprovalDraftCountResponse.builder()
@@ -62,6 +65,7 @@ public class ApprovalSearchServiceImpl implements ApprovalSearchService {
     }
 
     @Transactional(readOnly = true)
+    @Override
     public Page<ApprovalDraftSummaryResponse> readMyDrafts(String documentStatus, String keyword, int page, int size) {
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
         int offset = page * size;
@@ -73,6 +77,7 @@ public class ApprovalSearchServiceImpl implements ApprovalSearchService {
     }
 
     @Transactional(readOnly = true)
+    @Override
     public Page<ApprovalDraftSummaryResponse> readMyApprovalRequests(String keyword, int page, int size) {
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
         int offset = page * size;
@@ -84,6 +89,7 @@ public class ApprovalSearchServiceImpl implements ApprovalSearchService {
     }
 
     @Transactional(readOnly = true)
+    @Override
     public Page<ApprovalDraftSummaryResponse> readMyApprovalHistory(String keyword, int page, int size) {
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
         int offset = page * size;
@@ -95,6 +101,7 @@ public class ApprovalSearchServiceImpl implements ApprovalSearchService {
     }
 
     @Transactional(readOnly = true)
+    @Override
     public Page<ApprovalDraftSummaryResponse> readMyCompletedApprovalDocuments(String keyword, int page, int size) {
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
         int offset = page * size;
@@ -106,6 +113,7 @@ public class ApprovalSearchServiceImpl implements ApprovalSearchService {
     }
 
     @Transactional(readOnly = true)
+    @Override
     public Page<ApprovalDraftSummaryResponse> searchApprovalDocumentsForApprover(String listType, String keyword, int page, int size) {
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
         int offset = page * size;

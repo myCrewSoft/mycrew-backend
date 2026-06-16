@@ -553,6 +553,7 @@
         JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
         WHERE LM.EMP_ID = #{empId}
           AND LM.MAIL_MSG_ID = #{mailId}
+          AND L.SYSTEM_YN = 'Y'
         ORDER BY L.MAIL_LABEL_ID
     </select>
 
@@ -739,4 +740,152 @@
         WHERE EMP_ID = #{empId}
           AND PROVIDER_CD = 'GOOGLE'
     </update>
+
+    <select id="selectUserLabels" resultType="com.mycrewsoft.domain.mail.dto.response.MailLabelResponse">
+        SELECT MAIL_LABEL_ID AS labelId, LABEL_NM AS name
+        FROM TB_MAIL_LABEL
+        WHERE EMP_ID = #{empId}
+          AND SYSTEM_YN = 'N'
+          AND USE_YN = 'Y'
+        ORDER BY LABEL_NM
+    </select>
+
+    <select id="selectUserLabel" resultType="com.mycrewsoft.domain.mail.dto.response.MailLabelResponse">
+        SELECT MAIL_LABEL_ID AS labelId, LABEL_NM AS name
+        FROM TB_MAIL_LABEL
+        WHERE EMP_ID = #{empId}
+          AND MAIL_LABEL_ID = #{labelId}
+          AND SYSTEM_YN = 'N'
+          AND USE_YN = 'Y'
+    </select>
+
+    <select id="countUserLabelName" resultType="int">
+        SELECT COUNT(1)
+        FROM TB_MAIL_LABEL
+        WHERE EMP_ID = #{empId}
+          AND SYSTEM_YN = 'N'
+          AND USE_YN = 'Y'
+          AND LABEL_NM = #{name}
+    </select>
+
+    <insert id="insertUserLabel">
+        INSERT INTO TB_MAIL_LABEL (
+            MAIL_LABEL_ID, EMP_ID, EXTERNAL_LABEL_ID, LABEL_NM, SYSTEM_YN, LABEL_TYPE_CD, USE_YN
+        ) VALUES (
+            #{labelId}, #{empId}, 'USER_' || #{labelId}, #{name}, 'N', 'USER_' || #{labelId}, 'Y'
+        )
+    </insert>
+
+    <update id="updateUserLabelName">
+        UPDATE TB_MAIL_LABEL
+        SET LABEL_NM = #{name}
+        WHERE EMP_ID = #{empId}
+          AND MAIL_LABEL_ID = #{labelId}
+          AND SYSTEM_YN = 'N'
+          AND USE_YN = 'Y'
+    </update>
+
+    <update id="softDeleteUserLabel">
+        UPDATE TB_MAIL_LABEL
+        SET USE_YN = 'N'
+        WHERE EMP_ID = #{empId}
+          AND MAIL_LABEL_ID = #{labelId}
+          AND SYSTEM_YN = 'N'
+    </update>
+
+    <delete id="deleteLabelMapsByLabel">
+        DELETE FROM TB_MAIL_LABEL_MAP
+        WHERE EMP_ID = #{empId}
+          AND MAIL_LABEL_ID = #{labelId}
+    </delete>
+
+    <delete id="deleteLabelMapByLabelId">
+        DELETE FROM TB_MAIL_LABEL_MAP
+        WHERE EMP_ID = #{empId}
+          AND MAIL_MSG_ID = #{mailId}
+          AND MAIL_LABEL_ID = #{labelId}
+    </delete>
+
+    <select id="countMailsByLabel" resultType="long">
+        SELECT COUNT(1)
+        FROM TB_MAIL_MESSAGE M
+        WHERE M.EMP_ID = #{empId}
+          AND M.DEL_YN = 'N'
+          AND M.DRAFT_YN = 'N'
+          AND <include refid="notTrash"/>
+          AND EXISTS (
+              SELECT 1 FROM TB_MAIL_LABEL_MAP LM
+              WHERE LM.EMP_ID = M.EMP_ID
+                AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                AND LM.MAIL_LABEL_ID = #{labelId}
+          )
+    </select>
+
+    <select id="selectMailsByLabel" resultMap="MailSummaryMap">
+        SELECT
+            M.MAIL_MSG_ID AS MAIL_ID,
+            M.EXTERNAL_MSG_ID AS EXTERNAL_MESSAGE_ID,
+            M.EXTERNAL_THREAD_ID AS THREAD_ID,
+            M.MAIL_SJ AS SUBJECT,
+            M.SNIPPET,
+            M.FROM_EMAIL,
+            M.TO_SUMMARY,
+            M.MAIL_SNDNG_DT AS SENT_AT,
+            <include refid="mailFlags"/>,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM TB_MAIL_ATTACHMENT A
+                WHERE A.EMP_ID = M.EMP_ID AND A.MAIL_MSG_ID = M.MAIL_MSG_ID
+            ) THEN 1 ELSE 0 END AS HAS_ATTACHMENT
+        FROM TB_MAIL_MESSAGE M
+        WHERE M.EMP_ID = #{empId}
+          AND M.DEL_YN = 'N'
+          AND M.DRAFT_YN = 'N'
+          AND <include refid="notTrash"/>
+          AND EXISTS (
+              SELECT 1 FROM TB_MAIL_LABEL_MAP LM
+              WHERE LM.EMP_ID = M.EMP_ID
+                AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                AND LM.MAIL_LABEL_ID = #{labelId}
+          )
+        ORDER BY M.MAIL_SNDNG_DT DESC NULLS LAST, M.MAIL_MSG_ID DESC
+        OFFSET #{offset} ROWS FETCH NEXT #{size} ROWS ONLY
+    </select>
+
+    <select id="selectUserLabelsForMail" resultType="com.mycrewsoft.domain.mail.dto.response.MailLabelResponse">
+        SELECT L.MAIL_LABEL_ID AS labelId, L.LABEL_NM AS name
+        FROM TB_MAIL_LABEL_MAP LM
+        JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+        WHERE LM.EMP_ID = #{empId}
+          AND LM.MAIL_MSG_ID = #{mailId}
+          AND L.SYSTEM_YN = 'N'
+          AND L.USE_YN = 'Y'
+        ORDER BY L.LABEL_NM
+    </select>
+
+
+    <select id="countUnreadInbox" resultType="long">
+        SELECT COUNT(1)
+        FROM TB_MAIL_MESSAGE M
+        WHERE M.EMP_ID = #{empId}
+          AND M.DEL_YN = 'N'
+          AND M.DRAFT_YN = 'N'
+          AND <include refid="notTrash"/>
+          AND EXISTS (
+              SELECT 1
+              FROM TB_MAIL_LABEL_MAP LM
+              JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+              WHERE LM.EMP_ID = M.EMP_ID
+                AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                AND TRIM(L.LABEL_TYPE_CD) = 'UNREAD'
+          )
+          AND EXISTS (
+              SELECT 1
+              FROM TB_MAIL_LABEL_MAP LM
+              JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+              WHERE LM.EMP_ID = M.EMP_ID
+                AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                AND TRIM(L.LABEL_TYPE_CD) = 'INBOX'
+          )
+    </select>
+
 </mapper>
