@@ -1,5 +1,7 @@
 package com.mycrewsoft.domain.approval.service;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 
 import com.mycrewsoft.domain.approval.dto.response.ApprovalDocumentDetailResponse;
@@ -22,4 +24,8 @@ public interface ApprovalSearchService {
     Page<ApprovalDraftSummaryResponse> readMyCompletedApprovalDocuments(String keyword, int page, int size);
 
     Page<ApprovalDraftSummaryResponse> searchApprovalDocumentsForApprover(String listType, String keyword, int page, int size);
+    
+    // 위젯용
+    List<ApprovalDraftSummaryResponse> readPendingApprovalsForWidget();
+
 }
