@@ -154,6 +154,7 @@ public class BoardServiceImpl implements BoardService {
 	public BoardResponse getBoard(String deptCd, Long boardId) {
 
 		Long empId = SecurityUtil.getCurrentEmpId();
+		
 		// 1. 권한 검증 및 자원 설정
 		// 부서코드가 비어있지않으면
 		if (StringUtils.isNotBlank(deptCd)) {
@@ -162,8 +163,6 @@ public class BoardServiceImpl implements BoardService {
 
 			authorizationService.assertCurrentUserPermission(PermissionCode.BOARD_POST_READ, resource);
 		}
-		
-		
 		
 		// 2. 데이터베이스 조회 (게시물의 게시글, 게시판 댓글, 좋아요,조회수,좋아요 수 )
 		int updatedView = boardMapper.updateViewCount(boardId);
@@ -197,14 +196,24 @@ public class BoardServiceImpl implements BoardService {
 				prodId = prod.toString();
 			}
 			
-			ResourceContext context = ResourceContext.builder()
-										//내가 쓴 글인가? - 내가 작성한 글이면 어떤 게시판이든 상관없이 읽기 가능
-										.ownerEmpId(writer)
-										//내 BOARD_POST_READ 권한이 부서 범위인가? - 만일 내가 인사부 소속인데, 사업부 게시판 관리 권한을 받았다면?
-										.deptCd(getDeptCd)
-										//내 BOARD_POST_READ 권한이 프로젝트 범위인가? - 만일 내가 프로젝트 참여자가 아니지만, 프로젝트 관리 권한을 받았다면?
-										.projId(prodId)
-										.build();
+			String boardType = boardVo.getBoardTypeCd();
+			
+			ResourceContext context = null;
+			
+			if(boardType.equals("NOTICE") || boardType.equals("FREE") ||boardType.equals("ANON")) {
+			    context = ResourceContext.builder()
+						            .resourceType(ResourceType.BOARD)
+						            .build();
+			} else {
+				context = ResourceContext.builder()
+						//내가 쓴 글인가? - 내가 작성한 글이면 어떤 게시판이든 상관없이 읽기 가능
+						.ownerEmpId(writer)
+						//내 BOARD_POST_READ 권한이 부서 범위인가? - 만일 내가 인사부 소속인데, 사업부 게시판 관리 권한을 받았다면?
+						.deptCd(getDeptCd)
+						//내 BOARD_POST_READ 권한이 프로젝트 범위인가? - 만일 내가 프로젝트 참여자가 아니지만, 프로젝트 관리 권한을 받았다면?
+						.projId(prodId)
+						.build();
+			}
 			
 			//위에서 나열된 3가지 조건 중 하나라도 충족하면 권한 통과.
 			authorizationService.assertCurrentUserPermission(PermissionCode.BOARD_POST_READ, context);
@@ -276,6 +285,10 @@ public class BoardServiceImpl implements BoardService {
 	            }
 	        }
 	        
+	        if(boardCreateRequest.getBoardTypeCd().equals("NOTICE")) {
+	        	throw new CustomException(ErrorCode.ACCESS_DENIED);
+	        }
+	 
 	        // 공지사항(NOTICE)의 경우 특정 부서나 프로젝트가 없으므로 
 	        // 전사 관리자(Global 권한자)가 아니면 아래 assert에서 걸러지도록 유도하거나, 
 	        // 별도의 관리자 권한 코드를 사용할 수 있습니다.
@@ -283,7 +296,7 @@ public class BoardServiceImpl implements BoardService {
 	        // 최종 권한 검증 및 예외 발생
 	        authorizationService.assertCurrentUserPermission(PermissionCode.BOARD_POST_CREATE, contextBuilder.build());
 	    }
-
+	    
 	    // 2. DTO -> VO로 변환 및 저장 (기존 로직)
 	    BoardVO boardVo = dtoMapper.toDto(boardCreateRequest, BoardVO.class);
 	    boardVo.setFrstRgtrId(empId);
