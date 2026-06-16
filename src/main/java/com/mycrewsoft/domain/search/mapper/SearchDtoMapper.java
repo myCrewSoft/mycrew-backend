@@ -8,6 +8,6 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface SearchDtoMapper {
 
-    @Mapping(target = "type", expression = "java(com.mycrewsoft.domain.search.SearchType.valueOf(vo.getType()))")
+    @Mapping(target = "type", expression = "java(com.mycrewsoft.domain.search.enums.SearchType.valueOf(vo.getType()))")
     SearchResponse toResponse(SearchVO vo);
 }

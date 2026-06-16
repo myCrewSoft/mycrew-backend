@@ -126,20 +126,17 @@
 	          AND MM.DEL_YN = 'N'
 	          AND MM.DRAFT_YN = 'N'
 	    )
-	    <if test="type != null">
-	        WHERE type = #{type}
-	    </if>
 	</select>
 
     <insert id="insertSearchHist">
-        INSERT INTO TB_SEARCH_HIST (SEARCH_HIST_ID, MBR_ID, KEYWORD, REG_DT)
-        VALUES (SEQ_SEARCH_HIST.NEXTVAL, #{mbrId}, #{keyword}, SYSDATE)
+        INSERT INTO TB_SEARCH_HIST (SEARCH_HIST_ID, EMP_ID, KEYWORD, REG_DT)
+        VALUES (SEQ_SEARCH_HIST.NEXTVAL, #{empId}, #{keyword}, SYSDATE)
     </insert>
 
     <select id="readSearchHist" resultType="SearchHistVO">
         SELECT
             search_hist_id,
-            mbr_id,
+            emp_id,
             keyword,
             reg_dt
         FROM TB_SEARCH_HIST
@@ -154,27 +151,27 @@
 
     <delete id="deleteAllSearchHist">
         DELETE FROM TB_SEARCH_HIST
-        WHERE mbr_id = #{mbrId}
+        WHERE emp_id = #{empId}
     </delete>
 
     <update id="mergeRecentItem">
         MERGE INTO TB_RECENT_ITEM T
         USING DUAL ON (
-            T.MBR_ID    = #{mbrId}
+            T.ENP_ID    = #{empId}
             AND T.ITEM_TYPE = #{itemType}
             AND T.ITEM_ID   = #{itemId}
         )
         WHEN MATCHED THEN
             UPDATE SET ACCESSED_DT = SYSDATE
         WHEN NOT MATCHED THEN
-            INSERT (RECENT_ITEM_ID, MBR_ID, ITEM_TYPE, ITEM_ID, ACCESSED_DT)
-            VALUES (SEQ_RECENT_ITEM.NEXTVAL, #{mbrId}, #{itemType}, #{itemId}, SYSDATE)
+            INSERT (RECENT_ITEM_ID, EMP_ID, ITEM_TYPE, ITEM_ID, ACCESSED_DT)
+            VALUES (SEQ_RECENT_ITEM.NEXTVAL, #{empId}, #{itemType}, #{itemId}, SYSDATE)
     </update>
 
     <select id="readRecentItems" resultType="RecentItemVO">
         SELECT
             recent_item_id,
-            mbr_id,
+            emp_id,
             item_type,
             item_id,
             accessed_dt

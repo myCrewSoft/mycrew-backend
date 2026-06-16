@@ -31,10 +31,9 @@ public class SearchController {
     @Operation(summary = "통합 검색")
     @GetMapping
     public ResponseEntity<ApiResponse<List<SearchResponse>>> search(
-            @RequestParam String keyword,
-            @RequestParam(required = false) SearchType type
+            @RequestParam String keyword
     ) {
-        return ResponseEntity.ok(ApiResponse.success(searchService.search(keyword, type)));
+        return ResponseEntity.ok(ApiResponse.success(searchService.search(keyword)));
     }
 
     @Operation(summary = "검색 이력 조회")
