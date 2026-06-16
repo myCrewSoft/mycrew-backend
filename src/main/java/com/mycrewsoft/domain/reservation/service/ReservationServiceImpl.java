@@ -47,8 +47,8 @@ public class ReservationServiceImpl implements ReservationService {
 	public List<ReservationResponse> readReservationList(String begin, String end) {
 		
 		// 날짜 타입 변환
-		LocalDateTime beginDt = DateUtil.parseDateTime(begin);
-		LocalDateTime endDt = DateUtil.parseDateTime(end);
+		LocalDateTime beginDt = DateUtil.parseDate(begin).atStartOfDay();
+		LocalDateTime endDt = DateUtil.parseDate(end).atTime(23, 59, 59);
 
 		// 사용자 ID 조회
 	    Long empId = SecurityUtil.getCurrentEmpId();
@@ -68,7 +68,7 @@ public class ReservationServiceImpl implements ReservationService {
 
 	// 예약 생성
 	@Override
- @Transactional
+ 	@Transactional
 	public Long createReservation(ReservationCreateRequest request) {
 		
 		// dto -> vo 변환
