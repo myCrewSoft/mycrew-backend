@@ -96,6 +96,9 @@
             )
         </if>
         ORDER BY M.BEGIN_DT ASC
+        <if test="limit > 0">
+	    	WHERE ROWNUM &lt;= #{limit}
+	    </if>
     </select>
 
     <select id="selectMtngDetail" resultType="MtngDetailVO">

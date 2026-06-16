@@ -30,7 +30,8 @@ public interface MtngMapper {
         @Param("empId") Long empId,
         @Param("keyword") String keyword,
         @Param("beginDt") LocalDateTime beginDt,
-        @Param("endDt") LocalDateTime endDt
+        @Param("endDt") LocalDateTime endDt,
+        @Param("limit") int limit
     );
 
     // 상세 조회

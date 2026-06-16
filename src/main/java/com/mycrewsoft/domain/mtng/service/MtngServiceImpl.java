@@ -2,6 +2,7 @@ package com.mycrewsoft.domain.mtng.service;
 
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
+import com.mycrewsoft.common.util.DateUtil;
 import com.mycrewsoft.domain.mtng.dto.request.MtngCreateRequest;
 import com.mycrewsoft.domain.mtng.dto.request.MtngListRequest;
 import com.mycrewsoft.domain.mtng.dto.request.MtngUpdateRequest;
@@ -25,7 +26,9 @@ import com.mycrewsoft.security.util.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -41,6 +44,8 @@ public class MtngServiceImpl implements MtngService {
     private final ReservationService reservationService;
     private final VideoConfMapper videoConfMapper;
 
+    // 위젯 호출 개수
+    private static final int WIDGET_MTNG_LIMIT = 2;
 
     @Override
     @Transactional
@@ -73,7 +78,8 @@ public class MtngServiceImpl implements MtngService {
                 empId,
                 request.getKeyword(),
                 request.getBeginDt(),
-                request.getEndDt()
+                request.getEndDt(),
+                0
         );
 
         LocalDateTime now = LocalDateTime.now();
@@ -198,6 +204,25 @@ public class MtngServiceImpl implements MtngService {
         mtngMapper.deleteMtng(mtngId);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<MtngListResponse> getMtngListForWidget() {
+        Long empId = SecurityUtil.getCurrentEmpId();
+
+        List<MtngListVO> voList = mtngMapper.selectMtngList(
+                empId,
+                null,
+                DateUtil.startOfToday(),
+                DateUtil.endOfToday(),
+                WIDGET_MTNG_LIMIT
+        );
+
+        LocalDateTime now = LocalDateTime.now();
+        return voList.stream()
+                .map(vo -> mtngDtoMapper.toMtngListResponse(vo, now))
+                .toList();
+    }
+    
     // getMtngDetail에서만 사용하는 private 헬퍼
     // MapStruct로 기본 필드 변환 후, 권한 계산값(canEdit/canDelete/canEnd)을 toBuilder로 추가
     private MtngDetailResponse toMtngDetailResponse(
