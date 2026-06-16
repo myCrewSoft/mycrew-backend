@@ -28,6 +28,9 @@ public class MailDetailResponse {
     @Schema(description = "메일 본문")
     private String content;
 
+    @Schema(description = "메일 본문 렌더링 방식. 클라이언트는 SANDBOX_IFRAME이면 sandbox iframe으로 본문을 렌더링합니다.", example = "SANDBOX_IFRAME")
+    private String contentRenderMode;
+
     @Schema(description = "Gmail 스니펫")
     private String snippet;
 

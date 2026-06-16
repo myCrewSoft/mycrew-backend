@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.mycrewsoft.domain.attendance.dto.response.AdminAtndRowResponse;
+import com.mycrewsoft.domain.attendance.dto.response.AdminAtndStatResponse;
 import com.mycrewsoft.domain.attendance.dto.response.AtndHistoryResponse;
 import com.mycrewsoft.domain.attendance.dto.response.AtndLeaveTypeResponse;
 import com.mycrewsoft.domain.attendance.dto.response.LeaveBalanceResponse;
@@ -96,6 +97,19 @@ public interface AttendanceMapper {
 			@Param("atndDt") LocalDate atndDt,
 			@Param("deptCd") String deptCd,
 			@Param("keyword") String keyword);
+
+	/** 기간별 사원 근태 집계(사원당 1행) */
+	List<AdminAtndStatResponse> selectAttendanceStats(
+			@Param("from") LocalDate from,
+			@Param("to") LocalDate to,
+			@Param("deptCd") String deptCd,
+			@Param("keyword") String keyword);
+
+	/** 특정 사원의 기간 일자별 근태 조회 */
+	List<AdminAtndRowResponse> selectEmployeeAttendance(
+			@Param("empId") Long empId,
+			@Param("from") LocalDate from,
+			@Param("to") LocalDate to);
 
 	// ===== 휴가 =====
 

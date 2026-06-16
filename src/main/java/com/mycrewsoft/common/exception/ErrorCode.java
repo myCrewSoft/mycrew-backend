@@ -87,6 +87,7 @@ public enum ErrorCode {
 
     // MAIL
     MAIL_ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "MAIL_001", "연동된 활성 메일 계정을 찾을 수 없습니다."),
+    MAIL_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "MAIL_006", "메일 계정 토큰이 만료되었거나 유효하지 않습니다. 다시 연동해 주세요."),
     MAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "MAIL_002", "존재하지 않는 메일입니다."),
     MAIL_SCOPE_REQUIRED(HttpStatus.FORBIDDEN, "MAIL_003", "메일 API 사용에 필요한 Google OAuth scope가 부족합니다."),
     MAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "MAIL_004", "메일 발송 중 오류가 발생했습니다."),
@@ -150,7 +151,7 @@ public enum ErrorCode {
 	TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "TASK_001", "존재하지 않는 업무입니다."),
 	TASK_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "TASK_002", "업무 참여자가 아닙니다."),
 	TASK_NOT_OWNER(HttpStatus.FORBIDDEN, "TASK_003", "해당 업무에 대한 권한이 없습니다."),
-
+	TASK_INVALID_STAT_TRANSITION(HttpStatus.BAD_REQUEST, "TASK_004", "해당 상태에서는 정보를 변경할 수 없습니다."),
 
 	// ATTENDANCE
 	ATND_POLICY_NOT_FOUND(HttpStatus.NOT_FOUND, "ATND_001", "적용 가능한 근무 정책이 없습니다. 관리자에게 문의하세요."),

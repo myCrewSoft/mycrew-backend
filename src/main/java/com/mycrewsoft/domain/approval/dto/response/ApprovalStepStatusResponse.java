@@ -26,6 +26,15 @@ public class ApprovalStepStatusResponse {
     @Schema(description = "결재자명", example = "홍길동")
     private String aprvrEmpNm;
 
+    @Schema(description = "결재자 부서명", example = "개발팀")
+    private String aprvrDeptNm;
+
+    @Schema(description = "결재자 직위명", example = "팀장")
+    private String aprvrJobPstnNm;
+
+    @Schema(description = "결재자 프로필 이미지 파일 ID", example = "1001")
+    private Long aprvrPrflImgFileId;
+
     @Schema(description = "결재자 전자서명 파일 ID (승인 시점 스냅샷)", example = "9")
     private Long aprvrStampFileId;
 

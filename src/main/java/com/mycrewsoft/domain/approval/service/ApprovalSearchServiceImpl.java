@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.approval.dto.response.ApprovalDocumentDetailResponse;
+import com.mycrewsoft.domain.approval.dto.response.ApprovalDraftCountResponse;
 import com.mycrewsoft.domain.approval.dto.response.ApprovalDraftSummaryResponse;
 import com.mycrewsoft.domain.approval.mapper.ApprovalDraftMapper;
 
@@ -44,6 +45,20 @@ public class ApprovalSearchServiceImpl implements ApprovalSearchService {
         }
         support.populateStatus(detail);
         return detail;
+    }
+
+    @Transactional(readOnly = true)
+    public ApprovalDraftCountResponse readMyDraftCounts() {
+        Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
+        return ApprovalDraftCountResponse.builder()
+                .sentProgress(approvalDraftMapper.countMyDrafts(empId, ApprovalConstants.DOC_STATUS_IN_PROGRESS, null))
+                .sentCompleted(approvalDraftMapper.countMyDrafts(empId, ApprovalConstants.DOC_STATUS_COMPLETED, null))
+                .sentRejected(approvalDraftMapper.countMyDrafts(empId, ApprovalConstants.DOC_STATUS_REJECTED, null))
+                .sentTemporary(approvalDraftMapper.countMyDrafts(empId, ApprovalConstants.DOC_STATUS_TEMPORARY, null))
+                .receivedRequests(approvalDraftMapper.countMyApprovalRequests(empId, null))
+                .receivedHistory(approvalDraftMapper.countMyApprovalHistory(empId, null, null))
+                .receivedCompleted(approvalDraftMapper.countMyCompletedApprovalDocuments(empId, null))
+                .build();
     }
 
     @Transactional(readOnly = true)

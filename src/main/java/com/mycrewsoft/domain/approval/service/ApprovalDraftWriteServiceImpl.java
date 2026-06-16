@@ -64,4 +64,20 @@ public class ApprovalDraftWriteServiceImpl implements ApprovalDraftWriteService 
         support.assertDocStatus(savedDoc, ApprovalConstants.DOC_STATUS_TEMPORARY);
         support.replaceApprovalLine(empId, drftDocSn, approvalSteps, LocalDateTime.now());
     }
+
+    @Transactional
+    public void deleteTemporaryDraft(Long drftDocSn) {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        ApprovalDocVO savedDoc = support.requireDocForUpdate(drftDocSn);
+        // 기안자 본인 + 결재 기안 삭제 권한 보유 + 임시저장 상태 문서만 삭제 가능
+        support.assertDrafter(savedDoc, empId);
+        support.assertDeletePermission(empId);
+        support.assertDocStatus(savedDoc, ApprovalConstants.DOC_STATUS_TEMPORARY);
+
+        // 자식 데이터(결재선/단계/첨부)부터 제거한 뒤 원본 문서를 하드 삭제한다.
+        approvalDraftMapper.deleteApprovalLinesByDocSn(drftDocSn);
+        approvalDraftMapper.deleteApprovalStepsByDocSn(drftDocSn);
+        approvalDraftMapper.deleteApprovalFileByDocSn(drftDocSn);
+        approvalDraftMapper.deleteApprovalDocByDocSn(drftDocSn);
+    }
 }

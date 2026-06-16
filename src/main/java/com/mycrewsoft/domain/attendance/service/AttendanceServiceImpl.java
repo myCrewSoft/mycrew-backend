@@ -18,6 +18,7 @@ import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.attendance.dto.request.AtndPolicySaveRequest;
 import com.mycrewsoft.domain.attendance.dto.response.AdminAtndRowResponse;
+import com.mycrewsoft.domain.attendance.dto.response.AdminAtndStatResponse;
 import com.mycrewsoft.domain.attendance.dto.response.AtndCheckResponse;
 import com.mycrewsoft.domain.attendance.dto.response.AtndHistoryResponse;
 import com.mycrewsoft.domain.attendance.dto.response.AtndPolicyResponse;
@@ -185,9 +186,18 @@ public class AttendanceServiceImpl implements AttendanceService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public AtndStatsResponse getMyStats(String period) {
+	public AtndStatsResponse getMyStats(String period, String baseDate) {
 		Long empId = SecurityUtil.getCurrentEmpId();
 		LocalDate today = LocalDate.now();
+		// 기준 일자(baseDate)가 주어지면 해당 일자가 속한 기간을, 없으면 오늘 기준 기간을 집계한다.
+		LocalDate base = today;
+		if (baseDate != null && !baseDate.isBlank()) {
+			try {
+				base = LocalDate.parse(baseDate.trim(), YMD);
+			} catch (java.time.format.DateTimeParseException e) {
+				throw new CustomException(ErrorCode.ATND_INVALID_PERIOD);
+			}
+		}
 		String prd = period == null ? AttendanceConstants.PERIOD_WEEK : period.toUpperCase();
 
 		LocalDate from;
@@ -195,24 +205,24 @@ public class AttendanceServiceImpl implements AttendanceService {
 		String label;
 		switch (prd) {
 			case AttendanceConstants.PERIOD_DAY:
-				from = today;
-				to = today;
-				label = today.format(YMD);
+				from = base;
+				to = base;
+				label = base.format(YMD);
 				break;
 			case AttendanceConstants.PERIOD_WEEK:
-				from = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-				to = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+				from = base.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+				to = base.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
 				label = from.format(YMD) + " ~ " + to.format(YMD);
 				break;
 			case AttendanceConstants.PERIOD_MONTH:
-				from = today.withDayOfMonth(1);
-				to = today.with(TemporalAdjusters.lastDayOfMonth());
-				label = today.getYear() + "-" + String.format("%02d", today.getMonthValue());
+				from = base.withDayOfMonth(1);
+				to = base.with(TemporalAdjusters.lastDayOfMonth());
+				label = base.getYear() + "-" + String.format("%02d", base.getMonthValue());
 				break;
 			case AttendanceConstants.PERIOD_YEAR:
-				from = today.withDayOfYear(1);
-				to = today.with(TemporalAdjusters.lastDayOfYear());
-				label = String.valueOf(today.getYear());
+				from = base.withDayOfYear(1);
+				to = base.with(TemporalAdjusters.lastDayOfYear());
+				label = String.valueOf(base.getYear());
 				break;
 			default:
 				throw new CustomException(ErrorCode.ATND_INVALID_PERIOD);
@@ -338,6 +348,33 @@ public class AttendanceServiceImpl implements AttendanceService {
 		assertViewAll();
 		LocalDate atndDt = StringUtils.hasText(date) ? LocalDate.parse(date) : LocalDate.now();
 		return attendanceMapper.selectAllAttendance(atndDt, deptCd, keyword);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<AdminAtndStatResponse> getAttendanceStats(String from, String to, String deptCd, String keyword) {
+		assertViewAll();
+		LocalDate fromDt = StringUtils.hasText(from)
+				? LocalDate.parse(from)
+				: LocalDate.now().withDayOfMonth(1);
+		LocalDate toDt = StringUtils.hasText(to) ? LocalDate.parse(to) : LocalDate.now();
+		if (toDt.isBefore(fromDt)) {
+			LocalDate tmp = fromDt;
+			fromDt = toDt;
+			toDt = tmp;
+		}
+		return attendanceMapper.selectAttendanceStats(fromDt, toDt, deptCd, keyword);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<AdminAtndRowResponse> getEmployeeAttendance(Long empId, String from, String to) {
+		assertViewAll();
+		LocalDate fromDt = StringUtils.hasText(from)
+				? LocalDate.parse(from)
+				: LocalDate.now().withDayOfMonth(1);
+		LocalDate toDt = StringUtils.hasText(to) ? LocalDate.parse(to) : LocalDate.now();
+		return attendanceMapper.selectEmployeeAttendance(empId, fromDt, toDt);
 	}
 
 	// ============================ 내부 헬퍼 ============================

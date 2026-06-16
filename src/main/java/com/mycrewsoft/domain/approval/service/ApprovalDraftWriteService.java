@@ -9,4 +9,6 @@ public interface ApprovalDraftWriteService {
     Long saveTemporaryDraft(ApprovalDraftRequestDTO request);
 
     void saveApprovalLine(Long drftDocSn, List<ApprovalStepRequestDTO> approvalSteps);
+
+    void deleteTemporaryDraft(Long drftDocSn);
 }

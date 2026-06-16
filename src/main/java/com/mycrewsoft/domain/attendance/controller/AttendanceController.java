@@ -58,11 +58,12 @@ public class AttendanceController {
 		return ResponseEntity.ok(ApiResponse.success(attendanceService.getMyToday()));
 	}
 
-	@Operation(summary = "근태 통계 조회", description = "기간 구분(DAY/WEEK/MONTH/YEAR)에 따른 본인 근태 통계 지표를 조회합니다.")
+	@Operation(summary = "근태 통계 조회", description = "기간 구분(DAY/WEEK/MONTH/YEAR)과 기준 일자(baseDate)에 따른 본인 근태 통계 지표를 조회합니다. baseDate 생략 시 오늘 기준입니다.")
 	@GetMapping("/stats")
 	public ResponseEntity<ApiResponse<AtndStatsResponse>> getStats(
-			@RequestParam(name = "period", defaultValue = "WEEK") String period) {
-		return ResponseEntity.ok(ApiResponse.success(attendanceService.getMyStats(period)));
+			@RequestParam(name = "period", defaultValue = "WEEK") String period,
+			@RequestParam(name = "baseDate", required = false) String baseDate) {
+		return ResponseEntity.ok(ApiResponse.success(attendanceService.getMyStats(period, baseDate)));
 	}
 
 	@Operation(summary = "근태 이력 조회", description = "최근 N일간의 본인 일자별 근태 이력을 조회합니다.")

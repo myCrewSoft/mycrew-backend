@@ -21,6 +21,9 @@ public class LeaveBalanceResponse {
 	@Schema(description = "부서명", example = "개발팀")
 	private String deptNm;
 
+	@Schema(description = "프로필 이미지 파일 ID", example = "14")
+	private Long prflImgFileId;
+
 	@Schema(description = "기본 연차(정책)", example = "15.0")
 	private Double baseDay;
 
