@@ -55,4 +55,8 @@ public interface ProjectService {
 	
 	// 프로젝트 채팅방 ID 입력
 	void updateProjectChtrmId(Long projId, Long chtrmId);
+
+	// 위젯용
+	List<ProjectListResponseDto> getProjectListForWidget();
+
 }
