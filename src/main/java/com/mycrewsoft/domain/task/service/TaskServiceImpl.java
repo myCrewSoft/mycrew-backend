@@ -43,6 +43,9 @@ public class TaskServiceImpl implements TaskService {
     private final ProjectMapper projectMapper;
     private final ApplicationEventPublisher eventPublisher;
     
+    // 위젯 호출 개수
+    private static final int WIDGET_TASK_LIMIT = 3;
+    
     @Override
     public List<TaskListResponse> getTaskList(Long projId) {
         // 본인 currentEmpId 조회
@@ -318,6 +321,15 @@ public class TaskServiceImpl implements TaskService {
     private void recalculateProjectProgress(Long projId) {
     	int projResult = projectMapper.updateProjectPrgrsRtd(projId);
     	if(projResult == 0) throw new CustomException(ErrorCode.PROJECT_NOT_FOUND);
+    }
+    
+    // 위젯용
+    @Override
+    @Transactional(readOnly = true)
+    public List<TaskListResponse> getTaskListForWidget() {
+        Long empId = getCurrentEmpIdOrThrow();
+        List<TaskListVO> taskList = taskMapper.selectTaskListForWidget(empId, WIDGET_TASK_LIMIT);
+        return taskDtoMapper.toListResponseList(taskList);
     }
     
 }

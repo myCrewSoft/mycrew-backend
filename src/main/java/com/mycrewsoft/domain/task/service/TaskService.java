@@ -64,4 +64,6 @@ public interface TaskService {
      */
     void deleteTask(Long projId, Long taskId);
     
+    // 위젯용
+    List<TaskListResponse> getTaskListForWidget();
 }

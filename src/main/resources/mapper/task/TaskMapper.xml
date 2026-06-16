@@ -231,4 +231,30 @@
         WHERE TRUNC(T.TASK_END_DT) = TRUNC(SYSDATE + 1)
         AND T.DEL_YN = 'N'
     </select>
+    
+    <select id="selectTaskListForWidget" resultType="com.mycrewsoft.domain.task.vo.TaskListVO">
+	    SELECT *
+	      FROM (
+	        SELECT
+	            T.TASK_ID,
+	            T.PROJ_ID,
+	            T.TASK_NM,
+	            T.TASK_TYPE_CD,
+	            T.TASK_MNGR_ID,
+	            E.EMP_NM     AS TASK_MNGR_NM,
+	            E.PRFL_IMG_FILE_ID,
+	            T.TASK_STAT_CD,
+	            T.TASK_PRIORITY_CD,
+	            T.TASK_IMPRTMC_CD,
+	            T.TASK_PRGRS_SMRY,
+	            T.TASK_END_DT
+	          FROM TB_TASK T
+	          JOIN TB_EMPLOYEE E
+	            ON E.EMP_ID = T.TASK_MNGR_ID
+	         WHERE T.TASK_MNGR_ID = #{empId}
+	           AND T.TASK_STAT_CD != '03'
+	         ORDER BY T.TASK_END_DT ASC
+	      )
+	     WHERE ROWNUM &lt;= #{limit}
+	</select>
 </mapper>
