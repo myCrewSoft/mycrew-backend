@@ -14,6 +14,7 @@
     <resultMap id="DepartmentMemberResultMap" type="com.mycrewsoft.domain.department.dto.response.AdminDepartmentMemberResponseDTO">
         <result property="empId" column="EMP_ID"/>
         <result property="empNm" column="EMP_NM"/>
+        <result property="prflImgFileId" column="PRFL_IMG_FILE_ID"/>
         <result property="deptCd" column="DEPT_CD"/>
         <result property="deptNm" column="DEPT_NM"/>
         <result property="jobGrdCd" column="JOB_GRD_CD"/>
@@ -153,6 +154,7 @@
         SELECT
             E.EMP_ID,
             E.EMP_NM,
+            E.PRFL_IMG_FILE_ID,
             TRIM(E.DEPT_CD) AS DEPT_CD,
             D.DEPT_NM,
             E.JOB_GRD_CD,

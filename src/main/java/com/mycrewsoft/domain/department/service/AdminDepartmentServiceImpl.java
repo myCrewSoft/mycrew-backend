@@ -1,7 +1,9 @@
 package com.mycrewsoft.domain.department.service;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.stereotype.Service;
@@ -21,6 +23,8 @@ import com.mycrewsoft.domain.department.dto.response.AdminDepartmentResponseDTO;
 import com.mycrewsoft.domain.department.dto.response.DepartmentMemberMutationResponseDTO;
 import com.mycrewsoft.domain.department.mapper.AdminDepartmentMapper;
 import com.mycrewsoft.domain.department.vo.DepartmentVO;
+import com.mycrewsoft.domain.employee.mapper.EmployeeMapper;
+import com.mycrewsoft.domain.roleassignment.service.RoleAssignmentService;
 import com.mycrewsoft.security.authz.AuthorizationService;
 import com.mycrewsoft.security.authz.ResourceContext;
 import com.mycrewsoft.security.authz.ResourceType;
@@ -36,6 +40,8 @@ public class AdminDepartmentServiceImpl implements AdminDepartmentService {
     private final AdminDepartmentMapper departmentMapper;
     private final AuthorizationService authorizationService;
     private final RbacAuthorizationChangeService rbacAuthorizationChangeService;
+    private final RoleAssignmentService roleAssignmentService;
+    private final EmployeeMapper employeeMapper;
 
     @Override
     @Transactional
@@ -157,7 +163,16 @@ public class AdminDepartmentServiceImpl implements AdminDepartmentService {
         List<Long> empIds = normalizeEmpIds(request == null ? null : request.getEmpIds());
         validateEnabledEmployees(empIds);
 
+        // 부서 변경 전, 각 사원의 현재(이전) 부서를 먼저 수집한다. (변경 후에는 알 수 없음)
+        Map<Long, String> oldDeptCdByEmpId = new LinkedHashMap<>();
+        for (Long empId : empIds) {
+            oldDeptCdByEmpId.put(empId, employeeMapper.selectEmpDeptCodeByEmpId(empId));
+        }
+
         departmentMapper.updateDepartmentForEmployees(normalizedDeptCd, empIds);
+        // 부서 변경에 맞춰 DEPT 권한 범위를 동기화한다.
+        // (이전 부서 범위는 새 부서로 재지정, 이전 부서가 없던 신규 배정은 게시판 CRUD 범위 자동 생성)
+        roleAssignmentService.syncDeptScopeChange(oldDeptCdByEmpId, normalizedDeptCd);
         rbacAuthorizationChangeService.refreshEmployeesPermissions(empIds);
         return new DepartmentMemberMutationResponseDTO(null, normalizedDeptCd, empIds.size());
     }
@@ -169,6 +184,7 @@ public class AdminDepartmentServiceImpl implements AdminDepartmentService {
             DepartmentMemberTransferRequestDTO request) {
         String sourceDeptCd = normalizeCode(deptCd);
         assertDepartmentPermission(PermissionCode.ADMIN_DEPT_MEMBER_MANAGE, sourceDeptCd);
+        
         if (request == null || !StringUtils.hasText(request.getTargetDeptCd())) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
@@ -187,6 +203,12 @@ public class AdminDepartmentServiceImpl implements AdminDepartmentService {
         }
 
         departmentMapper.updateDepartmentForEmployees(targetDeptCd, empIds);
+        // 이동 대상은 모두 sourceDeptCd 소속임이 검증됐으므로, 이전 부서 = sourceDeptCd 로 DEPT 범위를 재지정한다.
+        Map<Long, String> oldDeptCdByEmpId = new LinkedHashMap<>();
+        for (Long empId : empIds) {
+            oldDeptCdByEmpId.put(empId, sourceDeptCd);
+        }
+        roleAssignmentService.syncDeptScopeChange(oldDeptCdByEmpId, targetDeptCd);
         rbacAuthorizationChangeService.refreshEmployeesPermissions(empIds);
         return new DepartmentMemberMutationResponseDTO(sourceDeptCd, targetDeptCd, empIds.size());
     }

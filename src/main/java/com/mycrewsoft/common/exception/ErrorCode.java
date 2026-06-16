@@ -17,6 +17,15 @@ import org.springframework.http.HttpStatus;
  */
 @Getter
 public enum ErrorCode {
+	
+	// APPROVAL
+	TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND, "APR_001", "존재하지 않는 결재 양식입니다."),
+	APPROVAL_DOC_NOT_FOUND(HttpStatus.NOT_FOUND, "APR_002", "존재하지 않는 기안서입니다."),
+	APPROVAL_ALREADY_PROCESSED(HttpStatus.CONFLICT, "APR_003", "이미 처리된 결재가 있어 회수할 수 없습니다."),
+	APPROVAL_DOC_STATUS_INVALID(HttpStatus.BAD_REQUEST, "APR_004", "현재 상태에서 처리할 수 없는 결재 문서입니다."),
+	APPROVAL_LINE_INVALID(HttpStatus.BAD_REQUEST, "APR_005", "결재선 정보가 올바르지 않습니다."),
+	APPROVAL_REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "APR_006", "반려 사유는 필수입니다."),
+	APPROVAL_SIGNATURE_REQUIRED(HttpStatus.BAD_REQUEST, "APR_007", "전자서명 이미지가 등록되어 있지 않아 승인할 수 없습니다. 마이페이지에서 전자서명을 먼저 등록해 주세요."),
 
     // COMMON
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "COMMON_001", "입력값이 올바르지 않습니다."),
@@ -33,7 +42,8 @@ public enum ErrorCode {
     REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "AUTH_006", "Refresh Token 이 존재하지 않습니다."),
     AUTH_VERSION_MISMATCH(HttpStatus.UNAUTHORIZED, "AUTH_007", "Token authorization version이 일치하지 않습니다."),
     OAUTH_PROCESSING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH_008", "OAuth 처리 중 오류가 발생했습니다."),
-
+    PASSWORD_NOT_MATCHED(HttpStatus.UNAUTHORIZED, "AUTH_009", "비밀번호가 일치하지 않습니다."),
+    
     // USER
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "존재하지 않는 사용자입니다."),
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "USER_002", "이미 사용 중인 이메일입니다."),
@@ -58,10 +68,12 @@ public enum ErrorCode {
 	DRIVE_INSERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "DRIVE_001", "폴더 생성에 실패했습니다."),
     DRIVE_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "DRIVE_002", "드라이브 아이템을 찾을 수 없습니다."),
     DRIVE_RENAME_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "DRIVE_003", "폴더만 이름 수정이 가능합니다."),
+    DRIVE_NOT_A_FILE(HttpStatus.BAD_REQUEST, "DRIVE_004", "파일 아이템이 아닙니다."),
 
     // BOARD
     BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지않는 게시판입니다."),
-
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_002", "존재하지않는 댓글입니다."),
+    
     // JOB
     RANK_NOT_FOUND(HttpStatus.NOT_FOUND, "JOB_001", "존재하지 않는 직급입니다."),
     DUPLICATE_RANK_ID(HttpStatus.CONFLICT, "JOB_002", "이미 존재하는 직급 ID입니다."),
@@ -73,10 +85,20 @@ public enum ErrorCode {
 	// PERMISSION
 	PERMISSION_NOT_FOUND(HttpStatus.NOT_FOUND, "PERM_001", "존재하지 않는 권합입니다."),
 
+    // MAIL
+    MAIL_ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "MAIL_001", "연동된 활성 메일 계정을 찾을 수 없습니다."),
+    MAIL_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "MAIL_006", "메일 계정 토큰이 만료되었거나 유효하지 않습니다. 다시 연동해 주세요."),
+    MAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "MAIL_002", "존재하지 않는 메일입니다."),
+    MAIL_SCOPE_REQUIRED(HttpStatus.FORBIDDEN, "MAIL_003", "메일 API 사용에 필요한 Google OAuth scope가 부족합니다."),
+    MAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "MAIL_004", "메일 발송 중 오류가 발생했습니다."),
+    MAIL_SYNC_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "MAIL_005", "메일 동기화 중 오류가 발생했습니다."),
+
     // MESSENGER
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND,  "CHAT_001", "존재하지 않는 채팅방입니다."),
     CHAT_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "CHAT_002", "채팅방 참여자가 아닙니다."),
     CHAT_ROOM_ALREADY_EXISTS(HttpStatus.CONFLICT, "CHAT_003", "이미 존재하는 1:1 채팅방입니다."),
+    CHAT_DIRECT_ROOM_CANNOT_ADD_PARTICIPANT(HttpStatus.BAD_REQUEST, "CHAT_004", "1:1 채팅방에는 참여자를 추가할 수 없습니다."),
+    CHAT_OWNER_CANNOT_BE_REMOVED(HttpStatus.BAD_REQUEST, "CHAT_005", "채팅방 개설자는 제거할 수 없습니다."),
 
     // WEBSOCKET
     WS_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "WS_001", "WebSocket 연결 시 인증이 필요합니다."),
@@ -89,7 +111,58 @@ public enum ErrorCode {
 	// ROOM
 	CONF_RM_NOT_FOUND(HttpStatus.NOT_FOUND, "CONF_RM_001", "존재하지 않는 회의실입니다."),
 	CONF_RM_CREATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CONF_RM_002", "회의실 생성에 실패했습니다."),
-	CONF_RM_ALREADY_DISABLED(HttpStatus.BAD_REQUEST, "CONF_RM_003", "이미 비활성화된 회의실입니다.");
+	CONF_RM_ALREADY_DISABLED(HttpStatus.BAD_REQUEST, "CONF_RM_003", "이미 비활성화된 회의실입니다."),
+
+	// RESERVATION 
+	RSRV_NOT_FOUND(HttpStatus.NOT_FOUND, "RSRV_001", "존재하지 않는 예약입니다."),
+	RSRV_CREATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "RSRV_002", "예약 생성에 실패했습니다."),
+	RSRV_TIME_CONFLICT(HttpStatus.CONFLICT, "RSRV_003", "이미 예약된 시간대입니다."),
+	
+	// PROEJCT
+	PROJECT_INVALID_DATE(HttpStatus.BAD_REQUEST, "PROJECT_001", "종료날짜는 시작날짜 이후여야 합니다."),
+	PROJECT_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "PROJECT_002", "프로젝트 참여자가 아닙니다."),
+	PROJECT_NOT_OWNER(HttpStatus.FORBIDDEN, "PROJECT_003", "해당 업무에 대한 권한이 없습니다."),
+	PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "PROJECT_004", "존재하지 않는 프로젝트입니다."),
+	PROJECT_INVALID_STAT_TRANSITION(HttpStatus.BAD_REQUEST, "PROJECT_005", "해당 상태에서는 상태를 변경할 수 없습니다."),
+	PROJECT_CANNOT_MODIFY_DATE(HttpStatus.BAD_REQUEST, "PROJECT_006", "해당 상태에서는 날짜를 수정할 수 없습니다."),
+	PROJECT_LEADER_CANNOT_LEAVE(HttpStatus.BAD_REQUEST, "PROJECT_007", "프로젝트 장은 퇴출시킬 수 없습니다."),
+  
+    // VIDEO
+    VIDEO_CONF_NOT_FOUND(HttpStatus.NOT_FOUND,   "VIDEO_001", "존재하지 않는 화상회의입니다."),
+    VIDEO_MOM_NOT_FOUND(HttpStatus.NOT_FOUND,    "VIDEO_002", "존재하지 않는 회의록입니다."),
+    VIDEO_ACCESS_DENIED(HttpStatus.FORBIDDEN,    "VIDEO_003", "화상회의 참여자만 접근할 수 있습니다."),
+    VIDEO_ALREADY_ENDED(HttpStatus.BAD_REQUEST,  "VIDEO_004", "이미 종료된 화상회의입니다."),
+    VIDEO_MOM_ALREADY_CONFIRMED(HttpStatus.BAD_REQUEST, "VIDEO_005", "이미 확정된 회의록입니다."),
+    VIDEO_APRVL_ALREADY_DONE(HttpStatus.BAD_REQUEST,    "VIDEO_006", "이미 결재 처리된 항목입니다."),
+    STT_TRANSCRIBE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "VIDEO_007", "음성 텍스트 변환에 실패했습니다."),
+    VIDEO_CONF_INVALID_DATE(HttpStatus.BAD_REQUEST, "VIDEO_008", "종료날짜는 시작날짜 이후여야 합니다."),
+	
+    // MEETING
+    MTNG_NOT_FOUND(HttpStatus.NOT_FOUND,   "MTNG_001", "존재하지 않는 회의입니다."),
+    INVALID_MTNG_TYPE_CD(HttpStatus.BAD_REQUEST, "MTNG_002", "유효하지 않은 회의 진행방식 코드입니다."),
+    MTNG_ALREADY_STARTED(HttpStatus.BAD_REQUEST, "MTNG_003", "이미 시작된 회의는 삭제할 수 없습니다."),
+    MTNG_MOM_NOT_FOUND(HttpStatus.NOT_FOUND, "MTNG_004", "존재하지 않는 회의록입니다."),
+    MTNG_MOM_NOT_EDITABLE(HttpStatus.BAD_REQUEST, "MTNG_005", "결재가 진행 중이거나 완료된 회의록은 수정할 수 없습니다."),
+    MTNG_PTCPT_FORBIDDEN(HttpStatus.FORBIDDEN, "MTNG_006", "회의 참여자만 접근할 수 있습니다."),
+    MTNG_MOM_ALREADY_REQUESTED(HttpStatus.BAD_REQUEST, "MTNG_007", "이미 결재 요청된 회의록입니다."),
+    MTNG_MOM_NO_APPROVER(HttpStatus.BAD_REQUEST, "MTNG_008", "결재자가 없습니다. 참여자를 확인해주세요."),
+
+	// TASK
+	TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "TASK_001", "존재하지 않는 업무입니다."),
+	TASK_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "TASK_002", "업무 참여자가 아닙니다."),
+	TASK_NOT_OWNER(HttpStatus.FORBIDDEN, "TASK_003", "해당 업무에 대한 권한이 없습니다."),
+	TASK_INVALID_STAT_TRANSITION(HttpStatus.BAD_REQUEST, "TASK_004", "해당 상태에서는 정보를 변경할 수 없습니다."),
+
+	// ATTENDANCE
+	ATND_POLICY_NOT_FOUND(HttpStatus.NOT_FOUND, "ATND_001", "적용 가능한 근무 정책이 없습니다. 관리자에게 문의하세요."),
+	ATND_ALREADY_CHECKED_IN(HttpStatus.CONFLICT, "ATND_002", "이미 출근 처리되었습니다."),
+	ATND_NOT_CHECKED_IN(HttpStatus.BAD_REQUEST, "ATND_003", "출근 기록이 없어 퇴근할 수 없습니다."),
+	ATND_ALREADY_CHECKED_OUT(HttpStatus.CONFLICT, "ATND_004", "이미 퇴근 처리되었습니다."),
+	ATND_INVALID_PERIOD(HttpStatus.BAD_REQUEST, "ATND_005", "조회 기간 구분 값이 올바르지 않습니다."),
+	ATND_LEAVE_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "ATND_006", "존재하지 않는 휴가 종류입니다."),
+	ATND_LEAVE_INVALID_RANGE(HttpStatus.BAD_REQUEST, "ATND_007", "휴가 종료일은 시작일 이후여야 합니다."),
+	ATND_OT_INVALID_RANGE(HttpStatus.BAD_REQUEST, "ATND_008", "초과근무 종료 시각은 시작 시각 이후여야 합니다."),
+	TASK_INVALID_DATE(HttpStatus.BAD_REQUEST, "TASK_004", "종료날짜는 시작날짜 이후여야 합니다.");
 
     // 팀원이 새 도메인 추가 시 아래 패턴으로 섹션 추가
     // BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지 않는 게시글입니다.")

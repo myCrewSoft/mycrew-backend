@@ -11,7 +11,7 @@ public class SearchHistVO {
 
 	private Long searchHistId;		// 검색 이력 ID - PK
 	
-	private Long mbrId;				// 검색자 ID(TB_MEMBER)
+	private Long empId;				// 검색자 ID(TB_EMPLOYEE)
 	private String keyword;			// 검색어
 	private LocalDateTime regDt;	// 검색 일시
 }

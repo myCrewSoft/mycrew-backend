@@ -4,28 +4,17 @@
 
 <mapper namespace="com.mycrewsoft.domain.notification.mapper.NotificationMapper">
 
-    <resultMap id="alrmResultMap" type="com.mycrewsoft.domain.notification.vo.AlrmVO"  autoMapping="true">
-        <id property="alrmId" column="ALRM_ID"/>
-        <collection property="alrmRcvr"
-                    ofType="com.mycrewsoft.domain.notification.vo.AlrmRcvrVO" autoMapping="true" columnPrefix="R_">
-            <id property="alrmRcvrId" column="R_ALRM_RCVR_ID"/>
-            <id property="alrmId" column="R_ALRM_ID"/>
-        </collection>
-    </resultMap>
-
-    <select id="selectAlrmList" resultMap="alrmResultMap">
+    <select id="selectAlrmList" resultType="com.mycrewsoft.domain.notification.vo.NotificationQueryVO">
         SELECT
+            R.ALRM_RCVR_ID,
             A.ALRM_ID,
             A.ALRM_TTLN,
             A.ALRM_TYPE_CD,
             A.ALRM_CN,
             A.ALRM_SNDNG_DT,
-            R.ALRM_RCVR_ID  AS R_ALRM_RCVR_ID,
-            R.ALRM_ID       AS R_ALRM_ID,
-            R.RCVR_EMP_ID   AS R_RCVR_EMP_ID,
-            R.ALRM_CFMTN_DT AS R_ALRM_CFMTN_DT
-        FROM TB_ALRM A
-        JOIN TB_ALRM_RCVR R ON A.ALRM_ID = R.ALRM_ID
+            R.ALRM_CFMTN_DT
+        FROM TB_ALRM_RCVR R
+        JOIN TB_ALRM A ON A.ALRM_ID = R.ALRM_ID
         WHERE R.RCVR_EMP_ID = #{rcvrEmpId}
           AND R.ALRM_DEL_YN = 'N'
         ORDER BY A.ALRM_SNDNG_DT DESC
@@ -55,7 +44,7 @@
             #{alrmTtln},
             #{alrmTypeCd},
             #{alrmCn},
-            SYSDATE
+            #{alrmSndngDt}
         )
     </insert>
 

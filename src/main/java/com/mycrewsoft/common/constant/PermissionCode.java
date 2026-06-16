@@ -25,7 +25,15 @@ public enum PermissionCode {
 	ADMIN_DEPT_UPDATE("ADMIN 부서 수정", "부서 정보를 수정할 수 있는 권한입니다."),
 	ADMIN_DEPT_DELETE("ADMIN 부서 삭제", "부서를 삭제할 수 있는 권한입니다."),
 	ADMIN_DEPT_MEMBER_MANAGE("ADMIN 부서 구성원 관리", "부서 구성원을 배정, 이동 및 관리할 수 있는 권한입니다."),
-
+	
+	//APPROVAL
+	APPROVAL_DRAFT_CREATE("결재 기안 생성", "결재 기안을 생성할 수 있는 권한입니다."),
+	APPROVAL_DRAFT_UPDATE("결재 기안 수정", "결재 기안을 수정할 수 있는 권한입니다."),
+	APPROVAL_DRAFT_DELETE("결재 기안 삭제", "결재 기안을 삭제할 수 있는 권한입니다."),
+	APPROVAL_TEMPLATE_CREATE("결재 양식 생성", "결재 양식을 생성할 수 있는 권한입니다."),
+	APPROVAL_TEMPLATE_UPDATE("결재 양식 수정", "결재 양식을 수정할 수 있는 권한입니다."),
+	APPROVAL_TEMPLATE_DELETE("결재 양식 수정", "결재 양식을 삭제할 수 있는 권한입니다."),
+	
 	// Department
 	DEPT_CREATE("부서 생성", "부서를 생성할 수 있는 권한입니다."),
 	DEPT_READ("부서 조회", "부서 정보를 조회할 수 있는 권한입니다."),
@@ -80,6 +88,8 @@ public enum PermissionCode {
 	ATTENDANCE_DEPT_READ("부서 근태 조회", "부서 구성원의 근태 정보를 조회할 수 있는 권한입니다."),
 	ATTENDANCE_APPROVE("근태 승인", "근태 관련 요청을 승인 또는 반려할 수 있는 권한입니다."),
 	ATTENDANCE_MANAGE("근태 관리", "근태 기능 전반을 관리할 수 있는 권한입니다."),
+	ATTENDANCE_POLICY_MANAGE("근무 정책 관리", "회사 근무 정책(출퇴근 시간, 소정/연장 근로 등)을 설정할 수 있는 관리자 권한입니다."),
+	ATTENDANCE_VIEW_ALL("전체 근태 조회", "모든 사원의 근태 현황을 조회할 수 있는 관리자 권한입니다."),
 
 	// Schedule
 	SCHEDULE_CREATE("일정 생성", "일정을 생성할 수 있는 권한입니다."),

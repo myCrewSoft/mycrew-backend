@@ -1,9 +1,13 @@
 package com.mycrewsoft.domain.messenger.controller;
 
 import com.mycrewsoft.common.response.ApiResponse;
+import com.mycrewsoft.domain.messenger.dto.request.AddParticipantsRequest;
 import com.mycrewsoft.domain.messenger.dto.request.CreateChatRoomRequest;
+import com.mycrewsoft.domain.messenger.dto.request.RemoveParticipantsRequest;
+import com.mycrewsoft.domain.messenger.dto.request.UpdateChatRoomRequest;
 import com.mycrewsoft.domain.messenger.dto.response.ChatMessageResponse;
 import com.mycrewsoft.domain.messenger.dto.response.ChatRoomResponse;
+import com.mycrewsoft.domain.messenger.enums.ParticipantStatus;
 import com.mycrewsoft.domain.messenger.service.MsngrService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -53,12 +57,51 @@ public class MsngrController {
         return ResponseEntity.ok(ApiResponse.success("채팅방이 생성되었습니다.", chtrmId));
     }
 
+    @Operation(summary = "채팅방 수정")
+    @PutMapping("/{chtrmId}")
+    public ResponseEntity<ApiResponse<Void>> updateChtrm(
+        @PathVariable Long chtrmId,    
+        @Validated @RequestBody UpdateChatRoomRequest request
+    ) {
+        msngrService.updateChtrm(chtrmId, request);
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @Operation(summary = "채팅방 삭제")
+    @DeleteMapping("/{chtrmId}")
+    public ResponseEntity<ApiResponse<Void>> deleteChtrm(
+        @PathVariable Long chtrmId  
+    ) {
+        msngrService.deleteChtrm(chtrmId);
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @Operation(summary = "참여자 추가")
+    @PostMapping("/{chtrmId}/participants")
+    public ResponseEntity<ApiResponse<Void>> addChtrmPtcpt(
+        @PathVariable Long chtrmId,
+        @Validated @RequestBody AddParticipantsRequest request
+    ) {
+        msngrService.addChtrmPtcpt(chtrmId, request);
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @Operation(summary = "참여자 삭제")
+    @DeleteMapping("/{chtrmId}/participants")
+    public ResponseEntity<ApiResponse<Void>> removeChtrmPtcpt(
+        @PathVariable Long chtrmId,
+        @Validated @RequestBody RemoveParticipantsRequest request
+    ) {
+        msngrService.removeChtrmPtcpt(chtrmId, request);
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
     @Operation(summary = "참여자 상태 변경 (자리비움, 다른 업무 중 등)")
     @PatchMapping("/status/{ptcptSttusCd}")
     public ResponseEntity<ApiResponse<Void>> updatePtcptSttus(
             @Parameter(description = "상태 코드 (STS1: 로그인, STS2: 자리비움, STS3: 다른 업무 중, STS4: 로그아웃)", example = "STS2")
             @PathVariable String ptcptSttusCd) {
-        msngrService.updatePtcptSttus(ptcptSttusCd);
+        msngrService.updatePtcptSttus(ParticipantStatus.fromCode(ptcptSttusCd));
         return ResponseEntity.ok(ApiResponse.success());
     }
 

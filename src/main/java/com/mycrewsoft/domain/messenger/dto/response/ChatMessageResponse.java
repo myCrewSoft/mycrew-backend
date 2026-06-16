@@ -13,6 +13,9 @@ public class ChatMessageResponse {
     @Schema(description = "메시지 ID", example = "101")
     private Long id;
 
+    @Schema(description = "채팅방 ID", example = "1")
+    private Long chatRoomId;
+
     @Schema(description = "보낸 사람 ID", example = "1236")
     private Long senderId;
     

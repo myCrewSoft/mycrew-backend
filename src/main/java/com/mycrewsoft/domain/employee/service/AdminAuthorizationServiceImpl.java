@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -21,6 +22,7 @@ import com.mycrewsoft.domain.employee.dto.request.RoleUpdateRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.PermissionResponseDTO;
 import com.mycrewsoft.domain.employee.dto.response.RoleDetailResponseDTO;
 import com.mycrewsoft.domain.employee.dto.response.RoleListResponseDTO;
+import com.mycrewsoft.domain.employee.event.PermissionChangedEvent;
 import com.mycrewsoft.domain.employee.mapper.AdminAuthorizationMapper;
 import com.mycrewsoft.domain.role.vo.RoleVO;
 import com.mycrewsoft.security.authz.AuthorizationService;
@@ -38,7 +40,9 @@ public class AdminAuthorizationServiceImpl implements AdminAuthorizationService 
     private final AuthorizationService authorizationService;
     private final AdminAuthorizationMapper adminAuthorizationMapper;
     private final RbacAuthorizationChangeService rbacAuthorizationChangeService;
-
+    private final ApplicationEventPublisher eventPublisher;
+    
+    
     @Override
     @Transactional(readOnly = true)
     public List<PermissionResponseDTO> getPermissions() {
@@ -147,14 +151,22 @@ public class AdminAuthorizationServiceImpl implements AdminAuthorizationService 
         assertRoleManagePermission();
         RoleDetailResponseDTO role = loadRoleBase(roleId);
         List<Long> empIds = normalizeEmpIds(request == null ? null : request.getEmpIds());
-        String scopeTypeCd = normalizeScopeType(request == null ? null : request.getScopeTypeCd());
-        String scopeId = normalizeAssignmentScopeId(scopeTypeCd, request == null ? null : request.getScopeId());
+        AssignmentScope assignmentScope = resolveAssignmentScope(role, request);
 
         validateEnabledEmployees(empIds);
 
-        adminAuthorizationMapper.insertRoleAssignments(role.getRoleId(), empIds, scopeTypeCd, scopeId);
+        adminAuthorizationMapper.insertRoleAssignments(
+                role.getRoleId(),
+                empIds,
+                assignmentScope.scopeTypeCd(),
+                assignmentScope.scopeId());
         rbacAuthorizationChangeService.refreshEmployeesPermissions(empIds);
 
+        // 권한 변경 알림
+        eventPublisher.publishEvent(
+        	new PermissionChangedEvent(request.getEmpIds())
+        );
+        
         return loadRoleDetail(role.getRoleId());
     }
 
@@ -170,6 +182,11 @@ public class AdminAuthorizationServiceImpl implements AdminAuthorizationService 
         adminAuthorizationMapper.deleteRoleAssignments(role.getRoleId(), empIds, scopeTypeCd, scopeId);
         rbacAuthorizationChangeService.refreshEmployeesPermissions(empIds);
 
+        // 권한 변경 알림
+        eventPublisher.publishEvent(
+        	new PermissionChangedEvent(request.getEmpIds())
+        );
+        
         return loadRoleDetail(role.getRoleId());
     }
 
@@ -308,6 +325,20 @@ public class AdminAuthorizationServiceImpl implements AdminAuthorizationService 
         return scopeId.trim();
     }
 
+    private AssignmentScope resolveAssignmentScope(RoleDetailResponseDTO role, RoleAssignRequestDTO request) {
+        if (Constants.ROLE_EMPLOYEE_SELF.equals(role.getRoleCode())) {
+            return new AssignmentScope(ScopeType.SELF.name(), null);
+        }
+
+        if (Constants.SUPER_ADMIN.equals(role.getRoleCode())) {
+            return new AssignmentScope(ScopeType.GLOBAL.name(), "*");
+        }
+
+        String scopeTypeCd = normalizeScopeType(request == null ? null : request.getScopeTypeCd());
+        String scopeId = normalizeAssignmentScopeId(scopeTypeCd, request == null ? null : request.getScopeId());
+        return new AssignmentScope(scopeTypeCd, scopeId);
+    }
+
     private String normalizeOptionalScopeId(String scopeTypeCd, String scopeId) {
         if (scopeTypeCd == null) {
             return null;
@@ -367,5 +398,8 @@ public class AdminAuthorizationServiceImpl implements AdminAuthorizationService 
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
+    }
+
+    private record AssignmentScope(String scopeTypeCd, String scopeId) {
     }
 }

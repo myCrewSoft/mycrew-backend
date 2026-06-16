@@ -3,10 +3,11 @@ package com.mycrewsoft.domain.messenger.dto.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
+import java.util.List;
 
 @Schema(description = "채팅방 목록/헤더 응답 DTO")
 @Getter
-@Builder
+@Builder(toBuilder = true)
 public class ChatRoomResponse {
 
     @Schema(description = "채팅방 ID", example = "1")
@@ -18,8 +19,11 @@ public class ChatRoomResponse {
     @Schema(description = "채팅방 종류 (M1: 1:1, M2: 그룹, M3: 프로젝트)", example = "M1")
     private String type;
 
-    @Schema(description = "프로필/아이콘에 표시할 글자 또는 이미지 식별값", example = "김")
-    private String avatar;
+    @Schema(description = "1:1 상대 프로필 이미지 첨부파일 ID", example = "10")
+    private Long prflImgFileId;
+
+    @Schema(description = "채팅방 이미지 첨부파일 ID", example = "20", nullable = true)
+    private Long chatRoomImageAtchFileId;
 
     @Schema(description = "채팅방 설명", example = "프론트엔드 개발팀 채팅방")
     private String description;
@@ -41,4 +45,10 @@ public class ChatRoomResponse {
 
     @Schema(description = "1:1 상대 부서", example = "개발팀")
     private String department;
+
+    @Schema(description = "채팅방 참여자 수", example = "5")
+    private Integer participantCount;
+
+    @Schema(description = "채팅방 참여자 목록")
+    private List<ChatParticipantResponse> participants;
 }

@@ -16,8 +16,8 @@ import lombok.RequiredArgsConstructor;
  * WebSocket + STOMP 설정 클래스.
 
  * [목적지 구조]
- * /pub/... → 클라이언트가 서버로 메시지를 보낼 때 (publish)
- * /sub/... → 클라이언트가 메시지를 받기 위해 구독할 때 (subscribe)
+ * /app/... → 클라이언트가 서버로 메시지를 보낼 때 (publish)
+ * /topic/... → 클라이언트가 메시지를 받기 위해 구독할 때 (subscribe)
  */
 @Configuration
 @EnableWebSocketMessageBroker
@@ -32,15 +32,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
      * 메시지 브로커를 설정한다.
      * 브로커란 메시지를 중간에서 받아서 구독자들에게 전달해주는 우체국 같은 역할이다.
      *
-     * enableSimpleBroker("/sub")
-     *   → /sub으로 시작하는 목적지로 오는 메시지는 브로커가 해당 목적지를 구독 중인
+     * enableSimpleBroker("/topic")
+     *   → /topic으로 시작하는 목적지로 오는 메시지는 브로커가 해당 목적지를 구독 중인
      *     모든 클라이언트에게 자동으로 전달한다.
-     *   → MsngrServiceImpl에서 /sub/chat/{chtrmId}로 브로드캐스트하는 것과 연결된다.
+     *   → MsngrServiceImpl에서 /topic/chats/{chtrmId}/events로 브로드캐스트하는 것과 연결된다.
      *
-     * setApplicationDestinationPrefixes("/pub")
-     *   → /pub으로 시작하는 목적지로 오는 메시지는 서버의 @MessageMapping 메서드로 라우팅한다.
-     *   → 클라이언트가 /pub/chat.send/1로 보내면
-     *     MsngrWebSocketController의 @MessageMapping("/chat.send/{chtrmId}")가 실행된다.
+     * setApplicationDestinationPrefixes("/app")
+     *   → /app으로 시작하는 목적지로 오는 메시지는 서버의 @MessageMapping 메서드로 라우팅한다.
+     *   → 클라이언트가 /app/chats/1/messages로 보내면
+     *     MsngrWebSocketController의 @MessageMapping("/chats/{chtrmId}/messages")가 실행된다.
      */
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {

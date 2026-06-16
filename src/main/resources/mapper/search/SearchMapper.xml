@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.domain.search.mapper.SearchMapper">
+
+    <select id="search" resultType="SearchVO">
+	    SELECT id, parentId, type, title, description, badgeText
+	    FROM (
+	        SELECT
+	            P.PROJ_ID       AS id,
+	            NULL            AS parentId,
+	            'PROJECT'       AS type,
+	            P.PROJ_NM       AS title,
+	            '프로젝트'       AS description,
+	            P.PROJ_STAT_CD  AS badgeText
+	        FROM TB_PROJECT P
+	        INNER JOIN TB_PROJ_MEMBER PM
+	            ON P.PROJ_ID = PM.PROJ_ID
+	           AND PM.EMP_ID = #{empId}
+	           AND PM.LEAVE_DT IS NULL
+	        WHERE P.PROJ_NM LIKE '%' || #{keyword} || '%'
+	
+	        UNION ALL
+	
+	        SELECT
+	            S.SCHD_ID                          AS id,
+	            NULL                               AS parentId,
+	            'SCHEDULE'                         AS type,
+	            S.SCHD_NM                          AS title,
+	            '일정'                              AS description,
+	            TO_CHAR(S.BEGIN_DT, 'YYYY.MM.DD')  AS badgeText
+	        FROM TB_INTG_SCHD S
+	        INNER JOIN TB_SCHD_TARGET ST
+	            ON S.SCHD_ID = ST.SCHD_ID
+	        INNER JOIN TB_EMPLOYEE E
+	            ON E.EMP_ID = #{empId}
+	        WHERE S.SCHD_NM LIKE '%' || #{keyword} || '%'
+	          AND (
+	              ST.TARGET_TYPE_CD = '001'
+	              OR (ST.TARGET_TYPE_CD = '002' AND ST.TARGET_ID = TO_CHAR(#{empId}))
+	              OR (ST.TARGET_TYPE_CD = '003' AND E.EXEC_YN = 'Y')
+	              OR (ST.TARGET_TYPE_CD = '004' AND ST.TARGET_ID = E.DEPT_CD)
+	              OR (ST.TARGET_TYPE_CD = '005' AND EXISTS (
+	                  SELECT 1 FROM TB_PROJ_MEMBER PM
+	                  WHERE PM.PROJ_ID = TO_NUMBER(ST.TARGET_ID)
+	                    AND PM.EMP_ID = #{empId}
+	                    AND PM.LEAVE_DT IS NULL
+	              ))
+	              OR (ST.TARGET_TYPE_CD = '006' AND EXISTS (
+	                  SELECT 1 FROM TB_TASK_PTCPT TP
+	                  WHERE TP.TASK_ID = TO_NUMBER(ST.TARGET_ID)
+	                    AND TP.EMP_ID = #{empId}
+	                    AND TP.LEAVE_DT IS NULL
+	              ))
+	              OR (ST.TARGET_TYPE_CD = '007' AND EXISTS (
+	                  SELECT 1 FROM TB_MTNG_PTCPT MP
+	                  WHERE MP.MTNG_ID = TO_NUMBER(ST.TARGET_ID)
+	                    AND MP.EMP_ID = #{empId}
+	              ))
+	              OR (ST.TARGET_TYPE_CD = '008' AND EXISTS (
+	                  SELECT 1 FROM TB_CONF_RM_RSRV CR
+	                  WHERE CR.RSRV_EMP_ID = #{empId}
+	                    AND CR.RSRV_ID = TO_NUMBER(ST.TARGET_ID)
+	              ))
+	          )
+	
+	        UNION ALL
+	
+	        SELECT
+	            M.MTNG_ID                          AS id,
+	            NULL                               AS parentId,
+	            'MEETING'                          AS type,
+	            M.MTNG_NM                          AS title,
+	            '회의'                              AS description,
+	            TO_CHAR(M.BEGIN_DT, 'YYYY.MM.DD')  AS badgeText
+	        FROM TB_MTNG M
+	        INNER JOIN TB_MTNG_PTCPT MP
+	            ON M.MTNG_ID = MP.MTNG_ID
+	           AND MP.EMP_ID = #{empId}
+	        WHERE M.MTNG_NM LIKE '%' || #{keyword} || '%'
+	
+	        UNION ALL
+	
+	        SELECT
+	            T.TASK_ID       AS id,
+	            T.PROJ_ID       AS parentId,
+	            'TASK'          AS type,
+	            T.TASK_NM       AS title,
+	            '업무'           AS description,
+	            T.TASK_STAT_CD  AS badgeText
+	        FROM TB_TASK T
+	        INNER JOIN TB_TASK_PTCPT TP
+	            ON T.TASK_ID = TP.TASK_ID
+	           AND TP.EMP_ID = #{empId}
+	           AND TP.LEAVE_DT IS NULL
+	        WHERE T.TASK_NM LIKE '%' || #{keyword} || '%'
+	
+	        UNION ALL
+	
+	        SELECT
+	            E.EDU_ID        AS id,
+	            NULL            AS parentId,
+	            'EDUCATION'     AS type,
+	            E.EDU_NM        AS title,
+	            '교육'           AS description,
+	            E.EDU_BEGIN_YMD AS badgeText
+	        FROM TB_EDU_MGMT E
+	        INNER JOIN TB_EDU_ATND_RLTM EA
+	            ON E.EDU_ID = EA.EDU_ID
+	           AND EA.EMP_ID = #{empId}
+	        WHERE E.EDU_NM LIKE '%' || #{keyword} || '%'
+	
+	        UNION ALL
+	
+	        SELECT
+	            MM.MAIL_MSG_ID                          AS id,
+	            NULL                                    AS parentId,
+	            'MAIL'                                  AS type,
+	            MM.MAIL_SJ                              AS title,
+	            '메일'                                   AS description,
+	            TO_CHAR(MM.MAIL_SNDNG_DT, 'YYYY.MM.DD') AS badgeText
+	        FROM TB_MAIL_MESSAGE MM
+	        WHERE MM.MAIL_SJ LIKE '%' || #{keyword} || '%'
+	          AND MM.EMP_ID = #{empId}
+	          AND MM.DEL_YN = 'N'
+	          AND MM.DRAFT_YN = 'N'
+	    )
+	</select>
+
+    <insert id="insertSearchHist">
+        INSERT INTO TB_SEARCH_HIST (SEARCH_HIST_ID, EMP_ID, KEYWORD, REG_DT)
+        VALUES (SEQ_SEARCH_HIST.NEXTVAL, #{empId}, #{keyword}, SYSDATE)
+    </insert>
+
+    <select id="readSearchHist" resultType="SearchHistVO">
+        SELECT
+            search_hist_id,
+            emp_id,
+            keyword,
+            reg_dt
+        FROM TB_SEARCH_HIST
+        WHERE emp_id = #{empId}
+        ORDER BY reg_dt DESC
+    </select>
+
+    <delete id="deleteSearchHist">
+        DELETE FROM TB_SEARCH_HIST
+        WHERE search_hist_id = #{searchHistId}
+    </delete>
+
+    <delete id="deleteAllSearchHist">
+        DELETE FROM TB_SEARCH_HIST
+        WHERE emp_id = #{empId}
+    </delete>
+
+    <update id="mergeRecentItem">
+        MERGE INTO TB_RECENT_ITEM T
+        USING DUAL ON (
+            T.ENP_ID    = #{empId}
+            AND T.ITEM_TYPE = #{itemType}
+            AND T.ITEM_ID   = #{itemId}
+        )
+        WHEN MATCHED THEN
+            UPDATE SET ACCESSED_DT = SYSDATE
+        WHEN NOT MATCHED THEN
+            INSERT (RECENT_ITEM_ID, EMP_ID, ITEM_TYPE, ITEM_ID, ACCESSED_DT)
+            VALUES (SEQ_RECENT_ITEM.NEXTVAL, #{empId}, #{itemType}, #{itemId}, SYSDATE)
+    </update>
+
+    <select id="readRecentItems" resultType="RecentItemVO">
+        SELECT
+            recent_item_id,
+            emp_id,
+            item_type,
+            item_id,
+            accessed_dt
+        FROM TB_RECENT_ITEM
+        WHERE emp_id = #{empId}
+        ORDER BY accessed_dt DESC
+    </select>
+
+    <delete id="deleteRecentItem">
+        DELETE FROM TB_RECENT_ITEM
+        WHERE recent_item_id = #{recentItemId}
+    </delete>
+
+</mapper>
