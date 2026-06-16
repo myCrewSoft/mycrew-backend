@@ -15,10 +15,12 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -34,9 +36,13 @@ import com.mycrewsoft.domain.file.service.FileService;
 import com.mycrewsoft.domain.mail.dto.response.MailDetailResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailAccountStatusResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailMutationResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailParticipantResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailSendResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSyncResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailTrashClearResponse;
 import com.mycrewsoft.domain.mail.gmail.GmailMessageContent;
+import com.mycrewsoft.domain.mail.gmail.GmailSendCommand;
+import com.mycrewsoft.domain.mail.gmail.GmailSendResult;
 import com.mycrewsoft.domain.mail.gmail.GmailSyncResult;
 import com.mycrewsoft.domain.mail.gmail.GmailSyncedMessage;
 import com.mycrewsoft.domain.mail.mapper.MailMapper;
@@ -61,6 +67,9 @@ class MailServiceImplTest {
     @Mock
     private FileService fileService;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private MailServiceImpl service;
 
     @BeforeEach
@@ -70,7 +79,8 @@ class MailServiceImplTest {
                 mailMapper,
                 googleGmailClient,
                 fileService,
-                testTransactionTemplate());
+                testTransactionTemplate(),
+                eventPublisher);
     }
 
     @AfterEach
@@ -273,6 +283,79 @@ class MailServiceImplTest {
         inOrder.verify(mailMapper).markMessagesDeleted(EMP_ID, List.of(10L, 11L));
     }
 
+    @Test
+    void sendDraftSendsStoredDraftAndDeletesDraftAfterGmailSuccess() {
+        authenticate(PermissionCode.MAIL_SEND);
+        MailAccountVO account = account("https://www.googleapis.com/auth/gmail.send");
+        MailMessageRow draft = mailRow();
+        draft.setDraftYn("Y");
+        draft.setSubject("Draft subject");
+        draft.setContent("<p>Hello draft</p>");
+        java.time.LocalDateTime sentAt = java.time.LocalDateTime.of(2026, 6, 16, 9, 30);
+
+        when(mailMapper.selectActiveMailAccount(EMP_ID)).thenReturn(account);
+        when(mailMapper.selectMailRow(EMP_ID, 10L)).thenReturn(draft);
+        when(mailMapper.selectParticipants(EMP_ID, 10L)).thenReturn(List.of(
+                participant("TO", "to@example.com"),
+                participant("CC", "cc@example.com"),
+                participant("BCC", "bcc@example.com")));
+        when(googleGmailClient.sendMessage(any(MailAccountVO.class), any(GmailSendCommand.class)))
+                .thenReturn(new GmailSendResult("gmail-sent", "thread-sent", sentAt));
+        when(mailMapper.selectNextMailMessageId()).thenReturn(100L);
+        when(mailMapper.selectNextMailLabelId()).thenReturn(1L, 2L, 3L, 4L, 5L);
+        when(mailMapper.selectLabelIdByType(EMP_ID, "SENT")).thenReturn(2L);
+        when(mailMapper.existsLabelMap(EMP_ID, 100L, 2L)).thenReturn(0);
+        when(mailMapper.selectNextMailLabelMapId()).thenReturn(20L);
+        when(mailMapper.selectNextMailParticipantId()).thenReturn(30L, 31L, 32L, 33L);
+
+        MailSendResponse response = service.sendDraft(10L);
+
+        assertThat(response.getMailId()).isEqualTo(100L);
+        assertThat(response.getExternalMessageId()).isEqualTo("gmail-sent");
+        assertThat(response.getThreadId()).isEqualTo("thread-sent");
+        assertThat(response.getSentAt()).isEqualTo(sentAt);
+
+        ArgumentCaptor<GmailSendCommand> commandCaptor = ArgumentCaptor.forClass(GmailSendCommand.class);
+        verify(googleGmailClient).sendMessage(any(MailAccountVO.class), commandCaptor.capture());
+        GmailSendCommand command = commandCaptor.getValue();
+        assertThat(command.getFromEmail()).isEqualTo("user@example.com");
+        assertThat(command.getTo()).containsExactly("to@example.com");
+        assertThat(command.getCc()).containsExactly("cc@example.com");
+        assertThat(command.getBcc()).containsExactly("bcc@example.com");
+        assertThat(command.getSubject()).isEqualTo("Draft subject");
+        assertThat(command.getContent()).isEqualTo("<p>Hello draft</p>");
+
+        verify(mailMapper).deleteParticipantsByMail(EMP_ID, 10L);
+        verify(mailMapper).deleteLabelMapsByMail(EMP_ID, 10L);
+        verify(mailMapper).markMessagesDeleted(EMP_ID, List.of(10L));
+    }
+
+    @Test
+    void sendDraftKeepsDraftWhenGmailSendFails() {
+        authenticate(PermissionCode.MAIL_SEND);
+        MailAccountVO account = account("https://www.googleapis.com/auth/gmail.send");
+        MailMessageRow draft = mailRow();
+        draft.setDraftYn("Y");
+        draft.setSubject("Draft subject");
+        draft.setContent("<p>Hello draft</p>");
+
+        when(mailMapper.selectActiveMailAccount(EMP_ID)).thenReturn(account);
+        when(mailMapper.selectMailRow(EMP_ID, 10L)).thenReturn(draft);
+        when(mailMapper.selectParticipants(EMP_ID, 10L)).thenReturn(List.of(
+                participant("TO", "to@example.com")));
+        when(googleGmailClient.sendMessage(any(MailAccountVO.class), any(GmailSendCommand.class)))
+                .thenReturn(new GmailSendResult(null, null, null));
+
+        assertThatThrownBy(() -> service.sendDraft(10L))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.MAIL_SEND_FAILED);
+
+        verify(mailMapper, never()).markMessagesDeleted(EMP_ID, List.of(10L));
+        verify(mailMapper, never()).deleteParticipantsByMail(EMP_ID, 10L);
+        verify(mailMapper, never()).deleteLabelMapsByMail(EMP_ID, 10L);
+    }
+
     private void authenticate(PermissionCode permissionCode) {
         AuthorizationUserDetails principal = new AuthorizationUserDetails(
                 EMP_ID,
@@ -322,6 +405,14 @@ class MailServiceImplTest {
         row.setDelYn("N");
         return row;
     }
+
+    private MailParticipantResponse participant(String type, String email) {
+        MailParticipantResponse participant = new MailParticipantResponse();
+        participant.setType(type);
+        participant.setEmail(email);
+        return participant;
+    }
+
     private GmailSyncedMessage syncedMessage() {
         GmailSyncedMessage message = new GmailSyncedMessage();
         message.setExternalMessageId("gmail-new");

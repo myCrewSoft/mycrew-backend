@@ -25,16 +25,19 @@ import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.mail.dto.request.MailImportantUpdateRequest;
 import com.mycrewsoft.domain.mail.dto.request.MailBulkRequest;
 import com.mycrewsoft.domain.mail.dto.request.MailDraftRequest;
+import com.mycrewsoft.domain.mail.dto.request.MailLabelRequest;
 import com.mycrewsoft.domain.mail.dto.request.MailSendRequest;
 import com.mycrewsoft.domain.mail.dto.response.MailAccountStatusResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailAttachmentDownload;
 import com.mycrewsoft.domain.mail.dto.response.MailBulkResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailLabelResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailDetailResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailMutationResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSendResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSummaryResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSyncResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailTrashClearResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailUnreadCountResponse;
 import com.mycrewsoft.domain.mail.service.MailService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -86,6 +89,12 @@ public class MailController {
             @Parameter(description = "최대 동기화 메시지 수")
             @RequestParam(defaultValue = "50") int maxResults) {
         return ResponseEntity.ok(ApiResponse.success(mailService.syncMails(maxResults)));
+    }
+
+    @GetMapping("/unread-count")
+    @Operation(summary = "받은편지함 안읽은 메일 수", description = "헤더 메일 아이콘 배지용으로 안읽은 받은 메일 수를 조회합니다.")
+    public ResponseEntity<ApiResponse<MailUnreadCountResponse>> getUnreadCount() {
+        return ResponseEntity.ok(ApiResponse.success(mailService.getUnreadCount()));
     }
 
     @GetMapping("/{mailId}")
@@ -183,11 +192,76 @@ public class MailController {
         return ResponseEntity.ok(ApiResponse.success(mailService.getDraft(mailId)));
     }
 
+    @PostMapping("/drafts/{mailId}/send")
+    @Operation(summary = "임시보관 메일 전송", description = "저장된 임시보관 메일의 수신자, 제목, 본문으로 Gmail 메일을 전송하고 임시보관 메일을 삭제 처리합니다.")
+    public ResponseEntity<ApiResponse<MailSendResponse>> sendDraft(
+            @Parameter(description = "임시보관 메일 ID") @PathVariable Long mailId) {
+        return ResponseEntity.ok(ApiResponse.success(mailService.sendDraft(mailId)));
+    }
+
     @DeleteMapping("/drafts/{mailId}")
     @Operation(summary = "임시보관 메일 삭제", description = "임시보관 메일을 삭제합니다.")
     public ResponseEntity<ApiResponse<Void>> deleteDraft(
             @Parameter(description = "내부 메일 ID") @PathVariable Long mailId) {
         mailService.deleteDraft(mailId);
         return ResponseEntity.ok(ApiResponse.success("임시보관 메일을 삭제했습니다.", null));
+    }
+
+    @GetMapping("/labels")
+    @Operation(summary = "사용자 라벨 목록", description = "현재 사원의 사용자 정의 라벨 목록을 조회합니다.")
+    public ResponseEntity<ApiResponse<List<MailLabelResponse>>> getUserLabels() {
+        return ResponseEntity.ok(ApiResponse.success(mailService.getUserLabels()));
+    }
+
+    @PostMapping("/labels")
+    @Operation(summary = "사용자 라벨 생성", description = "사용자 정의 라벨을 생성합니다.")
+    public ResponseEntity<ApiResponse<MailLabelResponse>> createUserLabel(
+            @Valid @org.springframework.web.bind.annotation.RequestBody MailLabelRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(mailService.createUserLabel(request)));
+    }
+
+    @PatchMapping("/labels/{labelId}")
+    @Operation(summary = "사용자 라벨 이름 변경", description = "사용자 정의 라벨 이름을 변경합니다.")
+    public ResponseEntity<ApiResponse<MailLabelResponse>> renameUserLabel(
+            @PathVariable Long labelId,
+            @Valid @org.springframework.web.bind.annotation.RequestBody MailLabelRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(mailService.renameUserLabel(labelId, request)));
+    }
+
+    @DeleteMapping("/labels/{labelId}")
+    @Operation(summary = "사용자 라벨 삭제", description = "사용자 정의 라벨을 삭제하고 모든 메일에서 라벨을 제거합니다.")
+    public ResponseEntity<ApiResponse<Void>> deleteUserLabel(@PathVariable Long labelId) {
+        mailService.deleteUserLabel(labelId);
+        return ResponseEntity.ok(ApiResponse.success("라벨을 삭제했습니다.", null));
+    }
+
+    @GetMapping("/labels/{labelId}/mails")
+    @Operation(summary = "라벨별 메일 목록", description = "특정 사용자 라벨이 적용된 메일 목록을 페이지 단위로 조회합니다.")
+    public ResponseEntity<ApiResponse<List<MailSummaryResponse>>> getMailsByLabel(
+            @PathVariable Long labelId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Page<MailSummaryResponse> mailPage = mailService.getMailsByLabel(labelId, PageRequest.of(page, size));
+        return ResponseEntity.ok(ApiResponse.success(mailPage.getContent(), mailPage));
+    }
+
+    @GetMapping("/{mailId}/labels")
+    @Operation(summary = "메일의 사용자 라벨 조회", description = "특정 메일에 적용된 사용자 라벨 목록을 조회합니다.")
+    public ResponseEntity<ApiResponse<List<MailLabelResponse>>> getMailLabels(@PathVariable Long mailId) {
+        return ResponseEntity.ok(ApiResponse.success(mailService.getMailLabels(mailId)));
+    }
+
+    @PostMapping("/{mailId}/labels/{labelId}")
+    @Operation(summary = "메일에 라벨 적용", description = "특정 메일에 사용자 라벨을 적용합니다.")
+    public ResponseEntity<ApiResponse<Void>> applyLabel(@PathVariable Long mailId, @PathVariable Long labelId) {
+        mailService.applyLabel(mailId, labelId);
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @DeleteMapping("/{mailId}/labels/{labelId}")
+    @Operation(summary = "메일에서 라벨 제거", description = "특정 메일에서 사용자 라벨을 제거합니다.")
+    public ResponseEntity<ApiResponse<Void>> removeLabel(@PathVariable Long mailId, @PathVariable Long labelId) {
+        mailService.removeLabel(mailId, labelId);
+        return ResponseEntity.ok(ApiResponse.success());
     }
 }

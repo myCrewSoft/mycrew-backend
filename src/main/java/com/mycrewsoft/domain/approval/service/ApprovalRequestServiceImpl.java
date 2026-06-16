@@ -32,6 +32,7 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
     private final EmployeeMapper employeeMapper;
     
     @Transactional
+    @Override
     public ApprovalMutationResponse submitApproval(Long drftDocSn) {
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
         LocalDateTime now = LocalDateTime.now();
@@ -79,6 +80,7 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
     }
 
     @Transactional
+    @Override
     public ApprovalMutationResponse withdrawApproval(Long drftDocSn) {
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
         LocalDateTime now = LocalDateTime.now();
@@ -124,6 +126,7 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
     }
 
     @Transactional
+    @Override
     public ApprovalMutationResponse approveApproval(Long drftDocSn, ApprovalActionRequestDTO request) {
         Long empId = com.mycrewsoft.security.util.SecurityUtil.getCurrentEmpId();
         LocalDateTime now = LocalDateTime.now();
@@ -208,6 +211,7 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
     }
 
     @Transactional
+    @Override
     public ApprovalMutationResponse rejectApproval(Long drftDocSn, ApprovalActionRequestDTO request) {
         if (request == null || !org.springframework.util.StringUtils.hasText(request.getReason())) {
             throw new com.mycrewsoft.common.exception.CustomException(com.mycrewsoft.common.exception.ErrorCode.APPROVAL_REJECT_REASON_REQUIRED);
@@ -263,11 +267,13 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
     }
 
     @Transactional(readOnly = true)
+    @Override
     public ApprovalAvailabilityResponse canApprove(Long drftDocSn) {
         return support.checkApprovalAvailability(drftDocSn, "승인할 수 있습니다.");
     }
 
     @Transactional(readOnly = true)
+    @Override
     public ApprovalAvailabilityResponse canReject(Long drftDocSn) {
         return support.checkApprovalAvailability(drftDocSn, "반려할 수 있습니다.");
     }
