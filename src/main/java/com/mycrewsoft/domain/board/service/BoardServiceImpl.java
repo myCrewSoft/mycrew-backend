@@ -25,12 +25,14 @@ import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
 import com.mycrewsoft.domain.board.dto.request.BoardUpdateRequest;
 import com.mycrewsoft.domain.board.dto.response.BoardResponse;
 import com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse;
+import com.mycrewsoft.domain.board.dto.response.BoardWidgetItemResponse;
 import com.mycrewsoft.domain.board.event.CommentCreatedEvent;
 import com.mycrewsoft.domain.board.event.NoticeCreatedEvent;
 import com.mycrewsoft.domain.board.mapper.BoardMapper;
 import com.mycrewsoft.domain.board.vo.BoardCommentVO;
 import com.mycrewsoft.domain.board.vo.BoardLikeVo;
 import com.mycrewsoft.domain.board.vo.BoardVO;
+import com.mycrewsoft.domain.board.vo.BoardWidgetVO;
 import com.mycrewsoft.domain.employee.mapper.EmployeeLookupMapper;
 import com.mycrewsoft.domain.employee.mapper.EmployeeMapper;
 import com.mycrewsoft.security.authz.AuthorizationService;
@@ -55,6 +57,9 @@ public class BoardServiceImpl implements BoardService {
 	private final DtoMapper dtoMapper;
 	private final ApplicationEventPublisher eventPublisher;
 	
+	// 위젯 출력 개수
+	private static final int WIDGET_BOARD_LIMIT = 3;
+
 	// 데이터를 몇 페이지에 몇개씩 보여줄지
 	@Override
 	@Transactional(readOnly = true)
@@ -507,4 +512,21 @@ public class BoardServiceImpl implements BoardService {
 		return result;
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public List<BoardWidgetItemResponse> getBoardListForWidget(String boardTypeCd, int limit) {
+	    Long currentEmpId = SecurityUtil.getCurrentEmpId();
+	    String deptCd = employeeMapper.selectEmpDeptCodeByEmpId(currentEmpId);
+	    List<BoardWidgetVO> voList = boardMapper.getBoardListForWidget(boardTypeCd, deptCd, limit);
+	    return voList.stream()
+	            .map(vo -> {
+	                BoardWidgetItemResponse dto = new BoardWidgetItemResponse();
+	                dto.setId(vo.getBoardId());
+	                dto.setTitle(vo.getBoardSj());
+	                dto.setWriterName(vo.getEmpNm());
+	                dto.setCreatedAt(vo.getFrstRegDt());
+	                return dto;
+	            })
+	            .toList();
+	}
 }

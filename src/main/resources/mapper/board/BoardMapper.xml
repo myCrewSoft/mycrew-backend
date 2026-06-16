@@ -389,5 +389,28 @@
           FROM TB_BOARD_COMMENT
          WHERE COMMENT_ID = #{commentId}
     </select>
-   
+    
+   <select id="getBoardListForWidget" resultType="BoardWidgetVO">
+	    SELECT *
+	      FROM (
+	        SELECT
+	            B.BOARD_ID    AS boardId,
+	            B.BOARD_SJ    AS boardSj,
+	            E.EMP_NM      AS empNm,
+	            B.FRST_REG_DT AS frstRegDt
+	          FROM TB_BOARD B
+	          LEFT JOIN TB_EMPLOYEE E ON B.FRST_RGTR_ID = E.EMP_ID
+	         WHERE B.DEL_YN = 'n'
+	           <choose>
+	               <when test="boardTypeCd == 'DEPT'">
+	                   AND TRIM(B.DEPT_CD) = TRIM(#{deptCd})
+	               </when>
+	               <otherwise>
+	                   AND B.BOARD_TYPE_CD = #{boardTypeCd}
+	               </otherwise>
+	           </choose>
+	         ORDER BY B.FRST_REG_DT DESC, B.BOARD_ID DESC
+	      )
+	     WHERE ROWNUM &lt;= #{limit}
+	</select>
 </mapper>

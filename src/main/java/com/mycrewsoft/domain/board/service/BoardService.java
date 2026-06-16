@@ -13,6 +13,7 @@ import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
 import com.mycrewsoft.domain.board.dto.request.BoardUpdateRequest;
 import com.mycrewsoft.domain.board.dto.response.BoardResponse;
 import com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse;
+import com.mycrewsoft.domain.board.dto.response.BoardWidgetItemResponse;
 
 public interface BoardService {
 
@@ -69,4 +70,7 @@ public interface BoardService {
 	//게시글 상세 좋아요 정보(총개수 +본인 좋아요 여부)
 	
 	Map<String, Object> getLike(Long boardId,Long empId);
+	
+	List<BoardWidgetItemResponse> getBoardListForWidget(String boardTypeCd, int limit);
+
 }
