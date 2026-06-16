@@ -22,6 +22,9 @@ public final class DateUtil {
 
     /** API 통신 일시 포맷: 2024-05-07 14:30:00 */
     public static final DateTimeFormatter DATETIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    
+    /** API 통신 일시 포맷: 14:07 */
+    public static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     /** 화면 표시용 날짜 포맷: 2024년 05월 07일 */
     public static final DateTimeFormatter DISPLAY_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy년 MM월 dd일");
@@ -55,6 +58,13 @@ public final class DateUtil {
         if (dateTime == null) return StringUtils.EMPTY;
 
         return dateTime.format(DATETIME_FORMAT);
+    }
+    
+    /** LocalDateTime → "2024-05-07 14:30:00" */
+    public static String formatTime(LocalDateTime dateTime) {
+    	if (dateTime == null) return StringUtils.EMPTY;
+    	
+    	return dateTime.format(TIME_FORMAT);
     }
     
     /** LocalDate → "2024년 05월 07일" */
@@ -138,6 +148,8 @@ public final class DateUtil {
 
         return format(dateTime.toLocalDate());
     }
+
+    
     
     /**
      * D-day 계산
@@ -150,5 +162,15 @@ public final class DateUtil {
         if (days == 0) return "D-Day";
         if (days > 0) return "D-" + days;
         return "D+" + Math.abs(days);
+    }
+    
+    // 오늘의 시작 시간(위젯용)
+    public static LocalDateTime startOfToday() {
+        return LocalDate.now().atStartOfDay();
+    }
+
+    // 오늘의 끝 시간(위젯용)
+    public static LocalDateTime endOfToday() {
+        return LocalDate.now().atTime(LocalTime.MAX);
     }
 }
