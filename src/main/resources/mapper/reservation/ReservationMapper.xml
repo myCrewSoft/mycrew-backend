@@ -89,4 +89,29 @@
 	      AND END_DT    <![CDATA[ > ]]> #{beginDt}
 	</select>
     
+    <select id="selectMyReservationListForWidget" resultType="ReservationDetailVO">
+	    SELECT *
+	      FROM (
+	        SELECT
+	            RR.RSRV_ID,
+	            RR.CONF_RM_ID,
+	            RR.RSRV_EMP_ID,
+	            RR.RSRV_PURPS,
+	            RR.BEGIN_DT,
+	            RR.END_DT,
+	            RR.INTG_RSRV_YN,
+	            M.MTNG_ID
+	          FROM TB_CONF_RM_RSRV RR
+	          JOIN TB_CONF_RM CR ON RR.CONF_RM_ID = CR.CONF_RM_ID
+	          LEFT JOIN TB_MTNG M ON M.CONF_RM_RSRV_ID = RR.RSRV_ID AND M.DEL_YN = 'N'
+	         WHERE CR.USE_YN = 'Y'
+	           AND RR.DEL_YN = 'N'
+	           AND RR.RSRV_EMP_ID = #{empId}
+	           AND RR.BEGIN_DT &gt;= #{beginDt}
+	           AND RR.BEGIN_DT &lt;= #{endDt}
+	         ORDER BY RR.BEGIN_DT ASC
+	      )
+	     WHERE ROWNUM &lt;= #{limit}
+	</select>
+    
 </mapper>

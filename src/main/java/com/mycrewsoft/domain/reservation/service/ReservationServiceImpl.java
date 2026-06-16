@@ -1,6 +1,8 @@
 package com.mycrewsoft.domain.reservation.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -27,6 +29,8 @@ public class ReservationServiceImpl implements ReservationService {
 
 	private final ReservationMapper reservationMapper;
 	private final ReservationDtoMapper reservationDtoMapper;
+	
+	private static final int WIDGET_RESERVATION_LIMIT = 2;
 	
 	// 예약 상세 조회
 	@Override
@@ -144,6 +148,29 @@ public class ReservationServiceImpl implements ReservationService {
 		
 		int result = reservationMapper.deleteConfRmRsrv(rsrvId);
 		if(result == 0) throw new CustomException(ErrorCode.RSRV_NOT_FOUND);
+	}
+	
+	@Override
+	@Transactional(readOnly = true)
+	public List<ReservationResponse> readReservationListForWidget() {
+	    Long empId = SecurityUtil.getCurrentEmpId();
+	    LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+	    LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
+
+	    List<ReservationDetailVO> voList = reservationMapper.selectMyReservationListForWidget(
+    		empId,
+    		DateUtil.startOfToday(),
+            DateUtil.endOfToday(),
+            WIDGET_RESERVATION_LIMIT
+	    );
+
+	    return voList.stream()
+	            .map(vo -> {
+	                ReservationResponse response = reservationDtoMapper.toResponse(vo);
+	                response.setMine(true);
+	                return response;
+	            })
+	            .toList();
 	}
 
 }

@@ -36,4 +36,12 @@ public interface ReservationMapper {
 			@Param("endDt") LocalDateTime endDt,
 			@Param("rsrvId") Long rsrvId
 	);
+	
+	// 위젯용
+	List<ReservationDetailVO> selectMyReservationListForWidget(
+		@Param("empId") Long empId,
+        @Param("beginDt") LocalDateTime beginDt,
+        @Param("endDt") LocalDateTime endDt,
+        @Param("limit") int limit
+	);
 }
