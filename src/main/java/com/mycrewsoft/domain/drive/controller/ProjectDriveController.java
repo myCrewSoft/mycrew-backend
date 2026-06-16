@@ -2,6 +2,7 @@ package com.mycrewsoft.domain.drive.controller;
 
 import java.util.List;
 
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -70,7 +71,7 @@ public class ProjectDriveController {
 		@PathVariable Long driveItemId,
 		@RequestBody DriveRenameRequestDto reqDto
 	){
-		
+		service.renameItem(driveItemId, reqDto);
 		return ResponseEntity.ok(ApiResponse.success("폴더명이 수정되었습니다."));
 	}
 	
@@ -83,9 +84,16 @@ public class ProjectDriveController {
 		return ResponseEntity.ok(ApiResponse.success("즐겨찾기 여부가 수정되었습니다."));
 	}
 	
-//	@Operation(description = "프로젝트 드라이브 논리 삭제 (하위 포함)")
-//	@PatchMapping("/items/{driveItemId}")
-//	public ResponseEntity<ApiResponse<String>> softDelete(@PathVariable Long driveItemId){
-//		return ResponseEntity.ok(Api)
-//	}
+	@Operation(description = "프로젝트 드라이브 논리 삭제 (하위 포함)")
+	@PatchMapping("/items/{driveItemId}/delete")
+	public ResponseEntity<ApiResponse<String>> softDelete(@PathVariable Long driveItemId){
+		service.softDeleteItem(driveItemId);
+		return ResponseEntity.ok(ApiResponse.success("삭제되었습니다."));
+	}
+	
+	@Operation(summary = "프로젝트 드라이브 파일 다운로드")
+	@GetMapping("/files/{driveItemId}/download")
+	public ResponseEntity<Resource> downloadFile(@PathVariable Long driveItemId){
+		return service.downloadFile(driveItemId);
+	}
 }

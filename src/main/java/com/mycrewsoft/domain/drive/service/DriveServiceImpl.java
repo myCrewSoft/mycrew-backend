@@ -29,6 +29,8 @@ import com.mycrewsoft.domain.drive.vo.DriveVo;
 import com.mycrewsoft.domain.file.constant.FileConstants;
 import com.mycrewsoft.domain.file.dto.FileUploadRequestDto;
 import com.mycrewsoft.domain.file.service.FileService;
+import com.mycrewsoft.domain.project.mapper.ProjectMapper;
+import com.mycrewsoft.domain.projectmember.mapper.ProjectMemberMapper;
 import com.mycrewsoft.security.authz.AuthorizationService;
 import com.mycrewsoft.security.authz.ResourceContext;
 import com.mycrewsoft.security.authz.ResourceType;
@@ -46,8 +48,9 @@ public class DriveServiceImpl implements DriveService {
 	private final DriveMapper mapper;
 	private final FileService fileService;
 	private final AuthorizationService authorizationService;
+	private final ProjectMemberMapper projMapper;
 	
-	// 공통 : 현재 사용자 소유 아이템 권한 컨텍스트 빌드
+	//현재 사용자 소유 아이템 권한 컨텍스트 빌드
 	private ResourceContext buildOwnerContext() {
 	    return ResourceContext.builder()
 	            .resourceType(ResourceType.DRIVE)
@@ -261,24 +264,29 @@ public class DriveServiceImpl implements DriveService {
 	}
 
 	/**
-	 * 개인 드라이브 휴지통 목록 조회
+	 * 휴지통 목록 조회
 	 */
 	@Override
-	public List<DriveResponseDto> getTrashList() {
+	public Page<DriveResponseDto> getTrashList(DriveSearchRequestDto reqDto) {
 		//권한체크
 		authorizationService.assertCurrentUserPermission(
 	            PermissionCode.DRIVE_READ, buildOwnerContext());
 
 	    Long empId = SecurityUtil.getCurrentEmpId();
-	    List<DriveVo> voList = mapper.selectTrashList(empId);
+	    int offset = reqDto.getPage() * reqDto.getSize();
+	    
+	    long total = mapper.countTrashList(empId);
+	    List<DriveVo> voList = mapper.selectTrashList(empId, offset, reqDto.getSize());
 
-	    return voList.stream().map(vo -> {
+	    List<DriveResponseDto> content = voList.stream().map(vo -> {
 	        DriveResponseDto respdto = dtoMapper.toDto(vo, DriveResponseDto.class);
 	        respdto.setDelDt(DateUtil.format(vo.getDelDt()));
 	        respdto.setFrstRegDt(DateUtil.format(vo.getFrstRegDt()));
 	        respdto.setFileSz(vo.getFileSz() != null ? FileUtil.formatFileSize(vo.getFileSz()) : null);
 	        return respdto;
 	    }).collect(Collectors.toList());
+	    
+	    return new PageImpl<>(content, PageRequest.of(reqDto.getPage(), reqDto.getSize()), total);
 	}
 
 	/**
@@ -294,12 +302,22 @@ public class DriveServiceImpl implements DriveService {
 		}
 		
 		//권한 체크
-		authorizationService.assertCurrentUserPermission(
-	            PermissionCode.DRIVE_UPDATE,
-	            ResourceContext.builder()
-	                    .resourceType(ResourceType.DRIVE)
-	                    .ownerEmpId(item.getFrstRgtrId())
-	                    .build());
+		if ("01".equals(item.getDriveScopeCd())) {
+		    // 개인 드라이브: 본인만
+		    authorizationService.assertCurrentUserPermission(
+		        PermissionCode.DRIVE_UPDATE,
+		        ResourceContext.builder()
+		            .resourceType(ResourceType.DRIVE)
+		            .ownerEmpId(item.getFrstRgtrId())
+		            .build());
+		} else {
+			Long currentEmpId = SecurityUtil.getCurrentEmpId();
+		    boolean isMember = projMapper.selectProjectMemberList(item.getProjId()).stream()
+		            .anyMatch(m -> m.getEmpId().equals(currentEmpId));
+		    if (!isMember) {
+		        throw new CustomException(ErrorCode.PROJECT_NOT_PARTICIPANT);
+		    }
+		}
 		
 		//1. 파일이면 첨부파일 복원
 		if("02".equals(item.getItemTypeCd()) && item.getDriveAtchFileId() != null) {
@@ -332,12 +350,23 @@ public class DriveServiceImpl implements DriveService {
 			throw new CustomException(ErrorCode.DRIVE_ITEM_NOT_FOUND);
 		}
 		
-		authorizationService.assertCurrentUserPermission(
-	            PermissionCode.DRIVE_DELETE,
-	            ResourceContext.builder()
-	                    .resourceType(ResourceType.DRIVE)
-	                    .ownerEmpId(item.getFrstRgtrId())
-	                    .build());
+		//권한 체크
+		if ("01".equals(item.getDriveScopeCd())) {
+		    // 개인 드라이브: 본인만
+		    authorizationService.assertCurrentUserPermission(
+		        PermissionCode.DRIVE_UPDATE,
+		        ResourceContext.builder()
+		            .resourceType(ResourceType.DRIVE)
+		            .ownerEmpId(item.getFrstRgtrId())
+		            .build());
+		} else {
+			Long currentEmpId = SecurityUtil.getCurrentEmpId();
+		    boolean isMember = projMapper.selectProjectMemberList(item.getProjId()).stream()
+		            .anyMatch(m -> m.getEmpId().equals(currentEmpId));
+		    if (!isMember) {
+		        throw new CustomException(ErrorCode.PROJECT_NOT_PARTICIPANT);
+		    }
+		}
 		
 		//1. 파일이면 첨부파일 영구 삭제 
 		if("02".equals(item.getItemTypeCd()) && item.getDriveAtchFileId() != null) {
@@ -403,6 +432,33 @@ public class DriveServiceImpl implements DriveService {
 						"attachment; filename*=UTF-8''" + encodedFileName)
 				.contentType(MediaType.APPLICATION_OCTET_STREAM)
 				.body(resource);
+	}
+
+	/**
+	 * 즐겨찾기 목록 조회 (프로젝트, 개인 드라이브)
+	 */
+	@Override
+	public Page<DriveResponseDto> getBookmarkList(DriveSearchRequestDto reqDto) {
+		//권한 체크
+		authorizationService.assertCurrentUserPermission(PermissionCode.DRIVE_READ, buildOwnerContext());
+		
+		Long empId = SecurityUtil.getCurrentEmpId();
+	    int offset = reqDto.getPage() * reqDto.getSize();
+	    
+	    //즐겨찾기 목록 조회
+	    long total = mapper.countBookmarkList(empId);
+	    List<DriveVo> voList = mapper.selectBookmarkList(empId, offset, reqDto.getSize());
+	    
+	    //vo -> dto 변환
+	    List<DriveResponseDto> content = voList.stream().map(vo -> {
+	        DriveResponseDto dto = dtoMapper.toDto(vo, DriveResponseDto.class);
+	        dto.setFrstRegDt(DateUtil.format(vo.getFrstRegDt()));
+	        dto.setLastMdfcnDt(DateUtil.format(vo.getLastMdfcnDt()));
+	        dto.setFileSz(vo.getFileSz() != null ? FileUtil.formatFileSize(vo.getFileSz()) : null);
+	        return dto;
+	    }).collect(Collectors.toList());
+
+	    return new PageImpl<>(content, PageRequest.of(reqDto.getPage(), reqDto.getSize()), total);
 	}
 
 

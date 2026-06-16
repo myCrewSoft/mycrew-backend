@@ -1,6 +1,8 @@
 package com.mycrewsoft.domain.drive.service;
 
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
 
 import com.mycrewsoft.domain.drive.dto.DriveFolderCreateRequestDto;
 import com.mycrewsoft.domain.drive.dto.DriveRenameRequestDto;
@@ -47,4 +49,17 @@ public interface ProjectDriveService {
 	 * @param bookmarkYn
 	 */
 	void toggleBookmark(Long driveItemId);
+	
+	/**
+	 * 프로젝트 드라이브 논리 삭제 (하위 포함)
+	 * @param driveItemId
+	 */
+	void softDeleteItem(Long driveItemId);
+	
+	/**
+	 * 프로젝트 드라이브 파일 다운로드
+	 * @param driveItemId
+	 * @return
+	 */
+	ResponseEntity<Resource> downloadFile(Long driveItemId);
 }

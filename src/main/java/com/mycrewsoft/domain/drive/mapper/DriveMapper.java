@@ -80,11 +80,12 @@ public interface DriveMapper {
 	List<DriveVo> selectFileChildrenByItemId(Long driveItemId);
 	
 	/**
-	 * 개인 드라이브 휴지통 목록 조회
+	 * 드라이브 휴지통 목록 조회
 	 * @param empId
 	 * @return
 	 */
-	List<DriveVo> selectTrashList(Long empId);
+	List<DriveVo> selectTrashList(@Param("empId") Long empId, @Param("offset") int offset, @Param("size") int size);
+	long countTrashList(Long empId);
 	
 	/**
 	 * 휴지통 단건 조회 (휴지통 목록 조회 및 아이템 존재여부 및 소유권 체크용)
@@ -135,4 +136,9 @@ public interface DriveMapper {
 	 * @return
 	 */
 	long countDriveListByProjId(@Param("projId") Long projId, @Param("prntDriveItemId") Long prntDriveItemId);
+	
+	//즐겨찾기 목록 조회 + 페이징
+	long countBookmarkList(Long empId);
+	List<DriveVo> selectBookmarkList(
+			@Param("empId") Long empId, @Param("offset") int offset, @Param("size") int size);
 }

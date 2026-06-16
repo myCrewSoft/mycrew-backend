@@ -94,8 +94,11 @@ public class DriveController {
     
     @Operation(summary = "휴지통 목록 조회")
     @GetMapping("/trash")
-    public ResponseEntity<ApiResponse<List<DriveResponseDto>>> getTrashList(){
-    	return ResponseEntity.ok(ApiResponse.success("휴지통 목록 조회 성공", driveService.getTrashList()));
+    public ResponseEntity<ApiResponse<List<DriveResponseDto>>> getTrashList(
+    		@ModelAttribute DriveSearchRequestDto reqDto
+    ){
+    	Page<DriveResponseDto> result = driveService.getTrashList(reqDto);
+    	return ResponseEntity.ok(ApiResponse.success(result.getContent(), result));
     }
     
     @Operation(summary = "휴지통 복원")
@@ -117,4 +120,13 @@ public class DriveController {
 		driveService.hardDeleteItem(driveItemId);
 		return ResponseEntity.ok(ApiResponse.success("영구 삭제되었습니다."));
 	}
+    
+    @Operation(summary = "즐겨찾기 목록 조회")
+    @GetMapping("/bookmark")
+    public ResponseEntity<ApiResponse<List<DriveResponseDto>>> getBookmarkList(
+    		@ModelAttribute DriveSearchRequestDto reqDto
+    ){
+    	 Page<DriveResponseDto> result = driveService.getBookmarkList(reqDto);
+    	 return ResponseEntity.ok(ApiResponse.success(result.getContent(), result));
+    }
 }
