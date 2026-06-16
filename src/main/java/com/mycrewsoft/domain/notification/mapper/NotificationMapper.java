@@ -23,5 +23,8 @@ public interface NotificationMapper {
     int updateReadAll(@Param("rcvrEmpId") Long rcvrEmpId);
 
     int updateDelYn(@Param("alrmRcvrId") Long alrmRcvrId, @Param("rcvrEmpId") Long rcvrEmpId);
+    
+    // 위젯용
+    List<NotificationQueryVO> selectAlrmList(@Param("empId") Long empId, @Param("limit") int limit);
 } 
 

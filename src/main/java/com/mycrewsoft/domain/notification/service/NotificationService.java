@@ -21,4 +21,6 @@ public interface NotificationService {
     void readAllAlrm();
 
     void deleteAlrm(Long alrmRcvrId);
+    
+    List<NotificationResponse> readAlrmListForWidget();
 }
