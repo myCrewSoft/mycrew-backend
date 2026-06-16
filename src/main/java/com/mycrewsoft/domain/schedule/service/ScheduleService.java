@@ -8,6 +8,7 @@ import com.mycrewsoft.domain.schedule.dto.command.ProjectScheduleCreateCommand;
 import com.mycrewsoft.domain.schedule.dto.command.TaskScheduleCreateCommand;
 import com.mycrewsoft.domain.schedule.dto.request.ScheduleRequestDto;
 import com.mycrewsoft.domain.schedule.dto.response.ScheduleResponseDto;
+import com.mycrewsoft.domain.schedule.dto.response.ScheduleWidgetItemResponse;
 
 public interface ScheduleService {
 	
@@ -26,4 +27,6 @@ public interface ScheduleService {
 	Long createTaskSchedule(TaskScheduleCreateCommand command); // 업무 자동 일정
 
 	Long createMeetingSchedule(MeetingScheduleCreateCommand command); // 회의 자동 일정
+	
+	List<ScheduleWidgetItemResponse> readTodaySchdListForWidget();	// 위젯용
 }

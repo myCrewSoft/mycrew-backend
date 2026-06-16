@@ -1,5 +1,6 @@
 package com.mycrewsoft.domain.schedule.mapper;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -7,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 
 import com.mycrewsoft.domain.schedule.vo.IntgSchdVO;
 import com.mycrewsoft.domain.schedule.vo.SchdSearchVO;
+import com.mycrewsoft.domain.schedule.vo.SchdWidgetVO;
 
 @Mapper
 public interface IntgSchdMapper {
@@ -29,4 +31,14 @@ public interface IntgSchdMapper {
 	
 	// 일정 삭제(논리)
 	int deleteIntgSchd(@Param("schdId") Long schdId);
+	
+	// 위젯용
+	List<SchdWidgetVO> selectTodaySchdListForWidget(
+		@Param("empId") Long empId,
+        @Param("deptCd") String deptCd,
+        @Param("execYn") Boolean execYn,
+        @Param("beginDt") LocalDateTime beginDt,
+        @Param("endDt") LocalDateTime endDt,
+        @Param("limit") int limit
+    );
 }

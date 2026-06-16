@@ -45,40 +45,46 @@
 	</select>
 	
 	<select id="selectIntgSchdList" resultType="IntgSchdVo">
-	    SELECT DISTINCT
-	        <include refid="schdColumns"/>
-	    FROM TB_INTG_SCHD S
-	    WHERE <include refid="whereNotDeleted"/>
-	      AND S.BEGIN_DT &lt;= #{endDt}
-	      AND S.END_DT   &gt;= #{beginDt}
-	      AND (
-	            S.SCHD_WRTR_ID = #{empId}
-	            OR S.SCHD_ID IN (
-	                SELECT T.SCHD_ID
-	                  FROM TB_SCHD_TARGET T
-	                 WHERE (T.TARGET_TYPE_CD = '01')
-	                    OR (T.TARGET_TYPE_CD = '02' AND T.TARGET_ID = TO_CHAR(#{empId}))
-	                    OR (T.TARGET_TYPE_CD = '04' AND T.TARGET_ID = #{deptCd})
-	                    <if test="execYn == true">
-				            OR (T.TARGET_TYPE_CD = '03')
-				        </if>
-	                    <if test="projIds != null and projIds.size() > 0">
-	                        OR (T.TARGET_TYPE_CD = '05' AND T.TARGET_ID IN
-	                            <foreach collection="projIds" item="projId" open="(" separator="," close=")">
-	                                #{projId}
-	                            </foreach>
-	                        )
-	                    </if>
-	                    <if test="taskIds != null and taskIds.size() > 0">
-	                        OR (T.TARGET_TYPE_CD = '06' AND T.TARGET_ID IN
-	                            <foreach collection="taskIds" item="taskId" open="(" separator="," close=")">
-	                                #{taskId}
-	                            </foreach>
-	                        )
-	                    </if>
-	            )
-	          )
-	    ORDER BY S.BEGIN_DT ASC
+	    SELECT *
+	      FROM (
+	        SELECT DISTINCT
+	            <include refid="schdColumns"/>
+	          FROM TB_INTG_SCHD S
+	         WHERE <include refid="whereNotDeleted"/>
+	           AND S.BEGIN_DT &lt;= #{endDt}
+	           AND S.END_DT   &gt;= #{beginDt}
+	           AND (
+	                 S.SCHD_WRTR_ID = #{empId}
+	                 OR S.SCHD_ID IN (
+	                     SELECT T.SCHD_ID
+	                       FROM TB_SCHD_TARGET T
+	                      WHERE (T.TARGET_TYPE_CD = '01')
+	                         OR (T.TARGET_TYPE_CD = '02' AND T.TARGET_ID = TO_CHAR(#{empId}))
+	                         OR (T.TARGET_TYPE_CD = '04' AND T.TARGET_ID = #{deptCd})
+	                         <if test="execYn == true">
+	                             OR (T.TARGET_TYPE_CD = '03')
+	                         </if>
+	                         <if test="projIds != null and projIds.size() > 0">
+	                             OR (T.TARGET_TYPE_CD = '05' AND T.TARGET_ID IN
+	                                 <foreach collection="projIds" item="projId" open="(" separator="," close=")">
+	                                     #{projId}
+	                                 </foreach>
+	                             )
+	                         </if>
+	                         <if test="taskIds != null and taskIds.size() > 0">
+	                             OR (T.TARGET_TYPE_CD = '06' AND T.TARGET_ID IN
+	                                 <foreach collection="taskIds" item="taskId" open="(" separator="," close=")">
+	                                     #{taskId}
+	                                 </foreach>
+	                             )
+	                         </if>
+	                 )
+	               )
+	         ORDER BY S.BEGIN_DT ASC
+	      )
+	    <if test="limit > 0">
+	    WHERE ROWNUM &lt;= #{limit}
+	    </if>
 	</select>
 	
 	<insert id="insertIntgSchd">
@@ -142,5 +148,52 @@
          WHERE SCHD_ID = #{schdId}
            AND DEL_YN  = 'N'
 	</delete>
+	
+	<select id="selectTodaySchdListForWidget" resultType="SchdWidgetVO">
+	    SELECT *
+	      FROM (
+	        SELECT DISTINCT
+	            S.SCHD_ID        AS id,
+	            S.SCHD_CLSF_CD   AS scheduleTypeCode,
+	            S.SCHD_NM        AS title,
+	            S.BEGIN_DT       AS start,
+	            S.END_DT         AS end,
+	            S.ALL_DAY_YN     AS allDay,
+	            D.DEPT_NM        AS deptNm,
+	            P.PROJ_NM        AS projNm,
+	            T.TASK_NM        AS taskNm
+	          FROM TB_INTG_SCHD S
+	          LEFT JOIN TB_SCHD_TARGET TD
+	              ON TD.SCHD_ID = S.SCHD_ID AND TD.TARGET_TYPE_CD = '04'
+	          LEFT JOIN TB_DEPARTMENT D
+	              ON D.DEPT_CD = TD.TARGET_ID
+	          LEFT JOIN TB_SCHD_TARGET TP
+	              ON TP.SCHD_ID = S.SCHD_ID AND TP.TARGET_TYPE_CD = '05'
+	          LEFT JOIN TB_PROJECT P
+	              ON P.PROJ_ID = TO_NUMBER(TP.TARGET_ID)
+	          LEFT JOIN TB_SCHD_TARGET TT
+	              ON TT.SCHD_ID = S.SCHD_ID AND TT.TARGET_TYPE_CD = '06'
+	          LEFT JOIN TB_TASK T
+	              ON T.TASK_ID = TO_NUMBER(TT.TARGET_ID)
+	         WHERE S.DEL_YN = 'n'
+	           AND S.BEGIN_DT &lt;= #{endDt}
+	           AND S.END_DT   &gt;= #{beginDt}
+	           AND (
+	                 S.SCHD_WRTR_ID = #{empId}
+	                 OR S.SCHD_ID IN (
+	                     SELECT T2.SCHD_ID
+	                       FROM TB_SCHD_TARGET T2
+	                      WHERE (T2.TARGET_TYPE_CD = '01')
+	                         OR (T2.TARGET_TYPE_CD = '02' AND T2.TARGET_ID = TO_CHAR(#{empId}))
+	                         OR (T2.TARGET_TYPE_CD = '04' AND T2.TARGET_ID = #{deptCd})
+	                         <if test="execYn == true">
+	                             OR (T2.TARGET_TYPE_CD = '03')
+	                         </if>
+	                 )
+	               )
+	         ORDER BY S.BEGIN_DT ASC
+	      )
+	     WHERE ROWNUM &lt;= #{limit}
+	</select>
 	
 </mapper>

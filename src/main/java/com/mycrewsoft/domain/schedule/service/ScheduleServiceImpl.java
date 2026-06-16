@@ -10,19 +10,22 @@ import org.springframework.transaction.annotation.Transactional;
 import com.mycrewsoft.common.constant.PermissionCode;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
+import com.mycrewsoft.common.util.DateUtil;
 import com.mycrewsoft.domain.employee.mapper.EmployeeMapper;
 import com.mycrewsoft.domain.schedule.dto.command.MeetingScheduleCreateCommand;
 import com.mycrewsoft.domain.schedule.dto.command.ProjectScheduleCreateCommand;
 import com.mycrewsoft.domain.schedule.dto.command.TaskScheduleCreateCommand;
 import com.mycrewsoft.domain.schedule.dto.request.ScheduleRequestDto;
 import com.mycrewsoft.domain.schedule.dto.response.ScheduleResponseDto;
+import com.mycrewsoft.domain.schedule.dto.response.ScheduleWidgetItemResponse;
 import com.mycrewsoft.domain.schedule.mapper.IntgSchdMapper;
 import com.mycrewsoft.domain.schedule.mapper.SchdTargetMapper;
-import com.mycrewsoft.domain.schedule.mapper.ScheduleMapper;
+import com.mycrewsoft.domain.schedule.mapper.ScheduleDtoMapper;
 import com.mycrewsoft.domain.schedule.vo.IntgSchdVO;
 import com.mycrewsoft.domain.schedule.vo.SchdSearchVO;
 import com.mycrewsoft.domain.schedule.vo.SchdTargetDetailVO;
 import com.mycrewsoft.domain.schedule.vo.SchdTargetVO;
+import com.mycrewsoft.domain.schedule.vo.SchdWidgetVO;
 import com.mycrewsoft.security.authz.AuthorizationService;
 import com.mycrewsoft.security.authz.ResourceContext;
 import com.mycrewsoft.security.authz.ResourceType;
@@ -36,9 +39,11 @@ public class ScheduleServiceImpl implements ScheduleService{
 
 	private final IntgSchdMapper intgSchdMapper;
 	private final SchdTargetMapper schdTargetMapper;
-	private final ScheduleMapper scheduleMapper;
+	private final ScheduleDtoMapper scheduleMapper;
 	private final EmployeeMapper employeeMapper;
 	private final AuthorizationService authorizationService;
+	
+	private static final int WIDGET_SCHD_LIMIT = 3;
 	
 	// 사용자가 직접 등록
 	@Override
@@ -305,6 +310,25 @@ public class ScheduleServiceImpl implements ScheduleService{
 	    // 일정 삭제
 		int deleted = intgSchdMapper.deleteIntgSchd(schdId);
 		if(deleted == 0) throw new CustomException(ErrorCode.SCHEDULE_NOT_FOUND);
+	}
+	
+	@Override
+	@Transactional(readOnly = true)
+	public List<ScheduleWidgetItemResponse> readTodaySchdListForWidget() {
+	    Long empId = SecurityUtil.getCurrentEmpId();
+	    Boolean exec = SecurityUtil.isCurrentExec();
+	    String deptCd = employeeMapper.selectEmpDeptCodeByEmpId(empId);
+
+	    List<SchdWidgetVO> voList = intgSchdMapper.selectTodaySchdListForWidget(
+	            empId,
+	            deptCd,
+	            exec,
+	            DateUtil.startOfToday(),
+	            DateUtil.endOfToday(),
+	            WIDGET_SCHD_LIMIT
+	    );
+
+	    return scheduleMapper.toWidgetItemResponseList(voList);
 	}
 	
 	//일정 참여자 목록 생성
