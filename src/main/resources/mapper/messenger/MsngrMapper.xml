@@ -22,127 +22,125 @@
     </resultMap>
 
     <select id="selectChtrmListByEmpId" resultMap="chtrmListResultMap">
-        SELECT
-            C.CHTRM_ID,
-            CASE
-                WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
-                    SELECT E.EMP_NM
-                    FROM TB_MSNGR_CHTRM_PTCPT OP
-                    JOIN TB_EMPLOYEE E
-                    ON E.EMP_ID = OP.EMP_ID
-                    WHERE OP.CHTRM_ID = C.CHTRM_ID
-                    AND OP.EMP_ID <![CDATA[ <> ]]> #{empId}
-                    AND OP.LEAV_DT IS NULL
-                    AND ROWNUM = 1
-                )
-                ELSE C.CHTRM_NM
-            END AS CHTRM_NM,
-            C.CHTRM_EXPLN,
-            C.CHTRM_TYPE_CD,
-            C.ESTBLSH_ID,
-            C.CHTRM_IMG_ATCH_FILE_ID,
-            C.CREAT_DT,
-            C.END_DT,
-            LM.LAST_MESSAGE,
-            LM.LAST_TIME,
-            (
-                SELECT COUNT(*)
-                FROM TB_MSNGR_CHTRM_PTCPT CP
-                WHERE CP.CHTRM_ID = C.CHTRM_ID
-                AND CP.LEAV_DT IS NULL
-            ) AS PARTICIPANT_COUNT,
-            CASE
-                WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
-                    SELECT RTRIM(OP.PTCPT_STTUS_CD)
-                    FROM TB_MSNGR_CHTRM_PTCPT OP
-                    WHERE OP.CHTRM_ID = C.CHTRM_ID
-                    AND OP.EMP_ID <![CDATA[ <> ]]> #{empId}
-                    AND OP.LEAV_DT IS NULL
-                    AND ROWNUM = 1
-                )
-            END AS STATUS,
-            CASE
-                WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
-                    SELECT JP.JOB_PSTN_NM
-                    FROM TB_MSNGR_CHTRM_PTCPT OP
-                    JOIN TB_EMPLOYEE E
-                    ON E.EMP_ID = OP.EMP_ID
-                    LEFT JOIN TB_JOB_POSITION JP
-                    ON JP.JOB_PSTN_CD = E.JOB_PSTN_CD
-                    WHERE OP.CHTRM_ID = C.CHTRM_ID
-                    AND OP.EMP_ID <![CDATA[ <> ]]> #{empId}
-                    AND OP.LEAV_DT IS NULL
-                    AND ROWNUM = 1
-                )
-            END AS JOB_TITLE,
-            CASE
-                WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
-                    SELECT D.DEPT_NM
-                    FROM TB_MSNGR_CHTRM_PTCPT OP
-                    JOIN TB_EMPLOYEE E
-                    ON E.EMP_ID = OP.EMP_ID
-                    LEFT JOIN TB_DEPARTMENT D
-                    ON D.DEPT_CD = E.DEPT_CD
-                    WHERE OP.CHTRM_ID = C.CHTRM_ID
-                    AND OP.EMP_ID <![CDATA[ <> ]]> #{empId}
-                    AND OP.LEAV_DT IS NULL
-                    AND ROWNUM = 1
-                )
-            END AS DEPARTMENT,
-            CASE
-                WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
-                    SELECT E.PRFL_IMG_FILE_ID
-                    FROM TB_MSNGR_CHTRM_PTCPT OP
-                    JOIN TB_EMPLOYEE E
-                    ON E.EMP_ID = OP.EMP_ID
-                    WHERE OP.CHTRM_ID = C.CHTRM_ID
-                    AND OP.EMP_ID <![CDATA[ <> ]]> #{empId}
-                    AND OP.LEAV_DT IS NULL
-                    AND ROWNUM = 1
-                )
-            END AS PRFL_IMG_FILE_ID,
-            (
-                SELECT COUNT(*)
-                FROM TB_MSNGR_MSG UM
-                WHERE UM.CHTRM_ID = C.CHTRM_ID
-                AND UM.CREAT_DT <![CDATA[ >= ]]> P.JOIN_DT
-                AND (
-                    P.LAST_CFMTN_MSG_ID IS NULL
-                    OR UM.MSG_ID <![CDATA[ > ]]> P.LAST_CFMTN_MSG_ID
-                )
-            ) AS UNREAD_COUNT,
-            P.CHTRM_ID AS PTCPT_CHTRM_ID,
-            P.EMP_ID,
-            RTRIM(P.PTCPT_STTUS_CD) AS PTCPT_STTUS_CD,
-            P.LAST_CFMTN_MSG_ID,
-            P.JOIN_DT,
-            P.LEAV_DT
-        FROM TB_MSNGR_CHTRM C
-        JOIN TB_MSNGR_CHTRM_PTCPT P
-        ON C.CHTRM_ID = P.CHTRM_ID
-        LEFT JOIN (
-            SELECT
-                CHTRM_ID,
-                MSG_CN AS LAST_MESSAGE,
-                TO_CHAR(CREAT_DT, 'HH24:MI') AS LAST_TIME,
-                CREAT_DT AS LAST_MSG_DT
-            FROM (
-                SELECT
-                    M.*,
-                    ROW_NUMBER() OVER (
-                        PARTITION BY M.CHTRM_ID
-                        ORDER BY M.CREAT_DT DESC, M.MSG_ID DESC
-                    ) AS RN
-                FROM TB_MSNGR_MSG M
-            )
-            WHERE RN = 1
-        ) LM
-        ON C.CHTRM_ID = LM.CHTRM_ID
-        WHERE P.EMP_ID = #{empId}
-        AND P.LEAV_DT IS NULL
-        AND C.END_DT IS NULL
-        ORDER BY NVL(LM.LAST_MSG_DT, C.CREAT_DT) DESC
-    </select>
+	    SELECT *
+	      FROM (
+	        SELECT
+	            C.CHTRM_ID,
+	            CASE
+	                WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
+	                    SELECT E.EMP_NM
+	                    FROM TB_MSNGR_CHTRM_PTCPT OP
+	                    JOIN TB_EMPLOYEE E ON E.EMP_ID = OP.EMP_ID
+	                    WHERE OP.CHTRM_ID = C.CHTRM_ID
+	                    AND OP.EMP_ID <![CDATA[ <> ]]> #{empId}
+	                    AND OP.LEAV_DT IS NULL
+	                    AND ROWNUM = 1
+	                )
+	                ELSE C.CHTRM_NM
+	            END AS CHTRM_NM,
+	            C.CHTRM_EXPLN,
+	            C.CHTRM_TYPE_CD,
+	            C.ESTBLSH_ID,
+	            C.CHTRM_IMG_ATCH_FILE_ID,
+	            C.CREAT_DT,
+	            C.END_DT,
+	            LM.LAST_MESSAGE,
+	            LM.LAST_TIME,
+	            (
+	                SELECT COUNT(*)
+	                FROM TB_MSNGR_CHTRM_PTCPT CP
+	                WHERE CP.CHTRM_ID = C.CHTRM_ID
+	                AND CP.LEAV_DT IS NULL
+	            ) AS PARTICIPANT_COUNT,
+	            CASE
+	                WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
+	                    SELECT RTRIM(OP.PTCPT_STTUS_CD)
+	                    FROM TB_MSNGR_CHTRM_PTCPT OP
+	                    WHERE OP.CHTRM_ID = C.CHTRM_ID
+	                    AND OP.EMP_ID <![CDATA[ <> ]]> #{empId}
+	                    AND OP.LEAV_DT IS NULL
+	                    AND ROWNUM = 1
+	                )
+	            END AS STATUS,
+	            CASE
+	                WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
+	                    SELECT JP.JOB_PSTN_NM
+	                    FROM TB_MSNGR_CHTRM_PTCPT OP
+	                    JOIN TB_EMPLOYEE E ON E.EMP_ID = OP.EMP_ID
+	                    LEFT JOIN TB_JOB_POSITION JP ON JP.JOB_PSTN_CD = E.JOB_PSTN_CD
+	                    WHERE OP.CHTRM_ID = C.CHTRM_ID
+	                    AND OP.EMP_ID <![CDATA[ <> ]]> #{empId}
+	                    AND OP.LEAV_DT IS NULL
+	                    AND ROWNUM = 1
+	                )
+	            END AS JOB_TITLE,
+	            CASE
+	                WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
+	                    SELECT D.DEPT_NM
+	                    FROM TB_MSNGR_CHTRM_PTCPT OP
+	                    JOIN TB_EMPLOYEE E ON E.EMP_ID = OP.EMP_ID
+	                    LEFT JOIN TB_DEPARTMENT D ON D.DEPT_CD = E.DEPT_CD
+	                    WHERE OP.CHTRM_ID = C.CHTRM_ID
+	                    AND OP.EMP_ID <![CDATA[ <> ]]> #{empId}
+	                    AND OP.LEAV_DT IS NULL
+	                    AND ROWNUM = 1
+	                )
+	            END AS DEPARTMENT,
+	            CASE
+	                WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
+	                    SELECT E.PRFL_IMG_FILE_ID
+	                    FROM TB_MSNGR_CHTRM_PTCPT OP
+	                    JOIN TB_EMPLOYEE E ON E.EMP_ID = OP.EMP_ID
+	                    WHERE OP.CHTRM_ID = C.CHTRM_ID
+	                    AND OP.EMP_ID <![CDATA[ <> ]]> #{empId}
+	                    AND OP.LEAV_DT IS NULL
+	                    AND ROWNUM = 1
+	                )
+	            END AS PRFL_IMG_FILE_ID,
+	            (
+	                SELECT COUNT(*)
+	                FROM TB_MSNGR_MSG UM
+	                WHERE UM.CHTRM_ID = C.CHTRM_ID
+	                AND UM.CREAT_DT <![CDATA[ >= ]]> P.JOIN_DT
+	                AND (
+	                    P.LAST_CFMTN_MSG_ID IS NULL
+	                    OR UM.MSG_ID <![CDATA[ > ]]> P.LAST_CFMTN_MSG_ID
+	                )
+	            ) AS UNREAD_COUNT,
+	            P.CHTRM_ID AS PTCPT_CHTRM_ID,
+	            P.EMP_ID,
+	            RTRIM(P.PTCPT_STTUS_CD) AS PTCPT_STTUS_CD,
+	            P.LAST_CFMTN_MSG_ID,
+	            P.JOIN_DT,
+	            P.LEAV_DT
+	          FROM TB_MSNGR_CHTRM C
+	          JOIN TB_MSNGR_CHTRM_PTCPT P ON C.CHTRM_ID = P.CHTRM_ID
+	          LEFT JOIN (
+	              SELECT
+	                  CHTRM_ID,
+	                  MSG_CN AS LAST_MESSAGE,
+	                  TO_CHAR(CREAT_DT, 'HH24:MI') AS LAST_TIME,
+	                  CREAT_DT AS LAST_MSG_DT
+	                FROM (
+	                    SELECT
+	                        M.*,
+	                        ROW_NUMBER() OVER (
+	                            PARTITION BY M.CHTRM_ID
+	                            ORDER BY M.CREAT_DT DESC, M.MSG_ID DESC
+	                        ) AS RN
+	                      FROM TB_MSNGR_MSG M
+	                )
+	               WHERE RN = 1
+	          ) LM ON C.CHTRM_ID = LM.CHTRM_ID
+	         WHERE P.EMP_ID = #{empId}
+	           AND P.LEAV_DT IS NULL
+	           AND C.END_DT IS NULL
+	         ORDER BY NVL(LM.LAST_MSG_DT, C.CREAT_DT) DESC
+	      )
+	    <if test="limit > 0">
+	    WHERE ROWNUM &lt;= #{limit}
+	    </if>
+	</select>
 
     <select id="selectChtrmById" resultMap="chtrmResultMap">
         SELECT

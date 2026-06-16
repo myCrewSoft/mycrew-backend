@@ -49,7 +49,11 @@ public interface MsngrService {
     // 프로젝트 인원 삭제 시 퇴장 조치
     void removeProjectChtrmParticipant(Long chtrmId, Long empId);
     
+    // 위젯용
+    List<ChatRoomResponse> getChtrmListForWidget();
+    
     // 웹소켓용
     void saveMsgAndBroadcast(Long chtrmId, String content, Long sndrId);
+
 
 }

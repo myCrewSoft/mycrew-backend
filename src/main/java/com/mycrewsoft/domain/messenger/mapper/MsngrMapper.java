@@ -13,8 +13,11 @@ import java.util.List;
 public interface MsngrMapper {
 
     // 채팅방 목록 조회
-    List<MsngrChtrmListVO> selectChtrmListByEmpId(@Param("empId") Long empId);
-
+	List<MsngrChtrmListVO> selectChtrmListByEmpId(
+		@Param("empId") Long empId,
+		@Param("limit") int limit
+	);
+	
     // 채팅방 조회
     MsngrChtrmVO selectChtrmById(@Param("chtrmId") Long chtrmId);
 
