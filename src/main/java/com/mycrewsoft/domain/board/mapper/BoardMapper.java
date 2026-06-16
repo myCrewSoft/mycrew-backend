@@ -24,9 +24,9 @@ public interface BoardMapper {
 	 * @return
 	 */
 	int countBoard(
-		    @Param("searchRequest") BoardSearchRequest searchRequest,
-		    @Param("boardTypeCd") String boardTypeCd,
-		    @Param("deptCd") String deptCd
+		    @Param("searchRequest") BoardSearchRequest searchRequest, //검색어
+		    @Param("boardTypeCd") String boardTypeCd, //게시판 유형
+		    @Param("deptCd") String deptCd //부서유형
 		);
 
 	/**
@@ -47,8 +47,8 @@ public interface BoardMapper {
 	 */
 	
 	List<BoardResponse>	getProjList(
-			@Param("getOffset") long getOffset,
-			@Param("getPageSize") int getPageSize,
+			@Param("getOffset") long getOffset, //페이징 시작위치
+			@Param("getPageSize") int getPageSize, //한 페이지당 가져올 게시글 수
 			@Param("searchRequest") BoardSearchRequest searchRequest,
 			@Param("projId") Long projId
 			
