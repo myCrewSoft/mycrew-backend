@@ -3,6 +3,7 @@ package com.mycrewsoft.domain.mail.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -19,9 +20,9 @@ import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.mycrewsoft.common.exception.CustomException;
+import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.mail.config.GoogleOAuthProperties;
 import com.mycrewsoft.domain.mail.gmail.GmailSyncResult;
-import com.mycrewsoft.domain.mail.mapper.MailMapper;
 import com.mycrewsoft.domain.mail.vo.MailAccountVO;
 
 import reactor.core.publisher.Mono;
@@ -37,7 +38,7 @@ class WebClientGoogleGmailClientTest {
         WebClientGoogleGmailClient client = new WebClientGoogleGmailClient(
                 builder,
                 new GoogleOAuthProperties(),
-                mock(MailMapper.class));
+                mock(MailAccountTokenService.class));
 
         GmailSyncResult result = client.syncMessages(account(), "expired-history-id", 10);
 
@@ -64,7 +65,7 @@ class WebClientGoogleGmailClientTest {
         WebClientGoogleGmailClient client = new WebClientGoogleGmailClient(
                 builder,
                 new GoogleOAuthProperties(),
-                mock(MailMapper.class));
+                mock(MailAccountTokenService.class));
 
         assertThatThrownBy(() -> client.syncMessages(account(), null, 10))
                 .isInstanceOf(CustomException.class);
@@ -90,7 +91,7 @@ class WebClientGoogleGmailClientTest {
         WebClientGoogleGmailClient client = new WebClientGoogleGmailClient(
                 builder,
                 new GoogleOAuthProperties(),
-                mock(MailMapper.class));
+                mock(MailAccountTokenService.class));
 
         assertThatThrownBy(() -> client.deleteMessage(account(), "missing-message"))
                 .isInstanceOf(CustomException.class);
@@ -112,13 +113,38 @@ class WebClientGoogleGmailClientTest {
         WebClientGoogleGmailClient client = new WebClientGoogleGmailClient(
                 builder,
                 new GoogleOAuthProperties(),
-                mock(MailMapper.class));
+                mock(MailAccountTokenService.class));
 
         GmailSyncResult result = client.syncMessages(account(), null, 10);
 
         assertThat(result.getMessages()).hasSize(1);
         assertThat(result.getMessages().getFirst().getAttachments()).hasSize(1);
         assertThat(result.getMessages().getFirst().getAttachments().getFirst().getContent()).hasSize(300_000);
+    }
+
+    @Test
+    void refreshTokenClientErrorMarksAccountInvalid() {
+        WebClient.Builder builder = WebClient.builder()
+                .exchangeFunction(request -> Mono.just(json(HttpStatus.BAD_REQUEST, """
+                        {
+                          "error": "invalid_grant"
+                        }
+                        """)));
+        MailAccountTokenService tokenService = mock(MailAccountTokenService.class);
+        WebClientGoogleGmailClient client = new WebClientGoogleGmailClient(
+                builder,
+                new GoogleOAuthProperties(),
+                tokenService);
+        MailAccountVO account = account();
+        account.setRefreshToken("refresh-token");
+        account.setTokenExprDt(LocalDateTime.now().minusMinutes(1));
+
+        assertThatThrownBy(() -> client.syncMessages(account, null, 10))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.MAIL_TOKEN_INVALID);
+
+        verify(tokenService).markInvalid(account);
     }
 
     private Mono<ClientResponse> respond(ClientRequest request, List<String> calledUris) {

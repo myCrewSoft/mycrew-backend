@@ -1,9 +1,13 @@
 package com.mycrewsoft.domain.mail.controller;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,7 +23,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.mail.dto.request.MailImportantUpdateRequest;
+import com.mycrewsoft.domain.mail.dto.request.MailBulkRequest;
+import com.mycrewsoft.domain.mail.dto.request.MailDraftRequest;
 import com.mycrewsoft.domain.mail.dto.request.MailSendRequest;
+import com.mycrewsoft.domain.mail.dto.response.MailAccountStatusResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailAttachmentDownload;
+import com.mycrewsoft.domain.mail.dto.response.MailBulkResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailDetailResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailMutationResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSendResponse;
@@ -41,6 +50,12 @@ import lombok.RequiredArgsConstructor;
 public class MailController {
 
     private final MailService mailService;
+
+    @GetMapping("/account/status")
+    @Operation(summary = "메일 계정 연동 상태 조회", description = "메일 계정 존재 여부와 토큰 상태를 조회합니다. 토큰이 만료되었거나 무효인 계정도 재연동 대상으로 응답합니다.")
+    public ResponseEntity<ApiResponse<MailAccountStatusResponse>> getAccountStatus() {
+        return ResponseEntity.ok(ApiResponse.success(mailService.getAccountStatus()));
+    }
 
     @GetMapping
     @Operation(summary = "메일 목록 조회", description = "메일함 유형, 키워드, 페이지 조건으로 현재 사원의 메일 목록을 조회합니다.")
@@ -124,5 +139,55 @@ public class MailController {
     public ResponseEntity<ApiResponse<MailMutationResponse>> restore(
             @Parameter(description = "내부 메일 ID") @PathVariable Long mailId) {
         return ResponseEntity.ok(ApiResponse.success(mailService.restore(mailId)));
+    }
+
+    @GetMapping("/{mailId}/attachments/{attachmentId}")
+    @Operation(summary = "메일 첨부파일 다운로드", description = "현재 사원에게 속한 메일의 첨부파일을 다운로드합니다.")
+    public ResponseEntity<Resource> downloadAttachment(
+            @Parameter(description = "내부 메일 ID") @PathVariable Long mailId,
+            @Parameter(description = "첨부파일 ID") @PathVariable Long attachmentId) {
+        MailAttachmentDownload download = mailService.downloadAttachment(mailId, attachmentId);
+        String fileName = download.getFileName() == null ? "attachment" : download.getFileName();
+        String encoded = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replace("+", "%20");
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encoded)
+                .body(download.getResource());
+    }
+
+    @PatchMapping("/{mailId}/unread")
+    @Operation(summary = "메일 읽지 않음 처리", description = "Gmail UNREAD 라벨을 추가하고 로컬 읽지 않음 상태를 동기화합니다.")
+    public ResponseEntity<ApiResponse<MailMutationResponse>> markUnread(
+            @Parameter(description = "내부 메일 ID") @PathVariable Long mailId) {
+        return ResponseEntity.ok(ApiResponse.success(mailService.markUnread(mailId)));
+    }
+
+    @PostMapping("/bulk")
+    @Operation(summary = "메일 일괄 처리", description = "선택한 여러 메일을 한 번에 읽음/읽지않음/휴지통/중요 처리합니다. action: read, unread, trash, important.")
+    public ResponseEntity<ApiResponse<MailBulkResponse>> bulkAction(
+            @Valid @org.springframework.web.bind.annotation.RequestBody MailBulkRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(mailService.bulkAction(request)));
+    }
+
+    @PostMapping("/drafts")
+    @Operation(summary = "임시보관 메일 저장", description = "작성 중인 메일을 임시보관(드래프트)으로 저장하거나 기존 드래프트를 수정합니다.")
+    public ResponseEntity<ApiResponse<Long>> saveDraft(
+            @Valid @org.springframework.web.bind.annotation.RequestBody MailDraftRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(mailService.saveDraft(request)));
+    }
+
+    @GetMapping("/drafts/{mailId}")
+    @Operation(summary = "임시보관 메일 조회", description = "편집을 위해 임시보관 메일의 수신자/제목/본문을 조회합니다.")
+    public ResponseEntity<ApiResponse<MailDetailResponse>> getDraft(
+            @Parameter(description = "내부 메일 ID") @PathVariable Long mailId) {
+        return ResponseEntity.ok(ApiResponse.success(mailService.getDraft(mailId)));
+    }
+
+    @DeleteMapping("/drafts/{mailId}")
+    @Operation(summary = "임시보관 메일 삭제", description = "임시보관 메일을 삭제합니다.")
+    public ResponseEntity<ApiResponse<Void>> deleteDraft(
+            @Parameter(description = "내부 메일 ID") @PathVariable Long mailId) {
+        mailService.deleteDraft(mailId);
+        return ResponseEntity.ok(ApiResponse.success("임시보관 메일을 삭제했습니다.", null));
     }
 }

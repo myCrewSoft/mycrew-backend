@@ -19,4 +19,7 @@ public class GmailSendCommand {
     private String subject;
     private String content;
     private List<MultipartFile> attachments = new ArrayList<>();
+    private String inReplyTo;
+    private String references;
+    private String threadId;
 }

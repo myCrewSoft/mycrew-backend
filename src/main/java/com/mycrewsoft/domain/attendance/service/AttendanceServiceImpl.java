@@ -186,9 +186,18 @@ public class AttendanceServiceImpl implements AttendanceService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public AtndStatsResponse getMyStats(String period) {
+	public AtndStatsResponse getMyStats(String period, String baseDate) {
 		Long empId = SecurityUtil.getCurrentEmpId();
 		LocalDate today = LocalDate.now();
+		// 기준 일자(baseDate)가 주어지면 해당 일자가 속한 기간을, 없으면 오늘 기준 기간을 집계한다.
+		LocalDate base = today;
+		if (baseDate != null && !baseDate.isBlank()) {
+			try {
+				base = LocalDate.parse(baseDate.trim(), YMD);
+			} catch (java.time.format.DateTimeParseException e) {
+				throw new CustomException(ErrorCode.ATND_INVALID_PERIOD);
+			}
+		}
 		String prd = period == null ? AttendanceConstants.PERIOD_WEEK : period.toUpperCase();
 
 		LocalDate from;
@@ -196,24 +205,24 @@ public class AttendanceServiceImpl implements AttendanceService {
 		String label;
 		switch (prd) {
 			case AttendanceConstants.PERIOD_DAY:
-				from = today;
-				to = today;
-				label = today.format(YMD);
+				from = base;
+				to = base;
+				label = base.format(YMD);
 				break;
 			case AttendanceConstants.PERIOD_WEEK:
-				from = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-				to = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+				from = base.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+				to = base.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
 				label = from.format(YMD) + " ~ " + to.format(YMD);
 				break;
 			case AttendanceConstants.PERIOD_MONTH:
-				from = today.withDayOfMonth(1);
-				to = today.with(TemporalAdjusters.lastDayOfMonth());
-				label = today.getYear() + "-" + String.format("%02d", today.getMonthValue());
+				from = base.withDayOfMonth(1);
+				to = base.with(TemporalAdjusters.lastDayOfMonth());
+				label = base.getYear() + "-" + String.format("%02d", base.getMonthValue());
 				break;
 			case AttendanceConstants.PERIOD_YEAR:
-				from = today.withDayOfYear(1);
-				to = today.with(TemporalAdjusters.lastDayOfYear());
-				label = String.valueOf(today.getYear());
+				from = base.withDayOfYear(1);
+				to = base.with(TemporalAdjusters.lastDayOfYear());
+				label = String.valueOf(base.getYear());
 				break;
 			default:
 				throw new CustomException(ErrorCode.ATND_INVALID_PERIOD);

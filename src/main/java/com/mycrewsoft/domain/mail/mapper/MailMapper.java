@@ -19,6 +19,8 @@ public interface MailMapper {
 
     MailAccountVO selectActiveMailAccount(@Param("empId") Long empId);
 
+    java.util.List<MailAccountVO> selectActiveMailAccounts();
+
     Long selectNextMailMessageId();
 
     Long selectNextMailLabelId();
@@ -64,6 +66,8 @@ public interface MailMapper {
     List<MailParticipantResponse> selectParticipants(@Param("empId") Long empId, @Param("mailId") Long mailId);
 
     List<MailAttachmentResponse> selectAttachments(@Param("empId") Long empId, @Param("mailId") Long mailId);
+
+    MailAttachmentResponse selectAttachmentMeta(@Param("empId") Long empId, @Param("mailId") Long mailId, @Param("attachmentId") Long attachmentId);
 
     List<String> selectLabelTypes(@Param("empId") Long empId, @Param("mailId") Long mailId);
 
