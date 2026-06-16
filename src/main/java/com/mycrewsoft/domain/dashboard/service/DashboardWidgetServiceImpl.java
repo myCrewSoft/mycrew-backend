@@ -15,6 +15,7 @@ import com.mycrewsoft.domain.board.service.BoardService;
 import com.mycrewsoft.domain.dashboard.dto.response.widget.ApprovalWidgetResponse;
 import com.mycrewsoft.domain.dashboard.dto.response.widget.AttendanceWidgetResponse;
 import com.mycrewsoft.domain.dashboard.dto.response.widget.BoardWidgetResponse;
+import com.mycrewsoft.domain.dashboard.dto.response.widget.MailWidgetResponse;
 import com.mycrewsoft.domain.dashboard.dto.response.widget.MeetingWidgetResponse;
 import com.mycrewsoft.domain.dashboard.dto.response.widget.MessengerWidgetResponse;
 import com.mycrewsoft.domain.dashboard.dto.response.widget.NotificationWidgetResponse;
@@ -22,6 +23,8 @@ import com.mycrewsoft.domain.dashboard.dto.response.widget.ProjectWidgetResponse
 import com.mycrewsoft.domain.dashboard.dto.response.widget.ReservationWidgetResponse;
 import com.mycrewsoft.domain.dashboard.dto.response.widget.ScheduleWidgetResponse;
 import com.mycrewsoft.domain.dashboard.dto.response.widget.TaskWidgetResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailSummaryResponse;
+import com.mycrewsoft.domain.mail.service.MailService;
 import com.mycrewsoft.domain.messenger.dto.response.ChatRoomResponse;
 import com.mycrewsoft.domain.messenger.service.MsngrService;
 import com.mycrewsoft.domain.mtng.dto.response.MtngListResponse;
@@ -54,7 +57,8 @@ public class DashboardWidgetServiceImpl implements DashboardWidgetService {
     private final BoardService          boardService;
     private final MsngrService          msngrService;
     private final NotificationService   notificationService;
-
+    private final MailService 			mailService;
+    
     @Override
     public AttendanceWidgetResponse readAttendanceWidget() {
         AtndTodayResponse today = attendanceService.getMyToday();
@@ -271,6 +275,30 @@ public class DashboardWidgetServiceImpl implements DashboardWidgetService {
         return NotificationWidgetResponse.builder()
                 .count(unreadCount)
                 .notifications(items)
+                .build();
+    }
+    
+    @Override
+    public MailWidgetResponse readMailWidget() {
+        List<MailSummaryResponse> list = mailService.getMailsForWidget();
+
+        int unreadCount = (int) list.stream()
+                .filter(MailSummaryResponse::isUnread)
+                .count();
+
+        List<MailWidgetResponse.MailItem> items = list.stream()
+                .map(dto -> MailWidgetResponse.MailItem.builder()
+                        .id(dto.getMailId())
+                        .senderName(dto.getFromEmail())
+                        .subject(dto.getSubject())
+                        .receivedAt(DateUtil.format(dto.getSentAt()))
+                        .isRead(!dto.isUnread())
+                        .build())
+                .toList();
+
+        return MailWidgetResponse.builder()
+                .unreadCount(unreadCount)
+                .mails(items)
                 .build();
     }
 }

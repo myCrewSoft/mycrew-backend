@@ -58,4 +58,7 @@ public interface MailService {
     MailDetailResponse getDraft(Long mailId);
 
     void deleteDraft(Long mailId);
+    
+    // 위젯용
+    List<MailSummaryResponse> getMailsForWidget();
 }

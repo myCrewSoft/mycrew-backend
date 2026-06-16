@@ -74,6 +74,7 @@ public class MailServiceImpl implements MailService {
     private static final Set<String> MAILBOX_TYPES = Set.of("inbox", "sent", "all", "self", "tome", "important", "unread", "draft");
     private static final Set<String> BULK_ACTIONS = Set.of("read", "unread", "trash", "important");
     private static final List<String> SYSTEM_LABELS = List.of("INBOX", "SENT", "TRASH", "UNREAD", "IMPORTANT");
+    private static final int WIDGET_MAIL_LIMIT = 5;	// 위젯 메일 개수
 
     private final AuthorizationService authorizationService;
     private final MailMapper mailMapper;
@@ -381,6 +382,25 @@ public class MailServiceImpl implements MailService {
         return syncAccount(account, maxResults);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<MailSummaryResponse> getMailsForWidget() {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        assertPermission(PermissionCode.MAIL_READ, empId);
+        MailAccountVO account = loadAccount(empId);
+        requireAnyScope(account, SCOPE_GMAIL_READONLY, SCOPE_GMAIL_MODIFY);
+
+        List<MailSummaryResponse> mails = mailMapper.selectMails(
+                empId,
+                "INBOX",
+                null,
+                account.getEmailAddr(),
+                0,
+                WIDGET_MAIL_LIMIT);
+        fillLabels(empId, mails);
+        return mails;
+    }
+    
     @Override
     public MailSyncResponse syncAccount(MailAccountVO account, int maxResults) {
         Long empId = account.getEmpId();

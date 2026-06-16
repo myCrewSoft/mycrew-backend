@@ -1,9 +1,15 @@
 package com.mycrewsoft.domain.dashboard.controller;
 
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.dashboard.dto.response.widget.ApprovalWidgetResponse;
 import com.mycrewsoft.domain.dashboard.dto.response.widget.AttendanceWidgetResponse;
 import com.mycrewsoft.domain.dashboard.dto.response.widget.BoardWidgetResponse;
+import com.mycrewsoft.domain.dashboard.dto.response.widget.MailWidgetResponse;
 import com.mycrewsoft.domain.dashboard.dto.response.widget.MeetingWidgetResponse;
 import com.mycrewsoft.domain.dashboard.dto.response.widget.MessengerWidgetResponse;
 import com.mycrewsoft.domain.dashboard.dto.response.widget.NotificationWidgetResponse;
@@ -16,11 +22,6 @@ import com.mycrewsoft.domain.dashboard.service.DashboardWidgetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Dashboard Widget", description = "대시보드 위젯 API")
 @RestController
@@ -89,5 +90,11 @@ public class DashboardWidgetController {
     @GetMapping("/notification")
     public ApiResponse<NotificationWidgetResponse> readNotificationWidget() {
         return ApiResponse.success(dashboardWidgetService.readNotificationWidget());
+    }
+    
+    @Operation(summary = "메일 위젯")
+    @GetMapping("/mail")
+    public ApiResponse<MailWidgetResponse> readMailWidget() {
+        return ApiResponse.success(dashboardWidgetService.readMailWidget());
     }
 }
