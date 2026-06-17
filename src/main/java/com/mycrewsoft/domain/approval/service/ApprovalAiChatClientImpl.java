@@ -1,6 +1,7 @@
 package com.mycrewsoft.domain.approval.service;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;

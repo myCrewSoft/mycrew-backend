@@ -2,8 +2,10 @@ package com.mycrewsoft.domain.approval.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,8 +22,11 @@ import org.springframework.core.task.TaskExecutor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mycrewsoft.ai.chatbot.service.ApprovalAiPromptService;
+import com.mycrewsoft.domain.approval.dto.request.ApprovalAiApprovalLineRequestDTO;
 import com.mycrewsoft.domain.approval.dto.request.ApprovalAiDraftRequestDTO;
 import com.mycrewsoft.domain.approval.dto.request.ApprovalDraftRequestDTO;
+import com.mycrewsoft.domain.approval.dto.response.ApprovalAiApprovalLineJobResponseDTO;
+import com.mycrewsoft.domain.approval.dto.response.ApprovalAiContentJobResponseDTO;
 import com.mycrewsoft.domain.approval.dto.response.ApprovalAiApproverCandidateDTO;
 import com.mycrewsoft.domain.approval.dto.response.ApprovalAiDraftJobResponseDTO;
 import com.mycrewsoft.domain.approval.dto.response.ApprovalAiDraftResponseDTO;
@@ -33,6 +38,7 @@ import com.mycrewsoft.domain.employee.dto.response.EmployeeProfileDTO;
 import com.mycrewsoft.domain.employee.mapper.EmployeeMapper;
 import com.mycrewsoft.domain.jobgrade.vo.JobGradeVO;
 import com.mycrewsoft.domain.jobposition.vo.JobPositionVO;
+import com.mycrewsoft.domain.notification.service.NotificationService;
 import com.mycrewsoft.security.util.SecurityUtil;
 
 @ExtendWith(MockitoExtension.class)
@@ -55,6 +61,9 @@ class ApprovalAiDraftServiceImplTest {
 
     @Mock
     private ApprovalAiPromptService approvalAiPromptService;
+
+    @Mock
+    private NotificationService notificationService;
 
     @Test
     void createDraftSplitsContentAndApprovalLinePromptsThenSavesTemporaryDraft() {
@@ -178,6 +187,196 @@ class ApprovalAiDraftServiceImplTest {
         assertThat(queried.getWarnings()).containsExactly("content warning", "line warning");
     }
 
+    @Test
+    void createDraftContentJobGeneratesEditableContentWithoutSavingTemporaryDraft() {
+        ApprovalAiDraftServiceImpl service = newService(Runnable::run);
+        Long drafterEmpId = 1234L;
+        ApprovalAiDraftRequestDTO request = request("Write a vacation draft.");
+        EmployeeProfileDTO profile = profile();
+        List<ApprovalTemplateResponse> templates = List.of(template("TMPL_VACATION", "Vacation Request"));
+
+        when(employeeMapper.selectEmployeeProfileByEmpId(drafterEmpId)).thenReturn(profile);
+        when(approvalDraftMapper.selectAllUsableTemplates(drafterEmpId)).thenReturn(templates);
+        when(approvalAiPromptService.buildDraftContentPrompt(
+                any(ApprovalAiDraftRequestDTO.class), eq(drafterEmpId), eq(profile), eq(templates)))
+                .thenReturn("content prompt");
+        when(approvalAiChatClient.complete("content prompt")).thenReturn("""
+                {
+                  "docTitle": "Vacation Request",
+                  "templateCode": "TMPL_VACATION",
+                  "html": "<html><body><h1>Vacation Request</h1></body></html>",
+                  "warnings": ["content warning"]
+                }
+                """);
+
+        ApprovalAiContentJobResponseDTO started;
+        ApprovalAiContentJobResponseDTO queried;
+        try (MockedStatic<SecurityUtil> securityUtil = mockStatic(SecurityUtil.class)) {
+            securityUtil.when(SecurityUtil::getCurrentEmpId).thenReturn(drafterEmpId);
+            started = service.createDraftContentJob(request);
+            queried = service.getDraftContentJob(started.getJobId());
+        }
+
+        assertThat(started.getStatus()).isEqualTo("SUCCEEDED");
+        assertThat(queried.getDocTtl()).isEqualTo("Vacation Request");
+        assertThat(queried.getTmplatCd()).isEqualTo("TMPL_VACATION");
+        assertThat(queried.getAprvlFullCn()).contains("Vacation Request");
+        assertThat(queried.getWarnings()).containsExactly("content warning");
+        verify(approvalAiChatClient, times(1)).complete("content prompt");
+        verify(approvalAiPromptService, never()).buildApprovalLinePrompt(
+                any(), any(), any(), any(), any(), any());
+        verify(approvalDraftWriteService, never()).saveTemporaryDraft(any(ApprovalDraftRequestDTO.class));
+    }
+
+    @Test
+    void createDraftContentJobToleratesRawNewlineInsideHtmlString() {
+        ApprovalAiDraftServiceImpl service = newService(Runnable::run);
+        Long drafterEmpId = 1234L;
+        ApprovalAiDraftRequestDTO request = request("Write a computer equipment usage plan.");
+        EmployeeProfileDTO profile = profile();
+        List<ApprovalTemplateResponse> templates = List.of(template("TMPL_EQUIPMENT", "Equipment Plan"));
+
+        when(employeeMapper.selectEmployeeProfileByEmpId(drafterEmpId)).thenReturn(profile);
+        when(approvalDraftMapper.selectAllUsableTemplates(drafterEmpId)).thenReturn(templates);
+        when(approvalAiPromptService.buildDraftContentPrompt(
+                any(ApprovalAiDraftRequestDTO.class), eq(drafterEmpId), eq(profile), eq(templates)))
+                .thenReturn("content prompt");
+        when(approvalAiChatClient.complete("content prompt")).thenReturn("""
+                {
+                  "docTitle": "Equipment Plan",
+                  "templateCode": null,
+                  "html": "<html><body><h1>Equipment Plan</h1>
+                <p>Use RAM, CPU and GPU.</p></body></html>",
+                  "warnings": []
+                }
+                """);
+
+        ApprovalAiContentJobResponseDTO result;
+        try (MockedStatic<SecurityUtil> securityUtil = mockStatic(SecurityUtil.class)) {
+            securityUtil.when(SecurityUtil::getCurrentEmpId).thenReturn(drafterEmpId);
+            result = service.createDraftContentJob(request);
+        }
+
+        assertThat(result.getStatus()).isEqualTo("SUCCEEDED");
+        assertThat(result.getDocTtl()).isEqualTo("Equipment Plan");
+        assertThat(result.getTmplatCd()).isNull();
+        assertThat(result.getAprvlFullCn()).contains("Use RAM, CPU and GPU.");
+        assertThat(result.getAprvlFullCn()).contains("{{SIGN:1}}");
+        verify(approvalDraftWriteService, never()).saveTemporaryDraft(any(ApprovalDraftRequestDTO.class));
+    }
+
+    @Test
+    void createDraftContentSaveJobSavesTemporaryDraftWithoutApprovalLineAndSendsNotification() {
+        ApprovalAiDraftServiceImpl service = newService(Runnable::run);
+        Long drafterEmpId = 1234L;
+        Long draftDocSn = 777L;
+        ApprovalAiDraftRequestDTO request = request("Write a vacation draft.");
+        EmployeeProfileDTO profile = profile();
+        List<ApprovalTemplateResponse> templates = List.of(template("TMPL_VACATION", "Vacation Request"));
+
+        when(employeeMapper.selectEmployeeProfileByEmpId(drafterEmpId)).thenReturn(profile);
+        when(approvalDraftMapper.selectAllUsableTemplates(drafterEmpId)).thenReturn(templates);
+        when(approvalAiPromptService.buildDraftContentPrompt(
+                any(ApprovalAiDraftRequestDTO.class), eq(drafterEmpId), eq(profile), eq(templates)))
+                .thenReturn("content prompt");
+        when(approvalAiChatClient.complete("content prompt")).thenReturn("""
+                {
+                  "docTitle": "Vacation Request",
+                  "templateCode": "TMPL_VACATION",
+                  "html": "<html><body><h1>Vacation Request</h1></body></html>",
+                  "warnings": ["content warning"]
+                }
+                """);
+        when(approvalDraftWriteService.saveTemporaryDraft(any(ApprovalDraftRequestDTO.class)))
+                .thenReturn(draftDocSn);
+
+        ApprovalAiDraftJobResponseDTO started;
+        ApprovalAiDraftJobResponseDTO queried;
+        try (MockedStatic<SecurityUtil> securityUtil = mockStatic(SecurityUtil.class)) {
+            securityUtil.when(SecurityUtil::getCurrentEmpId).thenReturn(drafterEmpId);
+            started = service.createDraftContentSaveJob(request);
+            queried = service.getDraftContentSaveJob(started.getJobId());
+        }
+
+        assertThat(started.getStatus()).isEqualTo("SUCCEEDED");
+        assertThat(queried.getDrftDocSn()).isEqualTo(draftDocSn);
+        assertThat(queried.getDocTtl()).isEqualTo("Vacation Request");
+        assertThat(queried.getTmplatCd()).isEqualTo("TMPL_VACATION");
+        assertThat(queried.getWarnings()).containsExactly("content warning");
+
+        ArgumentCaptor<ApprovalDraftRequestDTO> draftCaptor =
+                ArgumentCaptor.forClass(ApprovalDraftRequestDTO.class);
+        verify(approvalDraftWriteService).saveTemporaryDraft(draftCaptor.capture());
+        ApprovalDraftRequestDTO savedDraft = draftCaptor.getValue();
+        assertThat(savedDraft.getDocTtl()).isEqualTo("Vacation Request");
+        assertThat(savedDraft.getTmplatCd()).isEqualTo("TMPL_VACATION");
+        assertThat(savedDraft.getAprvlFullCn()).contains("Vacation Request");
+        assertThat(savedDraft.getAprvlFullCn()).contains("{{SIGN:1}}");
+        assertThat(savedDraft.getApprovalLines()).isNull();
+
+        verify(approvalAiPromptService, never()).buildApprovalLinePrompt(
+                any(), any(), any(), any(), any(), any());
+        verify(approvalAiMapper, never()).selectApproverCandidates(any(), any());
+        verify(notificationService).sendAlrm(
+                eq("AI 기안서 양식 생성 완료"),
+                eq("02"),
+                contains("임시저장"),
+                eq(List.of(drafterEmpId)));
+    }
+
+    @Test
+    void createApprovalLineJobCanRecommendLinesForManuallyWrittenDraft() {
+        ApprovalAiDraftServiceImpl service = newService(Runnable::run);
+        Long drafterEmpId = 1234L;
+        ApprovalAiApprovalLineRequestDTO request = new ApprovalAiApprovalLineRequestDTO();
+        request.setDocTtl("Purchase Request");
+        request.setTmplatCd("TMPL_PURCHASE");
+        request.setAprvlFullCn("<html><body><p>Purchase laptop for design work.</p></body></html>");
+
+        EmployeeProfileDTO profile = profile();
+        List<ApprovalTemplateResponse> templates = List.of(template("TMPL_PURCHASE", "Purchase Request"));
+        ApprovalAiApproverCandidateDTO manager = candidate(1111L, "Manager");
+        manager.setPrflImgFileId(9001L);
+        List<ApprovalAiApproverCandidateDTO> candidates = List.of(manager, candidate(2222L, "Director"));
+
+        when(employeeMapper.selectEmployeeProfileByEmpId(drafterEmpId)).thenReturn(profile);
+        when(approvalDraftMapper.selectAllUsableTemplates(drafterEmpId)).thenReturn(templates);
+        when(approvalAiMapper.selectApproverCandidates(drafterEmpId, "DEPT_023")).thenReturn(candidates);
+        when(approvalAiPromptService.buildApprovalLinePrompt(
+                any(ApprovalAiDraftRequestDTO.class),
+                eq(drafterEmpId),
+                eq(profile),
+                eq("Purchase Request"),
+                eq("TMPL_PURCHASE"),
+                eq(candidates)))
+                .thenReturn("approval line prompt");
+        when(approvalAiChatClient.complete("approval line prompt")).thenReturn("""
+                {
+                  "approvalLines": [
+                    {"aprvlOrd": 1, "aprvlMthdCd": "01", "aprvrEmpIds": [1111]}
+                  ],
+                  "warnings": []
+                }
+                """);
+
+        ApprovalAiApprovalLineJobResponseDTO started;
+        ApprovalAiApprovalLineJobResponseDTO queried;
+        try (MockedStatic<SecurityUtil> securityUtil = mockStatic(SecurityUtil.class)) {
+            securityUtil.when(SecurityUtil::getCurrentEmpId).thenReturn(drafterEmpId);
+            started = service.createApprovalLineJob(request);
+            queried = service.getApprovalLineJob(started.getJobId());
+        }
+
+        assertThat(started.getStatus()).isEqualTo("SUCCEEDED");
+        assertThat(queried.getApprovalLines()).hasSize(1);
+        assertThat(queried.getApprovalLines().get(0).getAprvrEmpIds()).containsExactly(1111L);
+        assertThat(queried.getApprovers()).hasSize(1);
+        assertThat(queried.getApprovers().get(0).getEmpId()).isEqualTo(1111L);
+        assertThat(queried.getApprovers().get(0).getPrflImgFileId()).isEqualTo(9001L);
+        verify(approvalAiPromptService, never()).buildDraftContentPrompt(any(), any(), any(), any());
+        verify(approvalDraftWriteService, never()).saveTemporaryDraft(any(ApprovalDraftRequestDTO.class));
+    }
+
     private ApprovalAiDraftServiceImpl newService(TaskExecutor taskExecutor) {
         return new ApprovalAiDraftServiceImpl(
                 approvalDraftMapper,
@@ -186,6 +385,7 @@ class ApprovalAiDraftServiceImplTest {
                 approvalDraftWriteService,
                 approvalAiChatClient,
                 approvalAiPromptService,
+                notificationService,
                 taskExecutor,
                 new ObjectMapper());
     }

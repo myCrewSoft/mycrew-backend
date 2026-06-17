@@ -44,7 +44,7 @@ spring:
       chat:
         options:
       # ▶ 사용 모델
-          model: gemma-3n-e4b-it-text
+          model: ${LOCAL_LLM_MODEL}
 
         # ▶ ChatClient 수동 설정
     chat:

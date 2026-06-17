@@ -20,7 +20,8 @@
             E.JOB_DUTY_CN AS jobDutyCn,
             E.EXEC_YN AS execYn,
             CASE WHEN E.EMP_STAMP_FILE_ID IS NULL THEN 'N' ELSE 'Y' END AS hasSignatureYn,
-            CASE WHEN D.EMP_ID = E.EMP_ID THEN 'Y' ELSE 'N' END AS deptLeaderYn
+            CASE WHEN D.EMP_ID = E.EMP_ID THEN 'Y' ELSE 'N' END AS deptLeaderYn,
+            E.PRFL_IMG_FILE_ID AS prflImgFileId
         FROM TB_EMPLOYEE E
         LEFT JOIN TB_DEPARTMENT D
           ON D.DEPT_CD = E.DEPT_CD

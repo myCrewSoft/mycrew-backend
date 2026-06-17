@@ -50,4 +50,7 @@ public class ApprovalAiApproverCandidateDTO {
 
     @Schema(description = "부서 책임자 여부", example = "Y")
     private String deptLeaderYn;
+
+    @Schema(description = "프로필 이미지 파일 ID", example = "9001")
+    private Long prflImgFileId;
 }
