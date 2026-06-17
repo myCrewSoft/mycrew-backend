@@ -20,8 +20,9 @@
        
        <if test="searchRequest != null and searchRequest.keyword != null and searchRequest.keyword != ''">
            AND (
-               B.BOARD_SJ LIKE '%' || #{searchRequest.keyword} || '%'
-               OR B.BOARD_CN LIKE '%' || #{searchRequest.keyword} || '%'
+               UPPER(B.BOARD_SJ) LIKE '%' || UPPER(#{searchRequest.keyword}) || '%'
+               OR UPPER(B.BOARD_CN) LIKE '%' || UPPER(#{searchRequest.keyword}) || '%'
+               OR (UPPER(TRIM(B.IMPRTNT_YN)) = 'Y' AND '중요 게시글' LIKE '%' || TRIM(#{searchRequest.keyword}) || '%')
            )
        </if>
        
@@ -74,8 +75,11 @@
          <if test="searchRequest != null">
             <if
                test="searchRequest.keyword != null and searchRequest.keyword != ''">
-               AND (B.BOARD_SJ LIKE '%'||  #{searchRequest.keyword} || '%'
-               OR B.BOARD_CN LIKE '%'||  #{searchRequest.keyword} || '%')
+               AND (
+                  UPPER(B.BOARD_SJ) LIKE '%' || UPPER(#{searchRequest.keyword}) || '%'
+                  OR UPPER(B.BOARD_CN) LIKE '%' || UPPER(#{searchRequest.keyword}) || '%'
+                  OR (UPPER(TRIM(B.IMPRTNT_YN)) = 'Y' AND '중요 게시글' LIKE '%' || TRIM(#{searchRequest.keyword}) || '%')
+               )
             </if>
          </if>
 
@@ -225,6 +229,7 @@
            AND (
                UPPER(BOARD_SJ) LIKE '%' || UPPER(#{searchRequest.keyword}) || '%'
                OR UPPER(BOARD_CN) LIKE '%' || UPPER(#{searchRequest.keyword}) || '%'
+               OR (UPPER(TRIM(IMPRTNT_YN)) = 'Y' AND '중요 게시글' LIKE '%' || TRIM(#{searchRequest.keyword}) || '%')
            )
        </if>
        
@@ -256,6 +261,7 @@
 				AND (
 					UPPER(b.BOARD_SJ) LIKE '%' || UPPER(#{searchRequest.keyword}) || '%'
 					OR UPPER(b.BOARD_CN) LIKE '%' || UPPER(#{searchRequest.keyword}) || '%'
+					OR (UPPER(TRIM(b.IMPRTNT_YN)) = 'Y' AND '중요 게시글' LIKE '%' || TRIM(#{searchRequest.keyword}) || '%')
 				)
 			</if>
 			ORDER BY b.FRST_REG_DT DESC

@@ -13,7 +13,7 @@ import lombok.ToString;
 public class BoardSearchRequest {
 
 	@Size(max=256 ,message ="검색어는 256자 이하여야 합니다.")
-	@Schema(description = "검색어(게시글 제목 기준 검색)",example = "워크숍") 
+	@Schema(description = "검색어(게시글 제목 또는 내용 기준 검색)",example = "워크숍")
 	private String keyword; //검색어
 	
 	@Size(max=10, message = "게시판 유형 코드는 10자 이하여야 합니다.")
