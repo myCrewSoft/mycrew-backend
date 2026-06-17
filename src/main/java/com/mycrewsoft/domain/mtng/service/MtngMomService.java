@@ -20,4 +20,8 @@ public interface MtngMomService {
 
     // 결재 요청 (전자결재 연동 지점)
     void requestApproval(Long mtngId);
+    
+    // 회의록 생성 버튼
+    void regenerateAiDraft(Long mtngId);
+
 }
