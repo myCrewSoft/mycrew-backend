@@ -1,11 +1,16 @@
 package com.mycrewsoft.domain.drive.service;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +21,7 @@ import com.mycrewsoft.common.util.DateUtil;
 import com.mycrewsoft.common.util.DtoMapper;
 import com.mycrewsoft.common.util.FileUtil;
 import com.mycrewsoft.domain.drive.dto.DriveFolderCreateRequestDto;
+import com.mycrewsoft.domain.drive.dto.DriveRenameRequestDto;
 import com.mycrewsoft.domain.drive.dto.DriveResponseDto;
 import com.mycrewsoft.domain.drive.dto.DriveSearchRequestDto;
 import com.mycrewsoft.domain.drive.mapper.DriveMapper;
@@ -139,6 +145,119 @@ public class ProjectDriveServiceImpl implements ProjectDriveService{
 		
 		int result = mapper.insertDriveItem(vo);
 		if(result == 0) throw new CustomException(ErrorCode.DRIVE_INSERT_FAILED);
+	}
+
+	/**
+	 * 프로젝트 드라이브 폴더명 수정
+	 */
+	@Override
+	public void renameItem(Long driveItemId, DriveRenameRequestDto reqDto) {
+		//해당 아이템이 존재하는지 확인
+		DriveVo vo = mapper.selectDriveItemById(driveItemId);
+		if(vo == null) throw new CustomException(ErrorCode.DRIVE_ITEM_NOT_FOUND);
+		Long currentProjId = vo.getProjId();
+		
+		//권한체크
+		authorizationService.assertCurrentUserPermission(
+				PermissionCode.PROJECT_DRIVE_UPDATE, buildProjectContext(currentProjId));
+		
+		//프로젝트 참여자인지 검증
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
+		validateProjectParticipant(currentProjId, currentEmpId);
+		
+		//폴더가 아니면 수정할 수 없음
+		if(!"01".equals(vo.getItemTypeCd())) throw new CustomException(ErrorCode.DRIVE_RENAME_NOT_ALLOWED);
+		
+		//폴더명 수정
+		mapper.updateFolderName(driveItemId, reqDto.getItemNm(), currentEmpId);
+	}
+
+	/**
+	 * 프로젝트 드라이브 아이템 즐겨찾기 등록/해제
+	 */
+	@Override
+	public void toggleBookmark(Long driveItemId) {
+		//아이템 존재 여부 확인
+		DriveVo vo = mapper.selectDriveItemById(driveItemId);
+		if(vo == null) throw new CustomException(ErrorCode.DRIVE_ITEM_NOT_FOUND);
+		Long currentProjId = vo.getProjId();
+		
+		//로그인한 사용자가 프로젝트 참여자인지 확인
+		validateProjectParticipant(currentProjId, SecurityUtil.getCurrentEmpId());
+		
+		//즐겨찾기 등록/해제
+		String newBookmarkYn = "N".equals(vo.getBookmarkYn()) ? "Y" : "N";
+		mapper.updateBookmarkYn(driveItemId, newBookmarkYn, SecurityUtil.getCurrentEmpId());
+	}
+
+	/**
+	 * 프로젝트 드라이브 아이템 논리 삭제(하위 포함)
+	 */
+	@Override
+	@Transactional
+	public void softDeleteItem(Long driveItemId) {
+		//아이템 존재 여부 확인
+		DriveVo vo = mapper.selectDriveItemById(driveItemId);
+		if(vo == null) throw new CustomException(ErrorCode.DRIVE_ITEM_NOT_FOUND);
+		Long currentProjId = vo.getProjId();
+		
+		//권한체크
+		authorizationService.assertCurrentUserPermission(
+				PermissionCode.PROJECT_DRIVE_DELETE, buildProjectContext(currentProjId));
+		
+		//해당 프로젝트 참여자인지 확인
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
+		validateProjectParticipant(currentProjId, currentEmpId);
+		
+		//파일 단건 삭제라면
+		if("02".equals(vo.getItemTypeCd())) {
+			fileService.deleteFile(vo.getDriveAtchFileId());
+		}else {
+		//하위에 포함된 파일일 때
+		 List<DriveVo> fileChildren = mapper.selectFileChildrenByItemId(driveItemId);
+	        for (DriveVo child : fileChildren) {
+	            if ("02".equals(child.getItemTypeCd()) && child.getDriveAtchFileId() != null) {
+	                fileService.deleteFile(child.getDriveAtchFileId()); 
+	            }
+	        }
+		}
+		//드라이브 아이템 삭제여부 수정
+		mapper.softDeleteItemWithChildren(driveItemId, SecurityUtil.getCurrentEmpId());
+	}
+
+	/**
+	 * 프로젝트 드라이브 파일 다운로드
+	 */
+	@Override
+	public ResponseEntity<Resource> downloadFile(Long driveItemId) {
+		//해당 아이템 존재 여부 확인
+		DriveVo vo = mapper.selectDriveItemById(driveItemId);
+		if(vo == null) throw new CustomException(ErrorCode.DRIVE_ITEM_NOT_FOUND);
+		
+		//아이템이 파일인지 확인
+		if(!"02".equals(vo.getItemTypeCd())) throw new CustomException(ErrorCode.DRIVE_NOT_A_FILE);
+		
+		//로그인한 사용자가 프로젝트 참여자인지 확인
+		validateProjectParticipant(vo.getProjId(), SecurityUtil.getCurrentEmpId());
+		
+		//파일 반환
+		Resource downloadFile = fileService.download(vo.getDriveAtchFileId());
+		
+		//파일명 인코딩(한글 파일명 깨짐 방지)
+		String encodedFileName;
+		try {
+			encodedFileName = URLEncoder.encode(vo.getOrgnlFileNm(), "UTF-8").replace("+", "%20");
+		}catch(UnsupportedEncodingException e) {
+			encodedFileName = vo.getOrgnlFileNm();
+		}
+				
+		//헤더, 바디 세팅
+		return ResponseEntity.ok()
+				.header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+						"attachment; filename*=UTF-8''" + encodedFileName)
+				.contentType(MediaType.APPLICATION_OCTET_STREAM)
+				.body(downloadFile);
+		
 	}
 
 }

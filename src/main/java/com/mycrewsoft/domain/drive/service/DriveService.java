@@ -47,11 +47,11 @@ public interface DriveService {
 	void deleteItem(Long driveItemId);
 	
 	/**
-	 * 개인 드라이브 휴지통 목록 조회
+	 * 휴지통 목록 조회 (개인 드라이브 프로젝트 드라이브)
 	 * @param empId
 	 * @return
 	 */
-	List<DriveResponseDto> getTrashList();
+	Page<DriveResponseDto> getTrashList(DriveSearchRequestDto reqDto);
 	
 	/**
 	 * 휴지통 복원
@@ -71,4 +71,11 @@ public interface DriveService {
 	 * @return
 	 */
 	ResponseEntity<Resource> downloadFile(Long driveItemId);
+	
+	/**
+	 * 즐겨찾기 목록 조회
+	 * @param reqDto
+	 * @return
+	 */
+	Page<DriveResponseDto> getBookmarkList(DriveSearchRequestDto reqDto);
 }
