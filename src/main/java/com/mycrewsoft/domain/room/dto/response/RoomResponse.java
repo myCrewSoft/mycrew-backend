@@ -19,7 +19,7 @@ public class RoomResponse {
     private String roomName;
 
     @Schema(description = "회의실 호수", example = "101호")
-    private String Ho;
+    private String ho;
 
     @Schema(description = "회의실 층수", example = "3")
     private Integer floor;
