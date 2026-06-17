@@ -38,7 +38,7 @@ spring:
   ai:
     openai:
 # ▶ 사내 LM Studio 주소
-      base-url: http://192.168.35.100:1234
+      base-url: ${LOCAL_LLM_URL}
       api-key: dummy
 
       chat:
@@ -49,7 +49,7 @@ spring:
         # ▶ ChatClient 수동 설정
     chat:
       client:
-        base-url: http://192.168.35.112:1234
+        base-url: ${LOCAL_LLM_URL}
         api-key: dummy
 
 
