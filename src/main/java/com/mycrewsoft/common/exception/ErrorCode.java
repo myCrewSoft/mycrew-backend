@@ -26,6 +26,7 @@ public enum ErrorCode {
 	APPROVAL_LINE_INVALID(HttpStatus.BAD_REQUEST, "APR_005", "결재선 정보가 올바르지 않습니다."),
 	APPROVAL_REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "APR_006", "반려 사유는 필수입니다."),
 	APPROVAL_SIGNATURE_REQUIRED(HttpStatus.BAD_REQUEST, "APR_007", "전자서명 이미지가 등록되어 있지 않아 승인할 수 없습니다. 마이페이지에서 전자서명을 먼저 등록해 주세요."),
+	APPROVAL_AI_JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "APR_008", "존재하지 않는 전자결재 AI 작업입니다."),
 
     // COMMON
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "COMMON_001", "입력값이 올바르지 않습니다."),
