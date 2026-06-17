@@ -8,7 +8,7 @@
 	<select id="selectConfRmRsrvList" resultType="ReservationDetailVO">
 		SELECT
 			RR.RSRV_ID, RR.CONF_RM_ID, RR.RSRV_EMP_ID, RR.RSRV_PURPS,
-			RR.BEGIN_DT, RR.END_DT, RR.DEL_YN, RR.INTG_RSRV_YN,
+			RR.BEGIN_DT, RR.END_DT, RR.DEL_YN, RR.ALL_DAY_YN,
 			E.EMP_NM AS RSRV_EMP_NM,
 			E.DEPT_CD AS RSRV_EMP_DEPT_CD,
 			E.JOB_GRD_CD AS RSRV_EMP_JOB_GRD_CD,
@@ -28,7 +28,7 @@
 	<select id="selectConfRmRsrv" resultType="ReservationDetailVO">
 		SELECT
 			RR.RSRV_ID, RR.CONF_RM_ID, RR.RSRV_EMP_ID, RR.RSRV_PURPS,
-			RR.BEGIN_DT, RR.END_DT, RR.DEL_YN, RR.INTG_RSRV_YN,
+			RR.BEGIN_DT, RR.END_DT, RR.DEL_YN, RR.ALL_DAY_YN,
 			E.EMP_NM AS RSRV_EMP_NM,
 			E.DEPT_CD AS RSRV_EMP_DEPT_CD,
 			E.JOB_GRD_CD AS RSRV_EMP_JOB_GRD_CD,
@@ -52,7 +52,7 @@
 	        , BEGIN_DT
 	        , END_DT
 	        , DEL_YN
-	        , INTG_RSRV_YN
+	        , ALL_DAY_YN
 	    ) VALUES (
 	        #{rsrvId}
 	        , #{confRmId}
@@ -61,7 +61,7 @@
 	        , #{beginDt}
 	        , #{endDt}
 	        , 'N'
-	        , #{intgRsrvYn}
+	        , #{allDayYn}
 	    )
 	</insert>
 
@@ -70,7 +70,7 @@
 	       SET RSRV_PURPS    = #{rsrvPurps},
 	           BEGIN_DT      = #{beginDt},
 	           END_DT        = #{endDt},
-	           INTG_RSRV_YN  = #{intgRsrvYn}
+	           ALL_DAY_YN  = #{allDayYn}
 	     WHERE RSRV_ID = #{rsrvId}
 		   AND DEL_YN = 'N'
 	</update>
@@ -101,7 +101,7 @@
 	            RR.RSRV_PURPS,
 	            RR.BEGIN_DT,
 	            RR.END_DT,
-	            RR.INTG_RSRV_YN,
+	            RR.ALL_DAY_YN,
 	            M.MTNG_ID
 	          FROM TB_CONF_RM_RSRV RR
 	          JOIN TB_CONF_RM CR ON RR.CONF_RM_ID = CR.CONF_RM_ID

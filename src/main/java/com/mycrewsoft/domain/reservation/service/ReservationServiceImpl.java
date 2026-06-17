@@ -80,7 +80,7 @@ public class ReservationServiceImpl implements ReservationService {
 		confRmRsrv.setRsrvEmpId(SecurityUtil.getCurrentEmpId());
 
 	    // 종일 예약이면 시작/종료 시간 강제 설정
-	    if ("Y".equals(request.getIntgRsrvYn())) {
+	    if ("Y".equals(request.getAllDayYn())) {
 	        confRmRsrv.setBeginDt(request.getStartDateTime().toLocalDate().atStartOfDay());
 	        confRmRsrv.setEndDt(request.getEndDateTime().toLocalDate().atTime(23, 59));
 	    }
@@ -118,7 +118,7 @@ public class ReservationServiceImpl implements ReservationService {
 		confRmRsrv.setRsrvId(rsrvId);
 		
 	    // 종일 예약이면 시작/종료 시간 강제 설정
-	    if ("Y".equals(request.getIntgRsrvYn())) {
+	    if ("Y".equals(request.getAllDayYn())) {
 	        confRmRsrv.setBeginDt(request.getStartDateTime().toLocalDate().atStartOfDay());
 	        confRmRsrv.setEndDt(request.getEndDateTime().toLocalDate().atTime(23, 59));
 	    }
