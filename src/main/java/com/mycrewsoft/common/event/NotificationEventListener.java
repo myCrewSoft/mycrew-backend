@@ -27,6 +27,7 @@ import com.mycrewsoft.domain.employee.event.ProfileChangedEvent;
 import com.mycrewsoft.domain.mtng.event.MeetingChangedEvent;
 import com.mycrewsoft.domain.mtng.event.MeetingEndedEvent;
 import com.mycrewsoft.domain.mtng.event.MeetingInvitedEvent;
+import com.mycrewsoft.domain.mail.event.MailReceivedEvent;
 import com.mycrewsoft.domain.mtng.event.MeetingReminderEvent;
 import com.mycrewsoft.domain.notification.service.NotificationService;
 import com.mycrewsoft.domain.project.event.ProjectClosedEvent;
@@ -491,6 +492,20 @@ public class NotificationEventListener {
             null,
             event.getAllEmpIds()
         );
+    }
+
+    // 메일
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleMailReceived(MailReceivedEvent event) {
+        String subject = (event.getLatestSubject() == null || event.getLatestSubject().isBlank())
+                ? "(제목 없음)"
+                : event.getLatestSubject();
+        String message = event.getNewCount() > 1
+                ? "새 메일이 도착했습니다: " + subject + " 외 " + (event.getNewCount() - 1) + "건"
+                : "새 메일이 도착했습니다: " + subject;
+        notificationService.sendAlrm(message, "10", null, List.of(event.getEmpId()));
     }
 
     // 기타

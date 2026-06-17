@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.Resource;
@@ -25,23 +26,28 @@ import com.mycrewsoft.domain.file.service.FileService;
 import com.mycrewsoft.domain.mail.dto.request.MailImportantUpdateRequest;
 import com.mycrewsoft.domain.mail.dto.request.MailBulkRequest;
 import com.mycrewsoft.domain.mail.dto.request.MailDraftRequest;
+import com.mycrewsoft.domain.mail.dto.request.MailLabelRequest;
 import com.mycrewsoft.domain.mail.dto.request.MailSendRequest;
 import com.mycrewsoft.domain.mail.dto.response.MailAccountStatusResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailAttachmentDownload;
 import com.mycrewsoft.domain.mail.dto.response.MailAttachmentResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailBulkResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailLabelResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailDetailResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailMutationResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailParticipantResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSendResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSummaryResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSyncResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailTrashClearResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailUnreadCountResponse;
 import com.mycrewsoft.domain.mail.gmail.GmailMessageContent;
 import com.mycrewsoft.domain.mail.gmail.GmailSendCommand;
 import com.mycrewsoft.domain.mail.gmail.GmailSendResult;
 import com.mycrewsoft.domain.mail.gmail.GmailSyncResult;
 import com.mycrewsoft.domain.mail.gmail.GmailSyncedAttachment;
 import com.mycrewsoft.domain.mail.gmail.GmailSyncedMessage;
+import com.mycrewsoft.domain.mail.event.MailReceivedEvent;
 import com.mycrewsoft.domain.mail.mapper.MailMapper;
 import com.mycrewsoft.domain.mail.vo.MailAccountVO;
 import com.mycrewsoft.domain.mail.vo.MailMessageRow;
@@ -81,6 +87,7 @@ public class MailServiceImpl implements MailService {
     private final GoogleGmailClient googleGmailClient;
     private final FileService fileService;
     private final TransactionTemplate transactionTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -183,6 +190,68 @@ public class MailServiceImpl implements MailService {
                 uploadFiles,
                 result,
                 sentAt));
+    }
+
+    @Override
+    public MailSendResponse sendDraft(Long mailId) {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        assertPermission(PermissionCode.MAIL_SEND, empId);
+        if (mailId == null) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        MailAccountVO account = loadAccount(empId);
+        requireScope(account, SCOPE_GMAIL_SEND);
+
+        MailMessageRow draft = mailMapper.selectMailRow(empId, mailId);
+        if (draft == null || !"Y".equals(draft.getDraftYn())) {
+            throw new CustomException(ErrorCode.MAIL_NOT_FOUND);
+        }
+
+        List<MailParticipantResponse> participants = mailMapper.selectParticipants(empId, mailId);
+        List<String> to = emailsByType(participants, "TO");
+        if (to.isEmpty()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        List<String> cc = emailsByType(participants, "CC");
+        List<String> bcc = emailsByType(participants, "BCC");
+        String subject = draft.getSubject() == null ? "" : draft.getSubject().trim();
+        String content = draft.getContent() == null ? "" : draft.getContent();
+        if (subject.isBlank() || content.isBlank()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        GmailSendCommand command = new GmailSendCommand();
+        command.setFromEmail(account.getEmailAddr());
+        command.setTo(to);
+        command.setCc(cc);
+        command.setBcc(bcc);
+        command.setSubject(subject);
+        command.setContent(content);
+        command.setAttachments(List.of());
+
+        GmailSendResult result = googleGmailClient.sendMessage(account, command);
+        if (result == null || result.getExternalMessageId() == null) {
+            throw new CustomException(ErrorCode.MAIL_SEND_FAILED);
+        }
+
+        LocalDateTime sentAt = result.getSentAt() == null ? LocalDateTime.now() : result.getSentAt();
+        return transactionTemplate.execute(status -> {
+            MailSendResponse response = persistSentMail(
+                    empId,
+                    account,
+                    subject,
+                    content,
+                    to,
+                    cc,
+                    bcc,
+                    List.of(),
+                    result,
+                    sentAt);
+            deleteDraftRow(empId, mailId);
+            return response;
+        });
     }
 
     private MailSendResponse persistSentMail(Long empId, MailAccountVO account, String subject, String content,
@@ -407,14 +476,16 @@ public class MailServiceImpl implements MailService {
         requireAnyScope(account, SCOPE_GMAIL_READONLY, SCOPE_GMAIL_MODIFY);
 
         int limit = normalizeSyncLimit(maxResults);
+        boolean incremental = account.getGoogleHistoryId() != null
+                && !account.getGoogleHistoryId().isBlank();
         GmailSyncResult result = googleGmailClient.syncMessages(account, account.getGoogleHistoryId(), limit);
         if (result == null) {
             throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
         }
-        return transactionTemplate.execute(status -> persistSyncResult(account, result));
+        return transactionTemplate.execute(status -> persistSyncResult(account, result, incremental));
     }
 
-    private MailSyncResponse persistSyncResult(MailAccountVO account, GmailSyncResult result) {
+    private MailSyncResponse persistSyncResult(MailAccountVO account, GmailSyncResult result, boolean incremental) {
         Long empId = account.getEmpId();
         ensureSystemLabels(empId);
         List<GmailSyncedMessage> messages = result.getMessages() == null
@@ -424,6 +495,8 @@ public class MailServiceImpl implements MailService {
         int inserted = 0;
         int updated = 0;
         int skipped = 0;
+        int newInboxCount = 0;
+        String latestInboxSubject = null;
         for (GmailSyncedMessage message : messages) {
             if (message == null || message.getExternalMessageId() == null || message.getExternalMessageId().isBlank()) {
                 skipped++;
@@ -449,11 +522,22 @@ public class MailServiceImpl implements MailService {
             if (newMessage) {
                 syncAttachments(empId, mailId, message.getAttachments());
             }
+            if (newMessage && message.getLabels() != null
+                    && message.getLabels().contains("INBOX")) {
+                newInboxCount++;
+                if (latestInboxSubject == null) {
+                    latestInboxSubject = message.getSubject();
+                }
+            }
         }
 
         String latestHistoryId = latestHistoryId(result, account);
         if (latestHistoryId != null && !latestHistoryId.isBlank()) {
             mailMapper.updateMailAccountSyncState(empId, latestHistoryId);
+        }
+
+        if (incremental && newInboxCount > 0) {
+            eventPublisher.publishEvent(new MailReceivedEvent(empId, newInboxCount, latestInboxSubject));
         }
 
         return new MailSyncResponse(
@@ -611,8 +695,9 @@ public class MailServiceImpl implements MailService {
         MailMessageRow row = new MailMessageRow();
         row.setMailId(mailId);
         row.setEmpId(empId);
-        row.setExternalMessageId(externalMessageId);
-        row.setThreadId(threadId);
+        // 드래프트는 Gmail 외부 ID가 없으므로 NOT NULL 충돌 방지를 위해 고유 플레이스홀더를 채운다.
+        row.setExternalMessageId(externalMessageId != null ? externalMessageId : "DRAFT_" + mailId);
+        row.setThreadId(threadId != null ? threadId : "DRAFT_" + mailId);
         row.setMessageIdHeader(messageIdHeader);
         row.setSubject(subject);
         row.setContent(content);
@@ -656,9 +741,126 @@ public class MailServiceImpl implements MailService {
         if (row == null || !"Y".equals(row.getDraftYn())) {
             throw new CustomException(ErrorCode.MAIL_NOT_FOUND);
         }
-        mailMapper.deleteParticipantsByMail(empId, mailId);
-        mailMapper.deleteLabelMapsByMail(empId, mailId);
-        mailMapper.markMessagesDeleted(empId, List.of(mailId));
+        deleteDraftRow(empId, mailId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MailLabelResponse> getUserLabels() {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        assertPermission(PermissionCode.MAIL_READ, empId);
+        return mailMapper.selectUserLabels(empId);
+    }
+
+    @Override
+    @Transactional
+    public MailLabelResponse createUserLabel(MailLabelRequest request) {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        assertPermission(PermissionCode.MAIL_MANAGE, empId);
+        String name = normalizeLabelName(request);
+        if (mailMapper.countUserLabelName(empId, name) > 0) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        Long labelId = mailMapper.selectNextMailLabelId();
+        mailMapper.insertUserLabel(labelId, empId, name);
+        return buildLabelResponse(labelId, name);
+    }
+
+    @Override
+    @Transactional
+    public MailLabelResponse renameUserLabel(Long labelId, MailLabelRequest request) {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        assertPermission(PermissionCode.MAIL_MANAGE, empId);
+        requireUserLabel(empId, labelId);
+        String name = normalizeLabelName(request);
+        mailMapper.updateUserLabelName(empId, labelId, name);
+        return buildLabelResponse(labelId, name);
+    }
+
+    @Override
+    @Transactional
+    public void deleteUserLabel(Long labelId) {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        assertPermission(PermissionCode.MAIL_MANAGE, empId);
+        requireUserLabel(empId, labelId);
+        mailMapper.deleteLabelMapsByLabel(empId, labelId);
+        mailMapper.softDeleteUserLabel(empId, labelId);
+    }
+
+    @Override
+    @Transactional
+    public void applyLabel(Long mailId, Long labelId) {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        assertPermission(PermissionCode.MAIL_READ, empId);
+        requireUserLabel(empId, labelId);
+        requireMail(empId, mailId);
+        if (mailMapper.existsLabelMap(empId, mailId, labelId) == 0) {
+            mailMapper.insertLabelMap(mailMapper.selectNextMailLabelMapId(), empId, mailId, labelId);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void removeLabel(Long mailId, Long labelId) {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        assertPermission(PermissionCode.MAIL_READ, empId);
+        requireUserLabel(empId, labelId);
+        mailMapper.deleteLabelMapByLabelId(empId, mailId, labelId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<MailSummaryResponse> getMailsByLabel(Long labelId, Pageable pageable) {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        assertPermission(PermissionCode.MAIL_READ, empId);
+        requireUserLabel(empId, labelId);
+        long total = mailMapper.countMailsByLabel(empId, labelId);
+        List<MailSummaryResponse> mails =
+                mailMapper.selectMailsByLabel(empId, labelId, pageable.getOffset(), pageable.getPageSize());
+        fillLabels(empId, mails);
+        return new PageImpl<>(mails, pageable, total);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MailLabelResponse> getMailLabels(Long mailId) {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        assertPermission(PermissionCode.MAIL_READ, empId);
+        return mailMapper.selectUserLabelsForMail(empId, mailId);
+    }
+
+    private MailLabelResponse buildLabelResponse(Long labelId, String name) {
+        MailLabelResponse response = new MailLabelResponse();
+        response.setLabelId(labelId);
+        response.setName(name);
+        return response;
+    }
+
+    private String normalizeLabelName(MailLabelRequest request) {
+        if (request == null || request.getName() == null || request.getName().isBlank()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return request.getName().trim();
+    }
+
+    private void requireUserLabel(Long empId, Long labelId) {
+        if (labelId == null || mailMapper.selectUserLabel(empId, labelId) == null) {
+            throw new CustomException(ErrorCode.MAIL_NOT_FOUND);
+        }
+    }
+
+    private void requireMail(Long empId, Long mailId) {
+        if (mailId == null || mailMapper.selectMailRow(empId, mailId) == null) {
+            throw new CustomException(ErrorCode.MAIL_NOT_FOUND);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MailUnreadCountResponse getUnreadCount() {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        assertPermission(PermissionCode.MAIL_READ, empId);
+        return new MailUnreadCountResponse(mailMapper.countUnreadInbox(empId));
     }
 
     private void assertPermission(PermissionCode permissionCode, Long empId) {
@@ -820,6 +1022,23 @@ public class MailServiceImpl implements MailService {
             }
         }
         return new ArrayList<>(deduped);
+    }
+
+    private List<String> emailsByType(List<MailParticipantResponse> participants, String type) {
+        if (participants == null || participants.isEmpty()) {
+            return List.of();
+        }
+        List<String> emails = participants.stream()
+                .filter(participant -> type.equals(participant.getType()))
+                .map(MailParticipantResponse::getEmail)
+                .toList();
+        return normalizeEmails(emails);
+    }
+
+    private void deleteDraftRow(Long empId, Long mailId) {
+        mailMapper.deleteParticipantsByMail(empId, mailId);
+        mailMapper.deleteLabelMapsByMail(empId, mailId);
+        mailMapper.markMessagesDeleted(empId, List.of(mailId));
     }
 
     private void insertParticipant(Long empId, Long mailId, String email, String type) {

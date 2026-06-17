@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 
 import com.mycrewsoft.domain.mail.dto.response.MailAttachmentResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailDetailResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailLabelResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailParticipantResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSummaryResponse;
 import com.mycrewsoft.domain.mail.vo.MailAccountVO;
@@ -52,6 +53,8 @@ public interface MailMapper {
                                           @Param("offset") long offset,
                                           @Param("size") int size);
 
+    long countUnreadInbox(@Param("empId") Long empId);
+
     long countMails(@Param("empId") Long empId,
                     @Param("type") String type,
                     @Param("keyword") String keyword,
@@ -95,6 +98,28 @@ public interface MailMapper {
                               @Param("labelTypeCd") String labelTypeCd);
 
     void deleteLabelMapsByMail(@Param("empId") Long empId, @Param("mailId") Long mailId);
+
+    java.util.List<MailLabelResponse> selectUserLabels(@Param("empId") Long empId);
+
+    MailLabelResponse selectUserLabel(@Param("empId") Long empId, @Param("labelId") Long labelId);
+
+    int countUserLabelName(@Param("empId") Long empId, @Param("name") String name);
+
+    void insertUserLabel(@Param("labelId") Long labelId, @Param("empId") Long empId, @Param("name") String name);
+
+    int updateUserLabelName(@Param("empId") Long empId, @Param("labelId") Long labelId, @Param("name") String name);
+
+    int softDeleteUserLabel(@Param("empId") Long empId, @Param("labelId") Long labelId);
+
+    void deleteLabelMapsByLabel(@Param("empId") Long empId, @Param("labelId") Long labelId);
+
+    void deleteLabelMapByLabelId(@Param("empId") Long empId, @Param("mailId") Long mailId, @Param("labelId") Long labelId);
+
+    long countMailsByLabel(@Param("empId") Long empId, @Param("labelId") Long labelId);
+
+    java.util.List<MailSummaryResponse> selectMailsByLabel(@Param("empId") Long empId, @Param("labelId") Long labelId, @Param("offset") long offset, @Param("size") int size);
+
+    java.util.List<MailLabelResponse> selectUserLabelsForMail(@Param("empId") Long empId, @Param("mailId") Long mailId);
 
     void markMessagesDeleted(@Param("empId") Long empId, @Param("mailIds") List<Long> mailIds);
 

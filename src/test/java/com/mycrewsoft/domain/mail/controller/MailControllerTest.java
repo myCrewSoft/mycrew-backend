@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.mail.dto.request.MailImportantUpdateRequest;
 import com.mycrewsoft.domain.mail.dto.response.MailMutationResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailSendResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSummaryResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSyncResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailTrashClearResponse;
@@ -124,5 +125,19 @@ class MailControllerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getData()).isEqualTo(result);
         verify(service).syncMails(30);
+    }
+
+    @Test
+    void sendDraftDelegatesToService() {
+        MailService service = Mockito.mock(MailService.class);
+        MailController controller = new MailController(service);
+        MailSendResponse result = new MailSendResponse(100L, "gmail-sent", "thread-sent", LocalDateTime.now());
+        when(service.sendDraft(10L)).thenReturn(result);
+
+        ResponseEntity<ApiResponse<MailSendResponse>> response = controller.sendDraft(10L);
+
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getData()).isEqualTo(result);
+        verify(service).sendDraft(10L);
     }
 }
