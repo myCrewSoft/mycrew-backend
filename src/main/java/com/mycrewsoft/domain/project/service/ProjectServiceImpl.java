@@ -49,6 +49,10 @@ public class ProjectServiceImpl implements ProjectService{
 	private final DtoMapper dtoMapper;
 	private final MsngrServiceImpl msngrService;
 	private final ApplicationEventPublisher eventPublisher;
+	
+	// 위젯 호출 개수
+	private static final int WIDGET_PROJECT_LIMIT = 2;
+
 	/**
 	 * 프로젝트 등록
 	 */
@@ -378,5 +382,14 @@ public class ProjectServiceImpl implements ProjectService{
 	    if (result == 0) {
 	        throw new CustomException(ErrorCode.PROJECT_NOT_FOUND);
 	    }
+	}
+	
+	// 위젯용
+	@Override
+	@Transactional(readOnly = true)
+	public List<ProjectListResponseDto> getProjectListForWidget() {
+	    Long empId = SecurityUtil.getCurrentEmpId();
+	    List<ProjectVO> voList = projectMapper.selectProjectListForWidget(empId, WIDGET_PROJECT_LIMIT);
+	    return dtoMapper.toDtoList(voList, ProjectListResponseDto.class);
 	}
 }

@@ -65,6 +65,9 @@ public interface MailService {
     MailSendResponse sendDraft(Long mailId);
 
     void deleteDraft(Long mailId);
+    
+    // 위젯용
+    List<MailSummaryResponse> getMailsForWidget();
 
     List<MailLabelResponse> getUserLabels();
 

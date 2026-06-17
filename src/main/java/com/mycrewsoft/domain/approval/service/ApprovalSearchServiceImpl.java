@@ -15,6 +15,7 @@ import com.mycrewsoft.domain.approval.dto.response.ApprovalDocumentDetailRespons
 import com.mycrewsoft.domain.approval.dto.response.ApprovalDraftCountResponse;
 import com.mycrewsoft.domain.approval.dto.response.ApprovalDraftSummaryResponse;
 import com.mycrewsoft.domain.approval.mapper.ApprovalDraftMapper;
+import com.mycrewsoft.security.util.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -139,5 +140,13 @@ public class ApprovalSearchServiceImpl implements ApprovalSearchService {
 
         Pageable pageable = PageRequest.of(page, size);
         return new PageImpl<>(content, pageable, totalCount);
+    }
+    
+    //위젯용
+    @Override
+    @Transactional(readOnly = true)
+    public List<ApprovalDraftSummaryResponse> readPendingApprovalsForWidget() {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        return approvalDraftMapper.selectMyApprovalRequests(empId, null, 0, 2);
     }
 }

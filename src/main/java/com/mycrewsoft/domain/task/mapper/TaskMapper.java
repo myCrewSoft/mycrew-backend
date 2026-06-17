@@ -47,4 +47,7 @@ public interface TaskMapper {
 
     /** 마감 임박 업무 조회 */
     List<TaskDeadlineVO> selectTasksDueTomorrow();
+    
+    /** 위젯용 */
+    List<TaskListVO> selectTaskListForWidget(@Param("empId") Long empId, @Param("limit") int limit);
 }

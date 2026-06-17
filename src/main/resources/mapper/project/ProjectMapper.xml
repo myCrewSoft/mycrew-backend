@@ -205,4 +205,33 @@
 	    SET CHTRM_ID = #{chtrmId}
 	    WHERE PROJ_ID = #{projId}
 	</update>
+	
+	<select id="selectProjectListForWidget" resultType="ProjectVO">
+	    SELECT *
+	      FROM (
+	        SELECT
+	            P.PROJ_ID,
+	            P.PROJ_NM,
+	            P.PROJ_BGNG_YMD,
+	            P.PROJ_END_YMD,
+	            CASE
+	                WHEN P.PROJ_STAT_CD = '01'
+	                 AND P.PROJ_BGNG_YMD &lt;= TRUNC(SYSDATE)
+	                THEN '02'
+	                ELSE P.PROJ_STAT_CD
+	            END AS PROJ_STAT_CD,
+	            E.EMP_NM AS PROJ_LDR_NM,
+	            P.PROJ_PRGRS_RT
+	          FROM TB_PROJECT P
+	          JOIN TB_PROJ_MEMBER PM
+	            ON PM.PROJ_ID   = P.PROJ_ID
+	           AND PM.EMP_ID    = #{empId}
+	           AND PM.LEAVE_DT IS NULL
+	          JOIN TB_EMPLOYEE E
+	            ON E.EMP_ID = P.PROJ_LDR_EMP_ID
+	         WHERE P.PROJ_STAT_CD = '02'
+	         ORDER BY P.PROJ_CREAT_DT DESC
+	      )
+	     WHERE ROWNUM &lt;= #{limit}
+	</select>
 </mapper>

@@ -45,6 +45,8 @@ public class MsngrServiceImpl implements MsngrService {
     private final SimpMessagingTemplate messagingTemplate;
     private final EmployeeMapper employeeMapper;
 
+    private static final int WIDGET_MSNGR_LIMIT = 3;
+    
     // 채팅방 목록 조회
     @Override
     public List<ChatRoomResponse> getChtrmList() {
@@ -52,7 +54,7 @@ public class MsngrServiceImpl implements MsngrService {
         Long empId = getCurrentEmpIdOrThrow();
         
         // 참여한 채팅방 목록 조회
-        List<MsngrChtrmListVO> voList = msngrMapper.selectChtrmListByEmpId(empId);
+        List<MsngrChtrmListVO> voList = msngrMapper.selectChtrmListByEmpId(empId, 0);
 
         // DTO 변환
         return msngrDtoMapper.toRoomResponseListFromList(voList);
@@ -460,6 +462,14 @@ public class MsngrServiceImpl implements MsngrService {
         if (result == 0) {
             throw new CustomException(ErrorCode.CHAT_NOT_PARTICIPANT);
         }
+    }
+    
+    
+    @Override
+    public List<ChatRoomResponse> getChtrmListForWidget() {
+        Long empId = getCurrentEmpIdOrThrow();
+        List<MsngrChtrmListVO> voList = msngrMapper.selectChtrmListByEmpId(empId, WIDGET_MSNGR_LIMIT);
+        return msngrDtoMapper.toRoomResponseListFromList(voList);
     }
     
     // 사용자 확인

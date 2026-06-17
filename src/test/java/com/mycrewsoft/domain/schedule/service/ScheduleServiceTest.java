@@ -1,8 +1,13 @@
 package com.mycrewsoft.domain.schedule.service;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willDoNothing;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,7 +28,7 @@ import com.mycrewsoft.domain.schedule.dto.request.ScheduleRequestDto;
 import com.mycrewsoft.domain.schedule.dto.response.ScheduleResponseDto;
 import com.mycrewsoft.domain.schedule.mapper.IntgSchdMapper;
 import com.mycrewsoft.domain.schedule.mapper.SchdTargetMapper;
-import com.mycrewsoft.domain.schedule.mapper.ScheduleMapper;
+import com.mycrewsoft.domain.schedule.mapper.ScheduleDtoMapper;
 import com.mycrewsoft.domain.schedule.vo.IntgSchdVO;
 import com.mycrewsoft.security.authz.AuthorizationService;
 import com.mycrewsoft.security.util.SecurityUtil;
@@ -38,7 +43,7 @@ class ScheduleServiceTest {
 
     @MockBean private IntgSchdMapper intgSchdMapper;
     @MockBean private SchdTargetMapper schdTargetMapper;
-    @MockBean private ScheduleMapper scheduleMapper;
+    @MockBean private ScheduleDtoMapper scheduleMapper;
     @MockBean private EmployeeMapper employeeMapper;
     @MockBean private AuthorizationService authorizationService;
 

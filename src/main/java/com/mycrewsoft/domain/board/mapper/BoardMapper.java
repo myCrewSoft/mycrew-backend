@@ -12,6 +12,7 @@ import com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse;
 import com.mycrewsoft.domain.board.vo.BoardCommentVO;
 import com.mycrewsoft.domain.board.vo.BoardLikeVo;
 import com.mycrewsoft.domain.board.vo.BoardVO;
+import com.mycrewsoft.domain.board.vo.BoardWidgetVO;
 
 
 @Mapper
@@ -118,5 +119,12 @@ public interface BoardMapper {
 	  
 	  //게시글 댓글 삭제
 	  int deleteComment(@Param("commentId") Long commentId);
+	  
+	  //위젯용
+	  List<BoardWidgetVO> getBoardListForWidget(
+		  @Param("boardTypeCd") String boardTypeCd,
+          @Param("deptCd") String deptCd,
+          @Param("limit") int limit
+      );
 	  
 }

@@ -10,12 +10,14 @@ import com.mycrewsoft.domain.schedule.dto.request.ScheduleRequestDto;
 import com.mycrewsoft.domain.schedule.dto.request.ScheduleTargetRequestDto;
 import com.mycrewsoft.domain.schedule.dto.response.ScheduleResponseDto;
 import com.mycrewsoft.domain.schedule.dto.response.ScheduleTargetResponseDto;
+import com.mycrewsoft.domain.schedule.dto.response.ScheduleWidgetItemResponse;
 import com.mycrewsoft.domain.schedule.vo.IntgSchdVO;
 import com.mycrewsoft.domain.schedule.vo.SchdTargetDetailVO;
 import com.mycrewsoft.domain.schedule.vo.SchdTargetVO;
+import com.mycrewsoft.domain.schedule.vo.SchdWidgetVO;
 
 @Mapper(componentModel = "spring")
-public interface ScheduleMapper {
+public interface ScheduleDtoMapper {
 
 	/**
 	 * ScheduleRequestDto -> IntgSchdVO로 변환
@@ -80,6 +82,19 @@ public interface ScheduleMapper {
     @Mapping(target = "schdId", source = "schdId")
     SchdTargetVO toTargetVo(ScheduleTargetRequestDto dto, Long schdId);
 
+    @Mapping(target = "id",               source = "id")
+    @Mapping(target = "scheduleTypeCode", source = "scheduleTypeCode")
+    @Mapping(target = "title",            source = "title")
+    @Mapping(target = "start",            source = "start")
+    @Mapping(target = "end",              source = "end")
+    @Mapping(target = "allDay",           source = "allDay")
+    @Mapping(target = "deptNm",           source = "deptNm")
+    @Mapping(target = "projNm",           source = "projNm")
+    @Mapping(target = "taskNm",           source = "taskNm")
+    ScheduleWidgetItemResponse toWidgetItemResponse(SchdWidgetVO vo);
+
+    List<ScheduleWidgetItemResponse> toWidgetItemResponseList(List<SchdWidgetVO> voList);
+    
     default List<SchdTargetVO> toTargetVoList(List<ScheduleTargetRequestDto> dtoList, Long schdId) {
         if (dtoList == null) return List.of();
         return dtoList.stream()

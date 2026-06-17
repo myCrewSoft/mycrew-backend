@@ -17,4 +17,7 @@ public interface ReservationService {
 	void modifyReservation(Long rsrvId, ReservationUpdateRequest request);
 	
 	void deleteReservation(Long rervId);
+	
+	// 위젯용
+	List<ReservationResponse> readReservationListForWidget();
 }

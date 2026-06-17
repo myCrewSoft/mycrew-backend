@@ -28,4 +28,5 @@ public class SchdSearchVO {
 
     private LocalDateTime endDt;
 
+    private int limit;
 }

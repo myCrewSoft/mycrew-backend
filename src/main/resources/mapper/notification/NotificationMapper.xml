@@ -18,6 +18,9 @@
         WHERE R.RCVR_EMP_ID = #{rcvrEmpId}
           AND R.ALRM_DEL_YN = 'N'
         ORDER BY A.ALRM_SNDNG_DT DESC
+        <if test="limit > 0">
+	    	WHERE ROWNUM &lt;= #{limit}
+	    </if>
     </select>
 
     <select id="selectUnreadCount" resultType="long">

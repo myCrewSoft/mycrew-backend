@@ -28,6 +28,9 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationDtoMapper dtoMapper;
     private final SseEmitterService sseEmitterService;
 
+    // 위젯 호출 개수
+    private static final int WIDGET_ALRM_LIMIT = 5;
+
     // 알림 조회
     @Override
     @Transactional(readOnly = true)
@@ -37,7 +40,7 @@ public class NotificationServiceImpl implements NotificationService {
         Long empId = SecurityUtil.getCurrentEmpId();
 
         // 알림 조회
-        List<NotificationQueryVO> notificationList = notificationMapper.selectAlrmList(empId);
+        List<NotificationQueryVO> notificationList = notificationMapper.selectAlrmList(empId, 0);
 
         // VO -> DTO 변환
         return dtoMapper.toResponseList(notificationList);
@@ -133,5 +136,14 @@ public class NotificationServiceImpl implements NotificationService {
         // 알림 삭제
         int result = notificationMapper.updateDelYn(alrmRcvrId, rcvrEmpId);
         if (result == 0) throw new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND);
+    }
+    
+    // 위젯 호출용
+    @Override
+    @Transactional(readOnly = true)
+    public List<NotificationResponse> readAlrmListForWidget() {
+        Long empId = SecurityUtil.getCurrentEmpId();
+        List<NotificationQueryVO> notificationList = notificationMapper.selectAlrmList(empId, WIDGET_ALRM_LIMIT);
+        return dtoMapper.toResponseList(notificationList);
     }
 }

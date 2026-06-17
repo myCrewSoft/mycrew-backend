@@ -70,4 +70,7 @@ public interface ProjectMapper {
 	
 	// 프로젝트 채팅방 ID 입력
 	int updateProjectChtrmId(@Param("projId") Long projId, @Param("chtrmId") Long chtrmId);
+	
+	// 위젯용
+	List<ProjectVO> selectProjectListForWidget(@Param("empId") Long empId, @Param("limit") int limit);
 }

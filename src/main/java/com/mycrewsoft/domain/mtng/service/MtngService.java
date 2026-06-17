@@ -19,4 +19,6 @@ public interface MtngService {
     void updateMtng(Long mtngId, MtngUpdateRequest request);
 
     void deleteMtng(Long mtngId);
+    
+    List<MtngListResponse> getMtngListForWidget();
 }
