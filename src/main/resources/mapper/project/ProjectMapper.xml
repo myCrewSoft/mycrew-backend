@@ -92,6 +92,7 @@
 	   P.PROJ_ID,
        P.PROJ_NM,
        P.PROJ_CN,
+       P.CHTRM_ID,
        P.PROJ_BGNG_YMD,
        P.PROJ_END_YMD,
        CASE
@@ -154,7 +155,7 @@
 	
 	
 	<!-- 프로젝트 진척률 = sum(업무진척률 * 업무중요도 가중치) / sum(가중치) -->
-	<update id="updateProjectPrgrsRt">
+	<update id="updateProjectPrgrsRtd">
 	    UPDATE TB_PROJECT
 	    SET PROJ_PRGRS_RT = (
 	        SELECT ROUND(
@@ -198,4 +199,10 @@
 		WHERE P.PROJ_STAT_CD = '02'
 		AND TRUNC(P.PROJ_END_YMD) = TRUNC(SYSDATE + 1)
 	</select>
+	
+	<update id="updateProjectChtrmId">
+	    UPDATE TB_PROJECT
+	    SET CHTRM_ID = #{chtrmId}
+	    WHERE PROJ_ID = #{projId}
+	</update>
 </mapper>

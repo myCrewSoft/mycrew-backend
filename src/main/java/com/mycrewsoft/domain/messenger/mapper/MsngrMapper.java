@@ -68,6 +68,9 @@ public interface MsngrMapper {
     // 사용자 상태 조회
     String selectPtcptSttus(@Param("empId") Long empId);
 
+    // 사용자가 현재 참여 중인 채팅방 ID 조회
+    List<Long> selectActiveChtrmIdsByEmpId(@Param("empId") Long empId);
+
     // 마지막 읽은 메시지 갱신
     int updateLastCfmtnMsgId(@Param("chtrmId") Long chtrmId,
                              @Param("empId") Long empId,
@@ -76,4 +79,16 @@ public interface MsngrMapper {
     // 안 읽은 사용자 수 조회
     int selectUnreadCountByMsgId(@Param("chtrmId") Long chtrmId,
                                  @Param("msgId") Long msgId);
+    
+    // 프로젝트 채팅방 조회
+    Long selectProjectChtrmId(@Param("projId") Long projId);
+    
+    // 프로젝트 인원 추가
+    int mergeProjectPtcpt(MsngrChtrmPtcptVO ptcptVO);
+    
+    // 프로젝트 인원 퇴장 조치
+    int updateProjectPtcptLeaveDt(
+	    @Param("chtrmId") Long chtrmId,
+	    @Param("empId") Long empId
+	);
 }

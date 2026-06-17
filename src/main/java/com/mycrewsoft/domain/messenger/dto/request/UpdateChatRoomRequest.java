@@ -15,4 +15,7 @@ public class UpdateChatRoomRequest {
     @Schema(description = "채팅방 설명", example = "프론트엔드 개발 전용 채팅방입니다.")
     private String chatDescription;
 
+    @Schema(description = "채팅방 이미지 첨부파일 ID", example = "10", nullable = true)
+    private Long chatRoomImageAtchFileId;
+
 }

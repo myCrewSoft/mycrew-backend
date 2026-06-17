@@ -13,6 +13,7 @@ public class MsngrChtrmListVO {
     private String chtrmExpln;
     private String chtrmTypeCd;
     private Long estblshId;
+    private Long chtrmImgAtchFileId;
     private LocalDateTime creatDt;
     private LocalDateTime endDt;
 

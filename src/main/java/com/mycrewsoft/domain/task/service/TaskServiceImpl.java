@@ -99,10 +99,17 @@ public class TaskServiceImpl implements TaskService {
                 taskMapper.insertTaskPtcpt(ptcptVO);
             }
 
-            // 업무 배정 알림
-            eventPublisher.publishEvent(
-                new TaskAssignedEvent(task.getTaskNm(), request.getEmpIdList())
-            );
+        // 업무 배정 알림
+        eventPublisher.publishEvent(
+    	    new TaskAssignedEvent(
+    	        task.getTaskId(),
+    	        task.getTaskNm(),
+    	        task.getTaskBgngDt(),
+    	        task.getTaskEndDt(),
+    	        request.getEmpIdList(),
+    	        SecurityUtil.getCurrentEmpId()
+    	    )
+    	);
         }
         
         // 프로젝트 진척률 최신화
@@ -170,6 +177,11 @@ public class TaskServiceImpl implements TaskService {
         TaskDetailVO existing = taskMapper.selectTaskDetail(taskId);
         if (existing == null) throw new CustomException(ErrorCode.TASK_NOT_FOUND);
 
+        // 완료, 중지된 업무는 수정 불가
+        if ("02".equals(existing.getTaskStatCd()) || "04".equals(existing.getTaskStatCd())) {
+        	throw new CustomException(ErrorCode.TASK_INVALID_STAT_TRANSITION);
+        }
+        
         // 해당 업무의 담당자거나 프로젝트장인지 확인
         validateTaskManagerOrProjectLeader(currentEmpId, projId, existing);
 
@@ -203,8 +215,15 @@ public class TaskServiceImpl implements TaskService {
 
         // 업무 배정 알림
         eventPublisher.publishEvent(
-            new TaskAssignedEvent(existing.getTaskNm(), empIdList)
-        );
+    	    new TaskAssignedEvent(
+	    		existing.getTaskId(),
+	    		existing.getTaskNm(),
+	    		existing.getTaskBgngDt(),
+	    		existing.getTaskEndDt(),
+	    		empIdList,
+    	        SecurityUtil.getCurrentEmpId()
+    	    )
+    	);
     }
 
     @Override

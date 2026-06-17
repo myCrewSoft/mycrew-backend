@@ -83,7 +83,8 @@ public class ChatGptController {
 	public Flux<String> stream(
 		@RequestParam String message,
 		@RequestParam String requestId,
-		@RequestParam String aiType
+		@RequestParam String aiType,
+		@RequestParam(required = false) Long boardId
 	) {
 		log.debug("requestId : {}", requestId);
 		
@@ -100,7 +101,10 @@ public class ChatGptController {
 		} else if ("REPT".equalsIgnoreCase(aiType)) {
 			aiMessage = promptReport.build(message);
 		} else if ("PORK".equalsIgnoreCase(aiType)) {
-			aiMessage = promptPostRisk.build(message);
+			if (boardId == null) {
+		        throw new IllegalArgumentException("게시글 ID가 필요합니다.");
+		    }
+			aiMessage = promptPostRisk.build(message, boardId.toString());
 		} else {
 			aiMessage = promptChatbot.build(message);
 		}

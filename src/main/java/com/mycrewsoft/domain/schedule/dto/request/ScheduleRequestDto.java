@@ -33,6 +33,12 @@ public class ScheduleRequestDto {
 	
 	@Schema(description = "업무 일정일 때 해당 업무 ID")
 	private Long taskId;
+	
+	@Schema(description = "회의 일정일 때 해당 회의  ID")
+	private Long vconfId;
+	
+	@Schema(description = "회의실 예약 일정일 때 해당 예약 ID")
+	private Long rsrvId;
     
 	@Schema(description = "일정 상세 내용", example = "회사가 창립된 날")
 	@Size(max = 4000, message = "일정명은 최대 4000자까지 입력 가능합니다.")

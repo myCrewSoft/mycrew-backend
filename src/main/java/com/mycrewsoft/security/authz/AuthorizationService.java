@@ -1,9 +1,12 @@
 package com.mycrewsoft.security.authz;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import com.mycrewsoft.common.constant.PermissionCode;
 import com.mycrewsoft.common.exception.CustomException;
@@ -20,6 +23,19 @@ import com.mycrewsoft.security.util.SecurityUtil;
  */
 @Service
 public class AuthorizationService {
+
+    private final AuthorizationRelationshipResolver relationshipResolver;
+
+    @Autowired
+    public AuthorizationService(AuthorizationRelationshipResolver relationshipResolver) {
+        this.relationshipResolver = relationshipResolver == null
+                ? AuthorizationRelationshipResolver.noop()
+                : relationshipResolver;
+    }
+
+    public AuthorizationService() {
+        this(AuthorizationRelationshipResolver.noop());
+    }
 
     public boolean canAccess(PermissionCode permissionCode, ResourceContext resource) {
         return canAccess(
@@ -38,9 +54,20 @@ public class AuthorizationService {
             return false;
         }
 
-        return scopedPermissions.stream()
-                .filter(permission -> permissionCode.getCode().equals(permission.getPermCd()))
-                .anyMatch(permission -> scopeMatches(empId, permission, resource));
+        List<ScopedPermission> matchingPermissions = scopedPermissions.stream()
+                .filter(permission -> permission != null && permissionCode.getCode().equals(permission.getPermCd()))
+                .toList();
+
+        if (matchingPermissions.isEmpty()) {
+            return false;
+        }
+
+        if (isFeatureGate(resource)) {
+            return matchingPermissions.stream().anyMatch(permission -> permission.getScopeType() != null);
+        }
+
+        return matchingPermissions.stream()
+                .anyMatch(permission -> permissionAllows(empId, permission, permissionCode, resource));
     }
 
     public void assertCurrentUserPermission(PermissionCode permissionCode, ResourceContext resource) {
@@ -73,7 +100,20 @@ public class AuthorizationService {
         return getCurrentPermissionScopes(permissionCode).hasGlobal();
     }
 
-    private boolean scopeMatches(Long empId, ScopedPermission permission, ResourceContext resource) {
+    private boolean permissionAllows(
+            Long empId,
+            ScopedPermission permission,
+            PermissionCode permissionCode,
+            ResourceContext resource) {
+        return scopeMatchesExplicitly(empId, permission, permissionCode, resource)
+                || relationshipPolicyMatches(empId, permission, permissionCode, resource);
+    }
+
+    private boolean scopeMatchesExplicitly(
+            Long empId,
+            ScopedPermission permission,
+            PermissionCode permissionCode,
+            ResourceContext resource) {
         if (permission.getScopeType() == null) {
             return false;
         }
@@ -81,15 +121,93 @@ public class AuthorizationService {
         return switch (permission.getScopeType()) {
             case GLOBAL -> true;
             case DEPT -> same(permission.getScopeId(), resource.getDeptCd());
-            case PROJECT -> same(permission.getScopeId(), resource.getProjId());
+            case PROJECT -> same(permission.getScopeId(), effectiveProjectId(resource));
             case TASK -> same(permission.getScopeId(), resource.getTaskId());
-            case SELF -> Objects.equals(empId, resource.getOwnerEmpId());
+            case SELF -> selfScopeMatches(empId, permissionCode, resource);
         };
     }
 
+    private boolean relationshipPolicyMatches(
+            Long empId,
+            ScopedPermission permission,
+            PermissionCode permissionCode,
+            ResourceContext resource) {
+        if (permission.getScopeType() != ScopeType.SELF) {
+            return false;
+        }
+
+        String projectId = effectiveProjectId(resource);
+
+        return switch (permissionCode) {
+            case BOARD_POST_READ -> relationshipResolver.isSameDepartment(empId, resource.getDeptCd())
+                    || relationshipResolver.isProjectMember(empId, projectId);
+            case BOARD_POST_CREATE -> canCreateBoardPostByRelationship(empId, resource, projectId);
+            case DEPT_READ -> relationshipResolver.isSameDepartment(empId, resource.getDeptCd());
+            case PROJECT_READ,
+                    PROJECT_DRIVE_READ,
+                    PROJECT_DRIVE_UPLOAD,
+                    PROJECT_DRIVE_UPDATE,
+                    PROJECT_DRIVE_DELETE,
+                    PROJECT_DRIVE_MANAGE -> relationshipResolver.isProjectMember(empId, projectId);
+            case PROJECT_UPDATE,
+                    PROJECT_DELETE,
+                    PROJECT_MEMBER_MANAGE -> relationshipResolver.isProjectLeader(empId, projectId);
+            case SCHEDULE_READ -> Objects.equals(empId, resource.getOwnerEmpId())
+                    || relationshipResolver.isSameDepartment(empId, resource.getDeptCd())
+                    || relationshipResolver.isProjectMember(empId, projectId);
+            default -> false;
+        };
+    }
+
+    private boolean canCreateBoardPostByRelationship(Long empId, ResourceContext resource, String projectId) {
+        if (StringUtils.hasText(resource.getDeptCd())) {
+            return relationshipResolver.isSameDepartment(empId, resource.getDeptCd());
+        }
+
+        if (StringUtils.hasText(projectId)) {
+            return relationshipResolver.isProjectMember(empId, projectId);
+        }
+
+        return false;
+    }
+
+    private boolean selfScopeMatches(Long empId, PermissionCode permissionCode, ResourceContext resource) {
+        if (permissionCode == PermissionCode.BOARD_POST_CREATE && hasSharedBoardTarget(resource)) {
+            return false;
+        }
+
+        return Objects.equals(empId, resource.getOwnerEmpId());
+    }
+
+    private boolean hasSharedBoardTarget(ResourceContext resource) {
+        return StringUtils.hasText(resource.getDeptCd()) || StringUtils.hasText(effectiveProjectId(resource));
+    }
+
+    private boolean isFeatureGate(ResourceContext resource) {
+        return !StringUtils.hasText(resource.getResourceId())
+                && !StringUtils.hasText(resource.getDeptCd())
+                && !StringUtils.hasText(resource.getProjId())
+                && !StringUtils.hasText(resource.getTaskId())
+                && resource.getOwnerEmpId() == null
+                && resource.getManagerEmpId() == null
+                && (resource.getMemberEmpIds() == null || resource.getMemberEmpIds().isEmpty());
+    }
+
+    private String effectiveProjectId(ResourceContext resource) {
+        if (StringUtils.hasText(resource.getProjId())) {
+            return resource.getProjId();
+        }
+
+        if (resource.getResourceType() == ResourceType.PROJECT && StringUtils.hasText(resource.getResourceId())) {
+            return resource.getResourceId();
+        }
+
+        return null;
+    }
+
     private boolean same(String assignmentScopeId, String resourceScopeId) {
-        return assignmentScopeId != null
-                && resourceScopeId != null
+        return StringUtils.hasText(assignmentScopeId)
+                && StringUtils.hasText(resourceScopeId)
                 && assignmentScopeId.trim().equals(resourceScopeId.trim());
     }
 }

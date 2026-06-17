@@ -82,6 +82,11 @@
         WHERE DRFT_DOC_SN = #{drftDocSn}
     </delete>
 
+    <delete id="deleteApprovalDocByDocSn">
+        DELETE FROM TB_APRVL_DOC
+        WHERE DRFT_DOC_SN = #{drftDocSn}
+    </delete>
+
     <select id="selectApprovalDocByDocSn"
             resultType="com.mycrewsoft.domain.approval.approvaldocVO.ApprovalDocVO">
         SELECT
@@ -211,6 +216,13 @@
         FROM TB_APRVL_LINE
         WHERE APRVL_STEP_SN = #{aprvlStepSn}
           AND APRVR_EMP_ID = #{aprvrEmpId}
+    </select>
+
+    <select id="selectApproverEmpIdsByStep" resultType="long">
+        SELECT APRVR_EMP_ID
+        FROM TB_APRVL_LINE
+        WHERE APRVL_STEP_SN = #{aprvlStepSn}
+        ORDER BY APRVL_LINE_SN ASC
     </select>
 
     <select id="countApprovalLinesByStepAndStatus" resultType="int">
@@ -507,6 +519,9 @@
             s.STEP_PRGRS_CD AS stepPrgrsCd,
             l.APRVR_EMP_ID AS aprvrEmpId,
             e.EMP_NM AS aprvrEmpNm,
+            dept.DEPT_NM AS aprvrDeptNm,
+            pstn.JOB_PSTN_NM AS aprvrJobPstnNm,
+            e.PRFL_IMG_FILE_ID AS aprvrPrflImgFileId,
             l.APRVL_PRGRS_CD AS aprvlPrgrsCd,
             l.APRVL_DT AS aprvlDt,
             l.APRVL_RSN AS aprvlRsn,
@@ -515,6 +530,8 @@
         FROM TB_APRVL_STEP s
         JOIN TB_APRVL_LINE l ON l.APRVL_STEP_SN = s.APRVL_STEP_SN
         JOIN TB_EMPLOYEE e ON e.EMP_ID = l.APRVR_EMP_ID
+        LEFT JOIN TB_DEPARTMENT dept ON dept.DEPT_CD = e.DEPT_CD
+        LEFT JOIN TB_JOB_POSITION pstn ON pstn.JOB_PSTN_CD = e.JOB_PSTN_CD
         WHERE s.DRFT_DOC_SN = #{drftDocSn}
         ORDER BY s.APRVL_ORD ASC, l.APRVL_LINE_SN ASC
     </select>

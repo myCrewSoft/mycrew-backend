@@ -36,6 +36,9 @@ public interface ApprovalDraftMapper {
 
     void deleteApprovalStepsByDocSn(@Param("drftDocSn") Long drftDocSn);
 
+    /** 임시저장 기안서(원본 문서) 하드 삭제 */
+    int deleteApprovalDocByDocSn(@Param("drftDocSn") Long drftDocSn);
+
     ApprovalDocVO selectApprovalDocByDocSn(@Param("drftDocSn") Long drftDocSn);
 
     ApprovalDocVO selectApprovalDocByDocSnForUpdate(@Param("drftDocSn") Long drftDocSn);
@@ -55,6 +58,8 @@ public interface ApprovalDraftMapper {
     ApprovalLineVO selectApprovalLineInStep(
             @Param("aprvlStepSn") Long aprvlStepSn,
             @Param("aprvrEmpId") Long aprvrEmpId);
+
+    List<Long> selectApproverEmpIdsByStep(@Param("aprvlStepSn") Long aprvlStepSn);
 
     int countApprovalLinesByStepAndStatus(
             @Param("aprvlStepSn") Long aprvlStepSn,

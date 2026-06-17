@@ -40,6 +40,7 @@
             C.CHTRM_EXPLN,
             C.CHTRM_TYPE_CD,
             C.ESTBLSH_ID,
+            C.CHTRM_IMG_ATCH_FILE_ID,
             C.CREAT_DT,
             C.END_DT,
             LM.LAST_MESSAGE,
@@ -52,7 +53,7 @@
             ) AS PARTICIPANT_COUNT,
             CASE
                 WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
-                    SELECT OP.PTCPT_STTUS_CD
+                    SELECT RTRIM(OP.PTCPT_STTUS_CD)
                     FROM TB_MSNGR_CHTRM_PTCPT OP
                     WHERE OP.CHTRM_ID = C.CHTRM_ID
                     AND OP.EMP_ID <![CDATA[ <> ]]> #{empId}
@@ -112,7 +113,7 @@
             ) AS UNREAD_COUNT,
             P.CHTRM_ID AS PTCPT_CHTRM_ID,
             P.EMP_ID,
-            P.PTCPT_STTUS_CD,
+            RTRIM(P.PTCPT_STTUS_CD) AS PTCPT_STTUS_CD,
             P.LAST_CFMTN_MSG_ID,
             P.JOIN_DT,
             P.LEAV_DT
@@ -150,6 +151,7 @@
             C.CHTRM_EXPLN,
             C.CHTRM_TYPE_CD,
             C.ESTBLSH_ID,
+            C.CHTRM_IMG_ATCH_FILE_ID,
             C.CREAT_DT,
             C.END_DT,
             (
@@ -160,7 +162,7 @@
             ) AS PARTICIPANT_COUNT,
             P.CHTRM_ID AS PTCPT_CHTRM_ID,
             P.EMP_ID,
-            P.PTCPT_STTUS_CD,
+            RTRIM(P.PTCPT_STTUS_CD) AS PTCPT_STTUS_CD,
             P.LAST_CFMTN_MSG_ID,
             P.JOIN_DT,
             P.LEAV_DT
@@ -174,7 +176,7 @@
         SELECT
             CHTRM_ID,
             EMP_ID,
-            PTCPT_STTUS_CD,
+            RTRIM(PTCPT_STTUS_CD) AS PTCPT_STTUS_CD,
             LAST_CFMTN_MSG_ID,
             JOIN_DT,
             LEAV_DT
@@ -236,6 +238,7 @@
             CHTRM_EXPLN,
             CHTRM_TYPE_CD,
             ESTBLSH_ID,
+            CHTRM_IMG_ATCH_FILE_ID,
             CREAT_DT
         ) VALUES (
             #{chtrmId},
@@ -243,6 +246,7 @@
             #{chtrmExpln},
             #{chtrmTypeCd},
             #{estblshId},
+            #{chtrmImgAtchFileId},
             SYSDATE
         )
     </insert>
@@ -283,7 +287,8 @@
     <update id="updateChtrm">
         UPDATE TB_MSNGR_CHTRM
         SET CHTRM_NM = #{vo.chtrmNm},
-            CHTRM_EXPLN = #{vo.chtrmExpln}
+            CHTRM_EXPLN = #{vo.chtrmExpln},
+            CHTRM_IMG_ATCH_FILE_ID = #{vo.chtrmImgAtchFileId}
         WHERE CHTRM_ID = #{chtrmId}
         AND END_DT IS NULL
     </update>
@@ -321,11 +326,18 @@
     </update>
 
     <select id="selectPtcptSttus" resultType="String">
-        SELECT PTCPT_STTUS_CD
+        SELECT RTRIM(PTCPT_STTUS_CD)
         FROM TB_MSNGR_CHTRM_PTCPT
         WHERE EMP_ID = #{empId}
         AND LEAV_DT IS NULL
         AND ROWNUM = 1
+    </select>
+
+    <select id="selectActiveChtrmIdsByEmpId" resultType="long">
+        SELECT CHTRM_ID
+        FROM TB_MSNGR_CHTRM_PTCPT
+        WHERE EMP_ID = #{empId}
+          AND LEAV_DT IS NULL
     </select>
 
     <update id="updateLastCfmtnMsgId">
@@ -349,4 +361,42 @@
             OR P.LAST_CFMTN_MSG_ID <![CDATA[ < ]]> M.MSG_ID
         )
     </select>
+    
+    <update id="mergeProjectPtcpt" parameterType="MsngrChtrmPtcptVO">
+	    MERGE INTO TB_MSNGR_CHTRM_PTCPT T
+	    USING (
+	        SELECT
+	            #{chtrmId} AS CHTRM_ID,
+	            #{empId} AS EMP_ID,
+	            #{ptcptSttusCd} AS PTCPT_STTUS_CD
+	        FROM DUAL
+	    ) S
+	    ON (
+	        T.CHTRM_ID = S.CHTRM_ID
+	        AND T.EMP_ID = S.EMP_ID
+	    )
+	    WHEN MATCHED THEN
+	        UPDATE SET
+	            T.PTCPT_STTUS_CD = S.PTCPT_STTUS_CD,
+	            T.LEAV_DT = NULL
+	    WHEN NOT MATCHED THEN
+	        INSERT (
+	            CHTRM_ID,
+	            EMP_ID,
+	            PTCPT_STTUS_CD
+	        )
+	        VALUES (
+	            S.CHTRM_ID,
+	            S.EMP_ID,
+	            S.PTCPT_STTUS_CD
+	        )
+	</update>
+	
+	<update id="updateProjectPtcptLeaveDt">
+	    UPDATE TB_MSNGR_CHTRM_PTCPT
+	    SET LEAV_DT = SYSDATE
+	    WHERE CHTRM_ID = #{chtrmId}
+	      AND EMP_ID = #{empId}
+	      AND LEAVE_DT IS NULL
+	</update>
 </mapper>

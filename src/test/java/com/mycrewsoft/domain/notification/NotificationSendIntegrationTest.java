@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.mycrewsoft.domain.notification.mapper.NotificationMapper;
 import com.mycrewsoft.domain.notification.vo.AlrmRcvrVO;
 import com.mycrewsoft.domain.notification.vo.AlrmVO;
+import com.mycrewsoft.domain.notification.vo.NotificationQueryVO;
 
 @SpringBootTest
 @Transactional
@@ -37,12 +38,11 @@ class NotificationSendIntegrationTest {
         rcvrVO.setRcvrEmpId(TEST_EMP_ID);
         notificationMapper.insertAlrmRcvr(rcvrVO);
 
-        List<AlrmVO> result = notificationMapper.selectAlrmList(TEST_EMP_ID);
+        List<NotificationQueryVO> result = notificationMapper.selectAlrmList(TEST_EMP_ID);
 
         assertThat(result).isNotEmpty();
         assertThat(result.get(0).getAlrmTtln()).isEqualTo("통합 테스트 알림");
-        assertThat(result.get(0).getAlrmRcvr()).isNotEmpty();
-        assertThat(result.get(0).getAlrmRcvr().get(0).getRcvrEmpId()).isEqualTo(TEST_EMP_ID);
+        assertThat(result.get(0).getAlrmRcvrId()).isEqualTo(rcvrVO.getAlrmRcvrId());
     }
 
     @Test

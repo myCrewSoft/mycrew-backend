@@ -73,6 +73,7 @@ public enum ErrorCode {
     // BOARD
     BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지않는 게시판입니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_002", "존재하지않는 댓글입니다."),
+    
     // JOB
     RANK_NOT_FOUND(HttpStatus.NOT_FOUND, "JOB_001", "존재하지 않는 직급입니다."),
     DUPLICATE_RANK_ID(HttpStatus.CONFLICT, "JOB_002", "이미 존재하는 직급 ID입니다."),
@@ -133,11 +134,35 @@ public enum ErrorCode {
     VIDEO_MOM_ALREADY_CONFIRMED(HttpStatus.BAD_REQUEST, "VIDEO_005", "이미 확정된 회의록입니다."),
     VIDEO_APRVL_ALREADY_DONE(HttpStatus.BAD_REQUEST,    "VIDEO_006", "이미 결재 처리된 항목입니다."),
     STT_TRANSCRIBE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "VIDEO_007", "음성 텍스트 변환에 실패했습니다."),
+    VIDEO_CONF_INVALID_DATE(HttpStatus.BAD_REQUEST, "VIDEO_008", "종료날짜는 시작날짜 이후여야 합니다."),
 	
+    // MEETING
+    MTNG_NOT_FOUND(HttpStatus.NOT_FOUND,   "MTNG_001", "존재하지 않는 회의입니다."),
+    INVALID_MTNG_TYPE_CD(HttpStatus.BAD_REQUEST, "MTNG_002", "유효하지 않은 회의 진행방식 코드입니다."),
+    MTNG_ALREADY_STARTED(HttpStatus.BAD_REQUEST, "MTNG_003", "이미 시작된 회의는 삭제할 수 없습니다."),
+    MTNG_MOM_NOT_FOUND(HttpStatus.NOT_FOUND, "MTNG_004", "존재하지 않는 회의록입니다."),
+    MTNG_MOM_NOT_EDITABLE(HttpStatus.BAD_REQUEST, "MTNG_005", "결재가 진행 중이거나 완료된 회의록은 수정할 수 없습니다."),
+    MTNG_PTCPT_FORBIDDEN(HttpStatus.FORBIDDEN, "MTNG_006", "회의 참여자만 접근할 수 있습니다."),
+    MTNG_MOM_ALREADY_REQUESTED(HttpStatus.BAD_REQUEST, "MTNG_007", "이미 결재 요청된 회의록입니다."),
+    MTNG_MOM_NO_APPROVER(HttpStatus.BAD_REQUEST, "MTNG_008", "결재자가 없습니다. 참여자를 확인해주세요."),
+
 	// TASK
 	TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "TASK_001", "존재하지 않는 업무입니다."),
 	TASK_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "TASK_002", "업무 참여자가 아닙니다."),
-	TASK_NOT_OWNER(HttpStatus.FORBIDDEN, "TASK_003", "해당 업무에 대한 권한이 없습니다.");
+	TASK_NOT_OWNER(HttpStatus.FORBIDDEN, "TASK_003", "해당 업무에 대한 권한이 없습니다."),
+	TASK_INVALID_STAT_TRANSITION(HttpStatus.BAD_REQUEST, "TASK_004", "해당 상태에서는 정보를 변경할 수 없습니다."),
+
+	// ATTENDANCE
+	ATND_POLICY_NOT_FOUND(HttpStatus.NOT_FOUND, "ATND_001", "적용 가능한 근무 정책이 없습니다. 관리자에게 문의하세요."),
+	ATND_ALREADY_CHECKED_IN(HttpStatus.CONFLICT, "ATND_002", "이미 출근 처리되었습니다."),
+	ATND_NOT_CHECKED_IN(HttpStatus.BAD_REQUEST, "ATND_003", "출근 기록이 없어 퇴근할 수 없습니다."),
+	ATND_ALREADY_CHECKED_OUT(HttpStatus.CONFLICT, "ATND_004", "이미 퇴근 처리되었습니다."),
+	ATND_INVALID_PERIOD(HttpStatus.BAD_REQUEST, "ATND_005", "조회 기간 구분 값이 올바르지 않습니다."),
+	ATND_LEAVE_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "ATND_006", "존재하지 않는 휴가 종류입니다."),
+	ATND_LEAVE_INVALID_RANGE(HttpStatus.BAD_REQUEST, "ATND_007", "휴가 종료일은 시작일 이후여야 합니다."),
+	ATND_OT_INVALID_RANGE(HttpStatus.BAD_REQUEST, "ATND_008", "초과근무 종료 시각은 시작 시각 이후여야 합니다."),
+	TASK_INVALID_DATE(HttpStatus.BAD_REQUEST, "TASK_004", "종료날짜는 시작날짜 이후여야 합니다.");
+
     // 팀원이 새 도메인 추가 시 아래 패턴으로 섹션 추가
     // BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD_001", "존재하지 않는 게시글입니다.")
 	

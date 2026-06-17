@@ -3,6 +3,7 @@ package com.mycrewsoft.domain.approval.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -51,5 +52,14 @@ public class ApprovalDraftController {
             @Valid @RequestBody List<ApprovalStepRequestDTO> approvalSteps) {
         approvalDraftService.saveApprovalLine(drftDocSn, approvalSteps);
         return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @Operation(summary = "임시저장 기안서 삭제",
+            description = "기안자 본인이 임시저장(상태 코드 00) 상태인 기안서를 결재선·첨부와 함께 영구 삭제합니다. '결재 기안 삭제' 권한이 필요합니다.")
+    @DeleteMapping("/drafts/{drftDocSn}")
+    public ResponseEntity<ApiResponse<Void>> deleteTemporaryDraft(
+            @PathVariable Long drftDocSn) {
+        approvalDraftService.deleteTemporaryDraft(drftDocSn);
+        return ResponseEntity.ok(ApiResponse.success("기안서를 삭제했습니다.", null));
     }
 }

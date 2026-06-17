@@ -52,4 +52,7 @@ public class ReservationResponse {
     
     @Schema(description = "내 예약 여부", example = "true")
     private Boolean mine;
+
+    @Schema(description = "연동된 회의ID, 없으면 null")
+    private Long mtngId;
 }

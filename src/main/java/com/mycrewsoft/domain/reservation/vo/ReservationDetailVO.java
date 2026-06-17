@@ -19,6 +19,8 @@ public class ReservationDetailVO {
     private String rsrvPurps;
     private LocalDateTime beginDt;
     private LocalDateTime endDt;
-    private String rsrvSttusCd;
+    private String delYn;
     private String intgRsrvYn;
+
+    private Long mtngId;
 }

@@ -67,4 +67,7 @@ public interface ProjectMapper {
 
 	// 프로젝트 마감 하루전 알림
 	List<ProjectDeadlineVO> selectProjectsDueTomorrow();
+	
+	// 프로젝트 채팅방 ID 입력
+	int updateProjectChtrmId(@Param("projId") Long projId, @Param("chtrmId") Long chtrmId);
 }

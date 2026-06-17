@@ -24,12 +24,18 @@ import com.mycrewsoft.domain.employee.event.FirstLoginEvent;
 import com.mycrewsoft.domain.employee.event.PasswordChangedEvent;
 import com.mycrewsoft.domain.employee.event.PermissionChangedEvent;
 import com.mycrewsoft.domain.employee.event.ProfileChangedEvent;
+import com.mycrewsoft.domain.mtng.event.MeetingChangedEvent;
+import com.mycrewsoft.domain.mtng.event.MeetingEndedEvent;
+import com.mycrewsoft.domain.mtng.event.MeetingInvitedEvent;
+import com.mycrewsoft.domain.mtng.event.MeetingReminderEvent;
 import com.mycrewsoft.domain.notification.service.NotificationService;
 import com.mycrewsoft.domain.project.event.ProjectClosedEvent;
 import com.mycrewsoft.domain.project.event.ProjectCompletedEvent;
 import com.mycrewsoft.domain.project.event.ProjectCreatedEvent;
 import com.mycrewsoft.domain.project.event.ProjectDeadlineEvent;
 import com.mycrewsoft.domain.project.event.ProjectManagerChangedEvent;
+import com.mycrewsoft.domain.project.event.ProjectMemberRemovedEvent;
+import com.mycrewsoft.domain.project.event.ProjectMembersAddedEvent;
 import com.mycrewsoft.domain.project.event.ProjectStoppedEvent;
 import com.mycrewsoft.domain.schedule.event.ScheduleCancelledEvent;
 import com.mycrewsoft.domain.schedule.event.ScheduleChangedEvent;
@@ -43,10 +49,6 @@ import com.mycrewsoft.domain.task.event.TaskDeadlineEvent;
 import com.mycrewsoft.domain.task.event.TaskManagerChangedEvent;
 import com.mycrewsoft.domain.task.event.TaskMemberRemovedEvent;
 import com.mycrewsoft.domain.task.event.TaskStatusChangedEvent;
-import com.mycrewsoft.domain.video.event.MeetingChangedEvent;
-import com.mycrewsoft.domain.video.event.MeetingEndedEvent;
-import com.mycrewsoft.domain.video.event.MeetingInvitedEvent;
-import com.mycrewsoft.domain.video.event.MeetingReminderEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -139,6 +141,27 @@ public class NotificationEventListener {
             null,
             event.getEmpIds()
         );
+    }
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleProjectMembersAdded(ProjectMembersAddedEvent event) {
+    	notificationService.sendAlrm(
+    			"[" + event.getProjNm() + "] 프로젝트에 등록되었습니다.",
+    			"04",
+    			null,
+    			event.getEmpIds()
+    			);
+    }
+    
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleProjectMemberRemoved(ProjectMemberRemovedEvent event) {
+    	notificationService.sendAlrm(
+    			"[" + event.getProjNm() + "] 프로젝트에서 제외되었습니다.",
+    			"04",
+    			null,
+    			List.of(event.getEmpId())
+    			);
     }
 
     @Async
