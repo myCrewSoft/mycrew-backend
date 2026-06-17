@@ -12,9 +12,9 @@ public class SchdWidgetVO {
     private Long id;
     private String scheduleTypeCode;
     private String title;
-    private LocalDateTime start;
-    private LocalDateTime end;
-    private Boolean allDay;
+    private LocalDateTime startDt;
+    private LocalDateTime endDt;
+    private String allDayYn;
     private String deptNm;
     private String projNm;
     private String taskNm;
