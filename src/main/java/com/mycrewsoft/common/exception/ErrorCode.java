@@ -118,6 +118,7 @@ public enum ErrorCode {
 	RSRV_NOT_FOUND(HttpStatus.NOT_FOUND, "RSRV_001", "존재하지 않는 예약입니다."),
 	RSRV_CREATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "RSRV_002", "예약 생성에 실패했습니다."),
 	RSRV_TIME_CONFLICT(HttpStatus.CONFLICT, "RSRV_003", "이미 예약된 시간대입니다."),
+	RSRV_ALREADY_CANCELLED(HttpStatus.BAD_REQUEST, "RSRV_004", "이미 삭제된 예약입니다."),
 	
 	// PROEJCT
 	PROJECT_INVALID_DATE(HttpStatus.BAD_REQUEST, "PROJECT_001", "종료날짜는 시작날짜 이후여야 합니다."),

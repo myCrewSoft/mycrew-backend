@@ -7,20 +7,17 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ReservationDetailVO {
+public class RsrvAdminVO {
 
-	private Long rsrvId;
+    private Long rsrvId;
     private Long confRmId;
-    private Long rsrvEmpId;
-    private String rsrvEmpNm;
-    private String rsrvEmpDeptCd;
-    private String rsrvEmpJobGrdCd;
-    private Long rsrvEmpPrflImgFileId;
+    private String confRmNm;
+    private int confRmFlr;
+    private String confRmHo;
     private String rsrvPurps;
+    private String rsrvEmpNm;
     private LocalDateTime beginDt;
     private LocalDateTime endDt;
+    private String intgRsrvYn;
     private String delYn;
-    private String allDayYn;
-
-    private Long mtngId;
 }
