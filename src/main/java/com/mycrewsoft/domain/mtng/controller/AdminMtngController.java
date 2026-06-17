@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -21,9 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "관리자 회의 관리", description = "관리자 전용 회의 조회 및 관리 API")
 @RestController
-@RequestMapping("/api/v1/admin/meetings")
+@RequestMapping("/admin/meetings")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 public class AdminMtngController {
 
     private final AdminMtngService adminMtngService;
