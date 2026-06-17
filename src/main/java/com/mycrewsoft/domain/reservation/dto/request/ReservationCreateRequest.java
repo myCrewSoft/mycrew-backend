@@ -25,7 +25,7 @@ public class ReservationCreateRequest {
 
     @NotNull
     @Schema(description = "종일 예약 여부", example = "N")
-    private String intgRsrvYn;
+    private String allDayYn;
     
     @NotNull
     @Schema(description = "예약 시작 일시", example = "2026-06-05T09:00:00")
