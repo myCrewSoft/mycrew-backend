@@ -7,9 +7,15 @@ import org.mapstruct.Mapping;
 
 import com.mycrewsoft.domain.reservation.dto.request.ReservationCreateRequest;
 import com.mycrewsoft.domain.reservation.dto.request.ReservationUpdateRequest;
+import com.mycrewsoft.domain.reservation.dto.request.RsrvSearchRequest;
+import com.mycrewsoft.domain.reservation.dto.response.PopularRmItem;
 import com.mycrewsoft.domain.reservation.dto.response.ReservationResponse;
+import com.mycrewsoft.domain.reservation.dto.response.RsrvListItem;
 import com.mycrewsoft.domain.reservation.vo.ConfRmRsrvVO;
+import com.mycrewsoft.domain.reservation.vo.PopularRmVO;
 import com.mycrewsoft.domain.reservation.vo.ReservationDetailVO;
+import com.mycrewsoft.domain.reservation.vo.RsrvAdminVO;
+import com.mycrewsoft.domain.reservation.vo.RsrvSearchVO;
 
 @Mapper(componentModel = "spring")
 public interface ReservationDtoMapper {
@@ -46,4 +52,11 @@ public interface ReservationDtoMapper {
     @Mapping(target = "rsrvEmpId",     ignore = true)
     @Mapping(target = "delYn",   ignore = true)
     ConfRmRsrvVO toVo(ReservationUpdateRequest request);
+    
+    PopularRmItem toPopularRmItem(PopularRmVO vo);
+
+    RsrvListItem toRsrvListItem(RsrvAdminVO vo);
+    
+    RsrvSearchVO toRsrvSearchVO(RsrvSearchRequest request);
+
 }
