@@ -29,9 +29,10 @@ public class MtngMomServiceImpl implements MtngMomService {
 
     private final MtngMomMapper mtngMomMapper;
     private final MtngMapper mtngMapper;
-    private final MtngMomDtoMapper mtngMomDtoMapper; // MapStruct
+    private final MtngMomDtoMapper mtngMomDtoMapper;
     private final ApprovalDraftWriteService approvalDraftWriteService;
     private final ApprovalRequestService approvalRequestService;
+    private final MtngMomAiService mtngMomAiService;
 
     @Override
     @Transactional
@@ -169,6 +170,12 @@ public class MtngMomServiceImpl implements MtngMomService {
         mtngMomMapper.updateMtngMomDrftDocSn(momVO.getMomId(), drftDocSn, "03");
     }
 
+    @Override
+    @Transactional
+    public void regenerateAiDraft(Long mtngId) {
+        mtngMomAiService.regenerateAiDraft(mtngId);
+    }
+    
     // 회의 참여자인지 검증 (회의록 조회/작성/수정 공통)
     private void validatePtcpt(Long mtngId, Long empId) {
         boolean isPtcpt = mtngMapper.selectMtngPtcptDetailList(mtngId).stream()
