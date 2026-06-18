@@ -55,4 +55,14 @@ public class MtngMomController {
         mtngMomService.requestApproval(mtngId);
         return ResponseEntity.ok(ApiResponse.success("결재 요청이 발송되었습니다.", null));
     }
+    
+    // 회의록 AI 초안 재생성 (자동 생성 실패 시 수동 재시도)
+    @Operation(summary = "회의록 AI 초안 재생성", description = "자동 생성 실패 시 수동으로 AI 초안을 다시 생성합니다.")
+    @PostMapping("/regenerate")
+    public ResponseEntity<ApiResponse<String>> regenerateAiDraft(
+            @PathVariable Long mtngId) {
+
+        mtngMomService.regenerateAiDraft(mtngId);
+        return ResponseEntity.ok(ApiResponse.success("AI 초안 재생성을 요청했습니다."));
+    }
 }
