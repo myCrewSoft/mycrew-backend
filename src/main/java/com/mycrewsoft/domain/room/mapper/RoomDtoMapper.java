@@ -7,7 +7,11 @@ import org.mapstruct.Mapping;
 
 import com.mycrewsoft.domain.room.dto.request.RoomCreateRequest;
 import com.mycrewsoft.domain.room.dto.request.RoomUpdateRequest;
+import com.mycrewsoft.domain.room.dto.response.ConfRmListItem;
+import com.mycrewsoft.domain.room.dto.response.ConfRmStatsSummary;
 import com.mycrewsoft.domain.room.dto.response.RoomResponse;
+import com.mycrewsoft.domain.room.vo.ConfRmAdminVO;
+import com.mycrewsoft.domain.room.vo.ConfRmSummaryVO;
 import com.mycrewsoft.domain.room.vo.ConfRmVO;
 
 @Mapper(componentModel = "spring")
@@ -25,4 +29,7 @@ public interface RoomDtoMapper {
     
     List<RoomResponse> toResponseList(List<ConfRmVO> voList);
 
+    ConfRmStatsSummary toConfRmStatsSummary(ConfRmSummaryVO vo);
+
+    ConfRmListItem toConfRmListItem(ConfRmAdminVO vo);
 }

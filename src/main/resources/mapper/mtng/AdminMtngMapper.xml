@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.domain.mtng.mapper.AdminMtngMapper">
+
+    <select id="selectAdminMtngList" parameterType="AdminMtngListRequest" resultType="MtngListVO">
+        SELECT *
+        FROM (
+            SELECT ROWNUM AS RN, INNER_QUERY.*
+            FROM (
+                SELECT
+                    M.MTNG_ID,
+                    M.MTNG_NM,
+                    M.MTNG_TYPE_CD,
+                    M.BEGIN_DT,
+                    M.END_DT,
+                    M.CRTR_ID,
+                    E.EMP_NM        AS CRTR_NM,
+                    CASE
+                        WHEN VC.VCONF_ID IS NULL THEN NULL
+                        WHEN M.BEGIN_DT &gt; SYSDATE THEN 'VC001'
+                        WHEN M.BEGIN_DT &lt;= SYSDATE AND M.END_DT &gt;= SYSDATE THEN 'VC002'
+                        ELSE 'VC003'
+                    END             AS VCONF_STTUS,
+                    VC.VCONF_ID,
+                    VC.ROOM_NM,
+                    CR.CONF_RM_NM,
+                    MOM.MOM_STTUS_CD,
+                    (
+                        SELECT COUNT(*)
+                        FROM TB_MTNG_PTCPT P
+                        WHERE P.MTNG_ID = M.MTNG_ID
+                    )               AS PTCPT_CNT,
+                    M.DEL_YN
+                FROM TB_MTNG M
+                LEFT JOIN TB_EMPLOYEE E      ON E.EMP_ID = M.CRTR_ID
+                LEFT JOIN TB_VIDEO_CONF VC   ON VC.MTNG_ID = M.MTNG_ID
+                LEFT JOIN TB_CONF_RM_RSRV RR ON RR.RSRV_ID = M.CONF_RM_RSRV_ID
+                LEFT JOIN TB_CONF_RM CR      ON CR.CONF_RM_ID = RR.CONF_RM_ID
+                LEFT JOIN TB_MTNG_MOM MOM    ON MOM.MTNG_ID = M.MTNG_ID
+                WHERE 1 = 1
+                <if test="includeDeleted == false">
+                    AND M.DEL_YN = 'N'
+                </if>
+                <if test="keyword != null and keyword != ''">
+                    AND (
+                        M.MTNG_NM LIKE '%' || #{keyword} || '%'
+                        OR E.EMP_NM LIKE '%' || #{keyword} || '%'
+                    )
+                </if>
+                <if test="mtngTypeCd != null and mtngTypeCd != ''">
+                    AND M.MTNG_TYPE_CD = #{mtngTypeCd}
+                </if>
+                <if test="vconfSttus != null and vconfSttus != ''">
+                    AND CASE
+                        WHEN VC.VCONF_ID IS NULL THEN NULL
+                        WHEN M.BEGIN_DT &gt; SYSDATE THEN 'VC001'
+                        WHEN M.BEGIN_DT &lt;= SYSDATE AND M.END_DT &gt;= SYSDATE THEN 'VC002'
+                        ELSE 'VC003'
+                    END = #{vconfSttus}
+                </if>
+                <if test="momSttusCd != null and momSttusCd != ''">
+                    AND MOM.MOM_STTUS_CD = #{momSttusCd}
+                </if>
+                <if test="beginDt != null">
+                    AND M.BEGIN_DT &gt;= #{beginDt}
+                </if>
+                <if test="endDt != null">
+                    AND M.BEGIN_DT &lt;= #{endDt}
+                </if>
+                ORDER BY M.BEGIN_DT DESC
+            ) INNER_QUERY
+            WHERE ROWNUM &lt;= #{page} * #{size}
+        )
+        WHERE RN &gt; (#{page} - 1) * #{size}
+    </select>
+
+    <select id="selectAdminMtngTotalCount" parameterType="AdminMtngListRequest" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_MTNG M
+        LEFT JOIN TB_EMPLOYEE E    ON E.EMP_ID = M.CRTR_ID
+        LEFT JOIN TB_VIDEO_CONF VC ON VC.MTNG_ID = M.MTNG_ID
+        LEFT JOIN TB_MTNG_MOM MOM  ON MOM.MTNG_ID = M.MTNG_ID
+        WHERE 1 = 1
+        <if test="includeDeleted == false">
+            AND M.DEL_YN = 'N'
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (
+                M.MTNG_NM LIKE '%' || #{keyword} || '%'
+                OR E.EMP_NM LIKE '%' || #{keyword} || '%'
+            )
+        </if>
+        <if test="mtngTypeCd != null and mtngTypeCd != ''">
+            AND M.MTNG_TYPE_CD = #{mtngTypeCd}
+        </if>
+        <if test="momSttusCd != null and momSttusCd != ''">
+            AND MOM.MOM_STTUS_CD = #{momSttusCd}
+        </if>
+        <if test="beginDt != null">
+            AND M.BEGIN_DT &gt;= #{beginDt}
+        </if>
+        <if test="endDt != null">
+            AND M.BEGIN_DT &lt;= #{endDt}
+        </if>
+    </select>
+
+    <select id="selectAdminMtngDetail" parameterType="Long" resultType="MtngListVO">
+        SELECT
+            M.MTNG_ID,
+            M.MTNG_NM,
+            M.MTNG_TYPE_CD,
+            M.BEGIN_DT,
+            M.END_DT,
+            M.CRTR_ID,
+            E.EMP_NM AS CRTR_NM,
+            M.CONF_RM_RSRV_ID,
+            CR.CONF_RM_NM,
+            VC.VCONF_ID,
+            VC.ROOM_NM,
+            CASE
+                WHEN VC.VCONF_ID IS NULL THEN NULL
+                WHEN M.BEGIN_DT &gt; SYSDATE THEN 'VC001'
+                WHEN M.BEGIN_DT &lt;= SYSDATE AND M.END_DT &gt;= SYSDATE THEN 'VC002'
+                ELSE 'VC003'
+            END AS VCONF_STTUS,
+            MOM.MOM_ID,
+            MOM.MOM_STTUS_CD,
+            M.DEL_YN
+        FROM TB_MTNG M
+        LEFT JOIN TB_EMPLOYEE E      ON E.EMP_ID = M.CRTR_ID
+        LEFT JOIN TB_VIDEO_CONF VC   ON VC.MTNG_ID = M.MTNG_ID
+        LEFT JOIN TB_CONF_RM_RSRV RR ON RR.RSRV_ID = M.CONF_RM_RSRV_ID
+        LEFT JOIN TB_CONF_RM CR      ON CR.CONF_RM_ID = RR.CONF_RM_ID
+        LEFT JOIN TB_MTNG_MOM MOM    ON MOM.MTNG_ID = M.MTNG_ID
+        WHERE M.MTNG_ID = #{mtngId}
+    </select>
+
+    <select id="selectAdminMtngPtcptList" parameterType="Long" resultType="AdminMtngPtcptVO">
+        SELECT
+            P.EMP_ID,
+            E.EMP_NM,
+            D.DEPT_NM,
+            J.JOB_GRD_NM
+        FROM TB_MTNG_PTCPT P
+        LEFT JOIN TB_EMPLOYEE E    ON E.EMP_ID = P.EMP_ID
+        LEFT JOIN TB_DEPARTMENT D  ON D.DEPT_CD = E.DEPT_CD
+        LEFT JOIN TB_JOB_GRADE J   ON J.JOB_GRD_CD = E.JOB_GRD_CD
+        WHERE P.MTNG_ID = #{mtngId}
+        ORDER BY E.EMP_NM ASC
+    </select>
+
+    <select id="selectAdminMtngStats" resultType="AdminMtngStatsVO">
+        SELECT
+            SUM(CASE WHEN TRUNC(M.BEGIN_DT) = TRUNC(SYSDATE)
+                          AND M.BEGIN_DT &gt; SYSDATE
+                          AND M.DEL_YN = 'N'
+                     THEN 1 ELSE 0 END) AS TODAY_SCHEDULED_CNT,
+            SUM(CASE WHEN M.BEGIN_DT &lt;= SYSDATE
+                          AND M.END_DT &gt;= SYSDATE
+                          AND M.DEL_YN = 'N'
+                     THEN 1 ELSE 0 END) AS IN_PROGRESS_CNT,
+            SUM(CASE WHEN TRUNC(M.END_DT) = TRUNC(SYSDATE)
+                          AND M.END_DT &lt; SYSDATE
+                          AND M.DEL_YN = 'N'
+                     THEN 1 ELSE 0 END) AS COMPLETED_CNT,
+            SUM(CASE WHEN MOM.MOM_STTUS_CD = '01'
+                          AND M.DEL_YN = 'N'
+                     THEN 1 ELSE 0 END) AS AI_PENDING_CNT
+        FROM TB_MTNG M
+        LEFT JOIN TB_MTNG_MOM MOM ON MOM.MTNG_ID = M.MTNG_ID
+    </select>
+
+    <select id="selectMtngTypeStats" resultType="MtngAnalyticsVO">
+        SELECT
+            M.MTNG_TYPE_CD AS CATEGORY,
+            COUNT(*)       AS CNT
+        FROM TB_MTNG M
+        WHERE M.DEL_YN = 'N'
+        GROUP BY M.MTNG_TYPE_CD
+        ORDER BY CNT DESC
+    </select>
+
+    <select id="selectMtngMonthlyStats" resultType="MtngAnalyticsVO">
+        SELECT
+            TO_CHAR(M.BEGIN_DT, 'YYYY-MM') AS CATEGORY,
+            COUNT(*)                        AS CNT
+        FROM TB_MTNG M
+        WHERE M.DEL_YN = 'N'
+          AND M.BEGIN_DT &gt;= ADD_MONTHS(TRUNC(SYSDATE, 'MM'), -5)
+        GROUP BY TO_CHAR(M.BEGIN_DT, 'YYYY-MM')
+        ORDER BY CATEGORY ASC
+    </select>
+
+    <select id="selectMtngHourlyStats" resultType="MtngAnalyticsVO">
+        SELECT
+            TO_CHAR(M.BEGIN_DT, 'HH24') AS CATEGORY,
+            COUNT(*)                     AS CNT
+        FROM TB_MTNG M
+        WHERE M.DEL_YN = 'N'
+          AND TO_NUMBER(TO_CHAR(M.BEGIN_DT, 'HH24')) BETWEEN 9 AND 18
+        GROUP BY TO_CHAR(M.BEGIN_DT, 'HH24')
+        ORDER BY CATEGORY ASC
+    </select>
+
+    <select id="selectMomGenerationRate" resultType="int">
+        SELECT
+            CASE
+                WHEN COUNT(*) = 0 THEN 0
+                ELSE ROUND(
+                    SUM(CASE WHEN MOM.MOM_ID IS NOT NULL THEN 1 ELSE 0 END)
+                    * 100 / COUNT(*)
+                )
+            END
+        FROM TB_MTNG M
+        LEFT JOIN TB_MTNG_MOM MOM ON MOM.MTNG_ID = M.MTNG_ID
+        WHERE M.DEL_YN = 'N'
+          AND M.END_DT &lt; SYSDATE
+    </select>
+
+    <update id="updateMtngForceEnd" parameterType="Long">
+        UPDATE TB_MTNG
+        SET END_DT = SYSDATE
+        WHERE MTNG_ID = #{mtngId}
+          AND BEGIN_DT &lt;= SYSDATE
+          AND END_DT &gt;= SYSDATE
+          AND DEL_YN = 'N'
+    </update>
+
+</mapper>

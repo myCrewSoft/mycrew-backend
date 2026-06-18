@@ -38,18 +38,18 @@ spring:
   ai:
     openai:
 # ▶ 사내 LM Studio 주소
-      base-url: http://192.168.35.112:1234
+      base-url: ${LOCAL_LLM_URL}
       api-key: dummy
 
       chat:
         options:
       # ▶ 사용 모델
-          model: gemma-3n-e4b-it-text
+          model: ${LOCAL_LLM_MODEL}
 
         # ▶ ChatClient 수동 설정
     chat:
       client:
-        base-url: http://192.168.35.112:1234
+        base-url: ${LOCAL_LLM_URL}
         api-key: dummy
 
 

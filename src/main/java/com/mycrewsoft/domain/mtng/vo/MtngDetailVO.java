@@ -28,6 +28,8 @@ public class MtngDetailVO {
     private Long vconfId; // 화상회의ID, 오프라인이면 NULL
 
     private String roomNm; // LiveKit room명, 오프라인이면 NULL
+    
+    private String vconfSttus;     // 화상회의 상태코드 (오프라인이면 NULL)
 
     private Long momId; // 회의록ID, 없으면 NULL
 
@@ -36,4 +38,6 @@ public class MtngDetailVO {
     private Long rcrdgAtchFileId; // 녹취록 첨부파일ID, 없으면 null
 
     private LocalDateTime rcrdgCreatDt; // 녹취록 생성일시, 없으면 null
+
+    private String delYn;          // 삭제여부
 }

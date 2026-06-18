@@ -26,6 +26,7 @@ public enum ErrorCode {
 	APPROVAL_LINE_INVALID(HttpStatus.BAD_REQUEST, "APR_005", "결재선 정보가 올바르지 않습니다."),
 	APPROVAL_REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "APR_006", "반려 사유는 필수입니다."),
 	APPROVAL_SIGNATURE_REQUIRED(HttpStatus.BAD_REQUEST, "APR_007", "전자서명 이미지가 등록되어 있지 않아 승인할 수 없습니다. 마이페이지에서 전자서명을 먼저 등록해 주세요."),
+	APPROVAL_AI_JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "APR_008", "존재하지 않는 전자결재 AI 작업입니다."),
 
     // COMMON
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "COMMON_001", "입력값이 올바르지 않습니다."),
@@ -117,6 +118,7 @@ public enum ErrorCode {
 	RSRV_NOT_FOUND(HttpStatus.NOT_FOUND, "RSRV_001", "존재하지 않는 예약입니다."),
 	RSRV_CREATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "RSRV_002", "예약 생성에 실패했습니다."),
 	RSRV_TIME_CONFLICT(HttpStatus.CONFLICT, "RSRV_003", "이미 예약된 시간대입니다."),
+	RSRV_ALREADY_CANCELLED(HttpStatus.BAD_REQUEST, "RSRV_004", "이미 삭제된 예약입니다."),
 	
 	// PROEJCT
 	PROJECT_INVALID_DATE(HttpStatus.BAD_REQUEST, "PROJECT_001", "종료날짜는 시작날짜 이후여야 합니다."),
@@ -146,6 +148,7 @@ public enum ErrorCode {
     MTNG_PTCPT_FORBIDDEN(HttpStatus.FORBIDDEN, "MTNG_006", "회의 참여자만 접근할 수 있습니다."),
     MTNG_MOM_ALREADY_REQUESTED(HttpStatus.BAD_REQUEST, "MTNG_007", "이미 결재 요청된 회의록입니다."),
     MTNG_MOM_NO_APPROVER(HttpStatus.BAD_REQUEST, "MTNG_008", "결재자가 없습니다. 참여자를 확인해주세요."),
+    MTNG_NOT_IN_PROGRESS(HttpStatus.BAD_REQUEST, "MTNG_009", "현재 진행 중인 회의가 아닙니다."),
 
 	// TASK
 	TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "TASK_001", "존재하지 않는 업무입니다."),

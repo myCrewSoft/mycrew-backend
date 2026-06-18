@@ -20,5 +20,5 @@ public class ConfRmRsrvVO {
 	private LocalDateTime beginDt;	// 시작 일시
 	private LocalDateTime endDt;	// 종료 일시
 	private String delYn;			// 삭제 여부
-	private String intgRsrvYn;		// 종일 예약 여부
+	private String allDayYn;		// 종일 예약 여부
 }

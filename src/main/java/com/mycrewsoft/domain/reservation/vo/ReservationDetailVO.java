@@ -20,7 +20,7 @@ public class ReservationDetailVO {
     private LocalDateTime beginDt;
     private LocalDateTime endDt;
     private String delYn;
-    private String intgRsrvYn;
+    private String allDayYn;
 
     private Long mtngId;
 }

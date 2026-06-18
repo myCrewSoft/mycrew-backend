@@ -159,7 +159,7 @@ public class DashboardWidgetServiceImpl implements DashboardWidgetService {
                         .endAt(dto.getEndDateTime() != null
                                 ? dto.getEndDateTime().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
                                 : null)
-                        .status(dto.getIntgRsrvYn())
+                        .status(dto.getAllDayYn())
                         .build())
                 .toList();
 

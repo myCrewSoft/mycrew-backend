@@ -48,7 +48,7 @@ public class ReservationResponse {
     private LocalDateTime endDateTime;
 
     @Schema(description = "종일 예약 여부", example = "N")
-    private String intgRsrvYn;
+    private String allDayYn;
     
     @Schema(description = "내 예약 여부", example = "true")
     private Boolean mine;

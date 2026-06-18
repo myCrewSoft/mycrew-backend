@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.mycrewsoft.domain.reservation.mapper.RsrvAdminMapper">
+	
+	<select id="selectRsrvStatsSummary" resultType="com.mycrewsoft.domain.reservation.vo.RsrvSummaryVO">
+        SELECT
+            (
+                SELECT COUNT(*)
+                FROM TB_CONF_RM_RSRV
+                WHERE DEL_YN = 'N'
+                  AND TRUNC(BEGIN_DT) = TRUNC(SYSDATE)
+            ) AS today_rsrv_count,
+            (
+                SELECT COUNT(*)
+                FROM TB_CONF_RM_RSRV
+                WHERE DEL_YN = 'N'
+                  AND BEGIN_DT &gt;= TRUNC(SYSDATE, 'IW')
+                  AND BEGIN_DT &lt; TRUNC(SYSDATE, 'IW') + 7
+            ) AS week_rsrv_count,
+            (
+                SELECT COUNT(*)
+                FROM TB_CONF_RM rm
+                WHERE rm.USE_YN = 'Y'
+                  AND rm.CONF_RM_ID NOT IN (
+                      SELECT r.CONF_RM_ID
+                      FROM TB_CONF_RM_RSRV r
+                      WHERE r.DEL_YN = 'N'
+                        AND SYSDATE BETWEEN r.BEGIN_DT AND r.END_DT
+                  )
+            ) AS available_rm_count
+        FROM DUAL
+    </select>
+
+    <select id="selectPopularRmList" resultType="com.mycrewsoft.domain.reservation.vo.PopularRmVO">
+        SELECT
+            rm.CONF_RM_NM,
+            COUNT(*) AS rsrv_count
+        FROM TB_CONF_RM_RSRV r
+        JOIN TB_CONF_RM rm ON r.CONF_RM_ID = rm.CONF_RM_ID
+        WHERE r.DEL_YN = 'N'
+          AND r.BEGIN_DT &gt;= TRUNC(SYSDATE, 'IW')
+          AND r.BEGIN_DT &lt; TRUNC(SYSDATE, 'IW') + 7
+        GROUP BY rm.CONF_RM_NM
+        ORDER BY rsrv_count DESC
+        FETCH FIRST 3 ROWS ONLY
+    </select>
+    
+    <select id="selectRsrvList" parameterType="RsrvSearchVO" resultType="RsrvAdminVO">
+        SELECT
+            r.RSRV_ID,
+            r.CONF_RM_ID,
+            rm.CONF_RM_NM,
+            rm.CONF_RM_FLR,
+            rm.CONF_RM_HO,
+            r.RSRV_PURPS,
+            e.EMP_NM    AS rsrv_emp_nm,
+            r.BEGIN_DT,
+            r.END_DT,
+            r.All_DAY_YN,
+            r.DEL_YN
+        FROM TB_CONF_RM_RSRV r
+        JOIN TB_CONF_RM rm   ON r.CONF_RM_ID = rm.CONF_RM_ID
+        JOIN TB_EMPLOYEE e   ON r.RSRV_EMP_ID = e.EMP_ID
+        <where>
+            <if test="searchDt != null">
+                AND TRUNC(r.BEGIN_DT) = #{searchDt}
+            </if>
+            <if test="confRmFlr != null">
+                AND rm.CONF_RM_FLR = #{confRmFlr}
+            </if>
+            <if test="confRmId != null">
+                AND r.CONF_RM_ID = #{confRmId}
+            </if>
+            <if test="rsrvEmpNm != null and rsrvEmpNm != ''">
+                AND e.EMP_NM LIKE '%' || #{rsrvEmpNm} || '%'
+            </if>
+            <if test="intgRsrvYn != null and intgRsrvYn != ''">
+                AND r.INTG_RSRV_YN = #{intgRsrvYn}
+            </if>
+            <if test="useYn != null and useYn != ''">
+                AND rm.USE_YN = #{useYn}
+            </if>
+        </where>
+        ORDER BY r.BEGIN_DT DESC
+    </select>
+</mapper>
