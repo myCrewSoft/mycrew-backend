@@ -43,15 +43,33 @@ public interface BoardMapper {
 	
 	
 	/**
+	 *  내 게시글 전체 카운트 (작성자 기준)
+	 */
+	int countMyBoard(
+			@Param("empId") Long empId,
+			@Param("searchRequest") BoardSearchRequest searchRequest
+		);
+
+	/**
+	 *  내 게시글 목록 조회 (작성자 기준, 페이징)
+	 */
+	List<BoardResponse> getMyBoardList(
+			@Param("getOffset") long getOffset,
+			@Param("getPageSize") int getPageSize,
+			@Param("empId") Long empId,
+			@Param("searchRequest") BoardSearchRequest searchRequest
+		);
+
+	/**
 	 *   프로젝트 목록 조회
 	 */
-	
+
 	List<BoardResponse>	getProjList(
 			@Param("getOffset") long getOffset, //페이징 시작위치
 			@Param("getPageSize") int getPageSize, //한 페이지당 가져올 게시글 수
 			@Param("searchRequest") BoardSearchRequest searchRequest,
 			@Param("projId") Long projId
-			
+
 			);
 	
 	int countProjBoard(

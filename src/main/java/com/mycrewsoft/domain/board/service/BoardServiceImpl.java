@@ -101,6 +101,23 @@ public class BoardServiceImpl implements BoardService {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
+	public Page<BoardResponse> getMyBoardList(BoardSearchRequest searchRequest, Pageable pageable) {
+		// 본인(작성자) 기준 조회이므로 별도 권한 검증 없이 현재 사용자 ID로 필터링한다.
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
+
+		int total = boardMapper.countMyBoard(currentEmpId, searchRequest);
+
+		List<BoardResponse> content = boardMapper.getMyBoardList(
+				pageable.getOffset(),
+				pageable.getPageSize(),
+				currentEmpId,
+				searchRequest);
+
+		return new PageImpl<>(content, pageable, total);
+	}
+
+	@Override
 	@Transactional
 	public List<BoardSideBarResponse> getSideBar() {
 		// 1. 권한 검증 및 자원 설정

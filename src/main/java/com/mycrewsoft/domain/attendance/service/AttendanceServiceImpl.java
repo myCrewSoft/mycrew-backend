@@ -377,6 +377,16 @@ public class AttendanceServiceImpl implements AttendanceService {
 		return attendanceMapper.selectEmployeeAttendance(empId, fromDt, toDt);
 	}
 
+	// ===== 대시보드 위젯 =====
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<AdminAtndRowResponse> getAttendanceAnomaliesForWidget(int limit) {
+		// 권한은 호출 측(관리자 대시보드 서비스)에서 ADMIN_CONSOLE_ACCESS로 검증한다.
+		int safeLimit = limit > 0 ? limit : 5;
+		return attendanceMapper.selectAttendanceAnomaliesForWidget(LocalDate.now(), safeLimit);
+	}
+
 	// ============================ 내부 헬퍼 ============================
 
 	private AtndPolicyVO requireActivePolicy(LocalDate baseDate) {

@@ -198,6 +198,50 @@
 		ORDER BY DEPT.DEPT_NM, E.EMP_NM
 	</select>
 
+	<!-- 대시보드 위젯용: 지정 일자의 근태 특이사항(지각/조퇴/결근) 사원 (최대 limit명) -->
+	<select id="selectAttendanceAnomaliesForWidget" resultType="AdminAtndRowResponse">
+		SELECT *
+		  FROM (
+			SELECT
+				D.EMP_ID,
+				E.EMP_NM,
+				DEPT.DEPT_NM,
+				GRD.JOB_GRD_NM        AS JBPS_NM,
+				E.PRFL_IMG_FILE_ID,
+				D.ATND_DT,
+				D.WRK_START_DTM,
+				D.WRK_END_DTM,
+				D.LATE_MIN,
+				D.EARLY_LEAVE_MIN,
+				D.WORK_MIN,
+				D.OT_MIN,
+				TRIM(D.ATND_STAT_CD)  AS ATND_STAT_CD,
+				SE.ATND_SE_CD_NM      AS ATND_STAT_NM
+			FROM TB_ATND_DAILY D
+			JOIN TB_EMPLOYEE E ON E.EMP_ID = D.EMP_ID
+			LEFT JOIN TB_DEPARTMENT DEPT ON DEPT.DEPT_CD = E.DEPT_CD
+			LEFT JOIN TB_JOB_GRADE GRD ON GRD.JOB_GRD_CD = E.JOB_GRD_CD
+			LEFT JOIN TB_ATND_SE_CD SE ON SE.ATND_SE_CD = D.ATND_STAT_CD
+			WHERE D.ATND_DT = TRUNC(#{atndDt})
+			  AND (
+					TRIM(D.ATND_STAT_CD) IN ('LATE', 'EARLY', 'ABSENT')
+					OR NVL(D.LATE_MIN, 0) &gt; 0
+					OR NVL(D.EARLY_LEAVE_MIN, 0) &gt; 0
+			  )
+			ORDER BY
+				CASE TRIM(D.ATND_STAT_CD)
+					WHEN 'ABSENT' THEN 0
+					WHEN 'LATE'   THEN 1
+					WHEN 'EARLY'  THEN 2
+					ELSE 3
+				END,
+				NVL(D.LATE_MIN, 0) DESC,
+				NVL(D.EARLY_LEAVE_MIN, 0) DESC,
+				E.EMP_NM
+		  )
+		 WHERE ROWNUM &lt;= #{limit}
+	</select>
+
 	<select id="selectAttendanceStats" resultType="AdminAtndStatResponse">
 		SELECT
 			E.EMP_ID,

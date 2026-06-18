@@ -330,7 +330,22 @@ public class ScheduleServiceImpl implements ScheduleService{
 
 	    return scheduleMapper.toWidgetItemResponseList(voList);
 	}
-	
+
+	// 관리자 대시보드 위젯용: 오늘 + 다가오는 전사(C001)·간부(C003) 중요 일정
+	@Override
+	@Transactional(readOnly = true)
+	public List<ScheduleWidgetItemResponse> readImportantSchdListForAdminWidget(int limit) {
+	    // 권한은 호출 측(관리자 대시보드 서비스)에서 ADMIN_CONSOLE_ACCESS로 검증한다.
+	    int safeLimit = limit > 0 ? limit : WIDGET_SCHD_LIMIT;
+
+	    List<SchdWidgetVO> voList = intgSchdMapper.selectImportantSchdListForAdminWidget(
+	            DateUtil.startOfToday(),
+	            safeLimit
+	    );
+
+	    return scheduleMapper.toWidgetItemResponseList(voList);
+	}
+
 	//일정 참여자 목록 생성
 	private List<SchdTargetVO> buildScheduleTargets(ScheduleRequestDto dto, Long schdId) {
 

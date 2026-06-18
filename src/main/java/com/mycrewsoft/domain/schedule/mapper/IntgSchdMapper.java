@@ -41,4 +41,10 @@ public interface IntgSchdMapper {
         @Param("endDt") LocalDateTime endDt,
         @Param("limit") int limit
     );
+
+	// 관리자 대시보드 위젯용: 오늘 + 다가오는 전사(C001)·간부(C003) 중요 일정
+	List<SchdWidgetVO> selectImportantSchdListForAdminWidget(
+        @Param("beginDt") LocalDateTime beginDt,
+        @Param("limit") int limit
+    );
 }

@@ -111,6 +111,11 @@ public interface AttendanceMapper {
 			@Param("from") LocalDate from,
 			@Param("to") LocalDate to);
 
+	/** 지정 일자의 근태 특이사항(지각/조퇴/결근) 사원 목록 조회(최대 limit명, 대시보드 위젯용) */
+	List<AdminAtndRowResponse> selectAttendanceAnomaliesForWidget(
+			@Param("atndDt") LocalDate atndDt,
+			@Param("limit") int limit);
+
 	// ===== 휴가 =====
 
 	/** 사용 가능한 휴가 종류 목록 조회 */

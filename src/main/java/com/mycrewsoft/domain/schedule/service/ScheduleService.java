@@ -29,4 +29,7 @@ public interface ScheduleService {
 	Long createMeetingSchedule(MeetingScheduleCreateCommand command); // 회의 자동 일정
 	
 	List<ScheduleWidgetItemResponse> readTodaySchdListForWidget();	// 위젯용
+
+	// 관리자 대시보드 위젯용: 오늘 + 다가오는 전사(C001)·간부(C003) 중요 일정
+	List<ScheduleWidgetItemResponse> readImportantSchdListForAdminWidget(int limit);
 }

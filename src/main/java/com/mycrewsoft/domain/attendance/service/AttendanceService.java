@@ -52,4 +52,9 @@ public interface AttendanceService {
 
 	/** 특정 사원의 기간 일자별 근태 조회 */
 	List<AdminAtndRowResponse> getEmployeeAttendance(Long empId, String from, String to);
+
+	// ===== 대시보드 위젯 =====
+
+	/** 오늘 근태 특이사항(지각/조퇴/결근) 사원 목록 조회(최대 limit명, 관리자 위젯용) */
+	List<AdminAtndRowResponse> getAttendanceAnomaliesForWidget(int limit);
 }

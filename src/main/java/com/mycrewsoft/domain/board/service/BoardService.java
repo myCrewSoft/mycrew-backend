@@ -29,6 +29,14 @@ public interface BoardService {
 	Page<BoardResponse> getBoardList(String boardTypeCd, String deptCd, BoardSearchRequest searchRequest,Pageable pageable);
 
 	/**
+	 * 내 게시글 목록 조회 (현재 로그인 사용자가 작성한 게시글)
+	 * @param searchRequest 검색 조건(키워드)
+	 * @param pageable 페이징 정보
+	 * @return 작성자 기준 게시글 페이지
+	 */
+	Page<BoardResponse> getMyBoardList(BoardSearchRequest searchRequest, Pageable pageable);
+
+	/**
 	 *  SideBar 목록을 가져오는 메서드. 
 	 * @return
 	 */

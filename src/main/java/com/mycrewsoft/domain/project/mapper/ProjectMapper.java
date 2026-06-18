@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.mycrewsoft.domain.project.vo.ProjectDeadlineVO;
+import com.mycrewsoft.domain.project.vo.ProjectStatusCountVO;
 import com.mycrewsoft.domain.project.vo.ProjectVO;
 import com.mycrewsoft.domain.projectmember.vo.ProjectMemberVO;
 
@@ -73,4 +74,7 @@ public interface ProjectMapper {
 	
 	// 위젯용
 	List<ProjectVO> selectProjectListForWidget(@Param("empId") Long empId, @Param("limit") int limit);
+
+	// 관리자 대시보드 위젯용: 전체 프로젝트 상태별 집계
+	ProjectStatusCountVO selectProjectStatusCounts();
 }
