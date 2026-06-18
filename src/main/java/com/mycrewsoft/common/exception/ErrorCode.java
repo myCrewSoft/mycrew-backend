@@ -148,6 +148,7 @@ public enum ErrorCode {
     MTNG_PTCPT_FORBIDDEN(HttpStatus.FORBIDDEN, "MTNG_006", "회의 참여자만 접근할 수 있습니다."),
     MTNG_MOM_ALREADY_REQUESTED(HttpStatus.BAD_REQUEST, "MTNG_007", "이미 결재 요청된 회의록입니다."),
     MTNG_MOM_NO_APPROVER(HttpStatus.BAD_REQUEST, "MTNG_008", "결재자가 없습니다. 참여자를 확인해주세요."),
+    MTNG_NOT_IN_PROGRESS(HttpStatus.BAD_REQUEST, "MTNG_009", "현재 진행 중인 회의가 아닙니다."),
 
 	// TASK
 	TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "TASK_001", "존재하지 않는 업무입니다."),
