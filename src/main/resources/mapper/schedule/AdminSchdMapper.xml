@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.schedule.mapper.AdminSchdMapper">
+
+    <sql id="adminSchdListColumns">
+        S.SCHD_ID,
+        S.SCHD_CLSF_CD,
+        S.SCHD_NM,
+        S.BEGIN_DT,
+        S.END_DT,
+        S.ALL_DAY_YN,
+        S.REPT_YN,
+        S.SCHD_WRTR_ID,
+        S.SCHD_REGST_DT,
+        E.EMP_NM   AS WRTR_NM,
+        D.DEPT_NM  AS WRTR_DEPT_NM
+    </sql>
+
+    <sql id="adminSchdListFrom">
+        FROM TB_INTG_SCHD S
+        LEFT JOIN TB_EMPLOYEE E ON S.SCHD_WRTR_ID = E.EMP_ID
+        LEFT JOIN TB_DEPARTMENT D ON E.DEPT_CD = D.DEPT_CD
+    </sql>
+
+    <sql id="adminSchdListWhere">
+        WHERE S.DEL_YN = 'N'
+        <if test="search.schdClsfCdList != null and search.schdClsfCdList.size() > 0">
+            AND S.SCHD_CLSF_CD IN
+            <foreach collection="search.schdClsfCdList" item="cd" open="(" separator="," close=")">
+                #{cd}
+            </foreach>
+        </if>
+        <if test="search.beginDt != null">
+            AND S.END_DT &gt;= #{search.beginDt}
+        </if>
+        <if test="search.endDt != null">
+            AND S.BEGIN_DT &lt;= #{search.endDt}
+        </if>
+        <if test="search.keyword != null and search.keyword != ''">
+            AND (
+                S.SCHD_NM LIKE '%' || #{search.keyword} || '%'
+                OR E.EMP_NM LIKE '%' || #{search.keyword} || '%'
+            )
+        </if>
+    </sql>
+
+    <select id="selectAdminSchdList" resultType="AdminSchdListVO">
+        SELECT *
+        FROM (
+            SELECT
+                <include refid="adminSchdListColumns"/>,
+                ROW_NUMBER() OVER (ORDER BY S.SCHD_REGST_DT DESC) AS RN
+            <include refid="adminSchdListFrom"/>
+            <include refid="adminSchdListWhere"/>
+        )
+        WHERE RN &gt; #{offset}
+          AND RN &lt;= #{offset} + #{size}
+    </select>
+
+    <select id="countAdminSchdList" resultType="long">
+        SELECT COUNT(*)
+        <include refid="adminSchdListFrom"/>
+        <include refid="adminSchdListWhere"/>
+    </select>
+
+    <select id="selectAdminSchd" resultType="IntgSchdVO">
+        SELECT
+            SCHD_ID,
+            SCHD_CLSF_CD,
+            SCHD_NM,
+            SCHD_DETAIL_CN,
+            BEGIN_DT,
+            END_DT,
+            SCHD_WRTR_ID,
+            SCHD_REGST_DT,
+            SCHD_CHGR_ID,
+            SCHD_CHG_DT,
+            ALL_DAY_YN,
+            DEL_YN,
+            DEL_DT,
+            REPT_YN,
+            REPT_TYPE_CD,
+            REPT_END_DT
+        FROM TB_INTG_SCHD
+        WHERE SCHD_ID = #{schdId}
+          AND DEL_YN = 'N'
+    </select>
+
+    <insert id="insertAdminSchd">
+        <selectKey keyProperty="schdId" resultType="long" order="BEFORE">
+            SELECT SEQ_SCHD_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_INTG_SCHD (
+            SCHD_ID,
+            SCHD_CLSF_CD,
+            SCHD_NM,
+            SCHD_DETAIL_CN,
+            BEGIN_DT,
+            END_DT,
+            SCHD_WRTR_ID,
+            SCHD_REGST_DT,
+            ALL_DAY_YN,
+            DEL_YN,
+            REPT_YN,
+            REPT_TYPE_CD,
+            REPT_END_DT
+        ) VALUES (
+            #{schdId},
+            #{schdClsfCd},
+            #{schdNm},
+            #{schdDetailCn},
+            #{beginDt},
+            #{endDt},
+            #{schdWrtrId},
+            SYSDATE,
+            #{allDayYn},
+            'N',
+            #{reptYn},
+            #{reptTypeCd},
+            #{reptEndDt}
+        )
+    </insert>
+
+    <update id="updateAdminSchd">
+        UPDATE TB_INTG_SCHD
+           SET SCHD_CLSF_CD   = #{schdClsfCd},
+               SCHD_NM        = #{schdNm},
+               SCHD_DETAIL_CN = #{schdDetailCn},
+               BEGIN_DT       = #{beginDt},
+               END_DT         = #{endDt},
+               ALL_DAY_YN     = #{allDayYn},
+               REPT_YN        = #{reptYn},
+               REPT_TYPE_CD   = #{reptTypeCd},
+               REPT_END_DT    = #{reptEndDt},
+               SCHD_CHGR_ID   = #{schdChgrId},
+               SCHD_CHG_DT    = SYSDATE
+         WHERE SCHD_ID = #{schdId}
+           AND DEL_YN  = 'N'
+    </update>
+
+    <update id="deleteAdminSchd">
+        UPDATE TB_INTG_SCHD
+           SET DEL_YN       = 'Y',
+               DEL_DT       = SYSDATE,
+               SCHD_CHGR_ID = #{schdId},
+               SCHD_CHG_DT  = SYSDATE
+         WHERE SCHD_ID = #{schdId}
+           AND DEL_YN  = 'N'
+    </update>
+
+</mapper>
