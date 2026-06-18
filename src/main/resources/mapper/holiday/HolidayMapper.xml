@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.holiday.mapper.HolidayMapper">
+
+    <select id="selectHolidayList" resultType="HolidayVO">
+        SELECT
+            HOLIDAY_ID,
+            HOLIDAY_DT,
+            HOLIDAY_NM,
+            IS_HOLIDAY_YN,
+            GEN_TYPE_CD,
+            SYNC_DT,
+            DEL_YN,
+            FRST_REG_DT
+        FROM TB_HOLIDAY
+        WHERE DEL_YN = 'N'
+          AND EXTRACT(YEAR FROM HOLIDAY_DT) = #{year}
+        ORDER BY HOLIDAY_DT ASC
+    </select>
+
+    <select id="selectHoliday" resultType="HolidayVO">
+        SELECT
+            HOLIDAY_ID,
+            HOLIDAY_DT,
+            HOLIDAY_NM,
+            IS_HOLIDAY_YN,
+            GEN_TYPE_CD,
+            SYNC_DT,
+            DEL_YN,
+            FRST_REG_DT
+        FROM TB_HOLIDAY
+        WHERE HOLIDAY_ID = #{holidayId}
+          AND DEL_YN = 'N'
+    </select>
+
+    <insert id="insertHoliday">
+        <selectKey keyProperty="holidayId" resultType="long" order="BEFORE">
+            SELECT SEQ_HOLIDAY_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_HOLIDAY (
+            HOLIDAY_ID,
+            HOLIDAY_DT,
+            HOLIDAY_NM,
+            IS_HOLIDAY_YN,
+            GEN_TYPE_CD,
+            FRST_REG_DT
+        ) VALUES (
+            #{holidayId},
+            #{holidayDt},
+            #{holidayNm},
+            #{isHolidayYn},
+            #{genTypeCd},
+            SYSDATE
+        )
+    </insert>
+
+    <update id="mergeHoliday">
+        MERGE INTO TB_HOLIDAY T
+        USING (
+            SELECT
+                #{holidayDt} AS HOLIDAY_DT,
+                #{holidayNm} AS HOLIDAY_NM,
+                #{isHolidayYn} AS IS_HOLIDAY_YN
+            FROM DUAL
+        ) S
+        ON (T.HOLIDAY_DT = S.HOLIDAY_DT AND T.DEL_YN = 'N')
+        WHEN MATCHED THEN
+            UPDATE SET
+                T.HOLIDAY_NM     = S.HOLIDAY_NM,
+                T.IS_HOLIDAY_YN  = S.IS_HOLIDAY_YN,
+                T.SYNC_DT        = SYSDATE
+        WHEN NOT MATCHED THEN
+            INSERT (
+                HOLIDAY_ID,
+                HOLIDAY_DT,
+                HOLIDAY_NM,
+                IS_HOLIDAY_YN,
+                GEN_TYPE_CD,
+                SYNC_DT,
+                FRST_REG_DT
+            ) VALUES (
+                SEQ_HOLIDAY_ID.NEXTVAL,
+                S.HOLIDAY_DT,
+                S.HOLIDAY_NM,
+                S.IS_HOLIDAY_YN,
+                'API',
+                SYSDATE,
+                SYSDATE
+            )
+    </update>
+
+    <update id="updateHoliday">
+        UPDATE TB_HOLIDAY
+           SET HOLIDAY_NM    = #{holidayNm},
+               HOLIDAY_DT    = #{holidayDt},
+               IS_HOLIDAY_YN = #{isHolidayYn}
+         WHERE HOLIDAY_ID = #{holidayId}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="deleteHoliday">
+        UPDATE TB_HOLIDAY
+           SET DEL_YN = 'Y'
+         WHERE HOLIDAY_ID = #{holidayId}
+           AND DEL_YN = 'N'
+    </update>
+
+</mapper>
