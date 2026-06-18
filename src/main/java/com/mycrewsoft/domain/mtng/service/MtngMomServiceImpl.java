@@ -2,6 +2,7 @@ package com.mycrewsoft.domain.mtng.service;
 
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
+import com.mycrewsoft.common.util.DateUtil;
 import com.mycrewsoft.domain.approval.dto.request.ApprovalDraftRequestDTO;
 import com.mycrewsoft.domain.approval.dto.request.ApprovalStepRequestDTO;
 import com.mycrewsoft.domain.approval.service.ApprovalDraftWriteService;
@@ -11,6 +12,7 @@ import com.mycrewsoft.domain.mtng.dto.mom.response.MtngMomResponse;
 import com.mycrewsoft.domain.mtng.mapper.MtngMapper;
 import com.mycrewsoft.domain.mtng.mapper.MtngMomDtoMapper;
 import com.mycrewsoft.domain.mtng.mapper.MtngMomMapper;
+import com.mycrewsoft.domain.mtng.vo.MtngDetailVO;
 import com.mycrewsoft.domain.mtng.vo.MtngPtcptDetailVO;
 import com.mycrewsoft.domain.mtng.vo.mom.MtngMomHistVO;
 import com.mycrewsoft.domain.mtng.vo.mom.MtngMomVO;
@@ -18,6 +20,7 @@ import com.mycrewsoft.security.util.SecurityUtil;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -39,10 +42,17 @@ public class MtngMomServiceImpl implements MtngMomService {
         Long empId = SecurityUtil.getCurrentEmpId();
         validatePtcpt(mtngId, empId);
 
+        // 회의 기본정보 조회 (회의명, 일시, 장소, 참여자)
+        MtngDetailVO detailVO = mtngMapper.selectMtngDetail(mtngId);
+        List<MtngPtcptDetailVO> ptcptList = mtngMapper.selectMtngPtcptDetailList(mtngId);
+
+        // 회의 기본정보가 채워진 HTML 양식 생성
+        String initialHtml = buildInitialMomHtml(detailVO, ptcptList);
+
         MtngMomVO momVO = MtngMomVO.builder()
                 .mtngId(mtngId)
-                .momCn("")
-                .momSttusCd("02") // OFFLINE은 AI초안 단계 없이 편집중으로 시작
+                .momCn(initialHtml)
+                .momSttusCd("02") // 편집중
                 .edtrId(empId)
                 .build();
 
@@ -178,5 +188,93 @@ public class MtngMomServiceImpl implements MtngMomService {
             throw new CustomException(ErrorCode.MTNG_PTCPT_FORBIDDEN);
         }
     }
+    
+
+ // 오프라인 회의록 초기 HTML 양식 생성
+ // AI 없이 회의 기본정보만 채워서 반환 — 작성자가 이후 내용을 직접 입력
+ private String buildInitialMomHtml(MtngDetailVO detailVO, List<MtngPtcptDetailVO> ptcptList) {
+
+     // 서명란: 작성자(crtrId) 제외한 참여자 수만큼 생성
+     String signHeaders = ptcptList.stream()
+             .filter(p -> !p.getEmpId().equals(detailVO.getCrtrId()))
+             .map(p -> "<td class=\"header\">" + p.getEmpNm() + "</td>")
+             .collect(Collectors.joining());
+
+     String signBodies = ptcptList.stream()
+             .filter(p -> !p.getEmpId().equals(detailVO.getCrtrId()))
+             .map(p -> "<td class=\"body\"></td>")
+             .collect(Collectors.joining());
+
+     String ptcptNames = ptcptList.stream()
+             .map(MtngPtcptDetailVO::getEmpNm)
+             .collect(Collectors.joining(", "));
+
+     String location = detailVO.getConfRmNm() != null ? detailVO.getConfRmNm() : "미정";
+
+     
+     return """
+             <!DOCTYPE html>
+             <html lang="ko">
+             <head>
+             <meta charset="UTF-8">
+             <style>
+               body { font-family: 'Malgun Gothic', sans-serif; font-size: 13px; color: #1e293b; margin: 40px; }
+               h1 { font-size: 20px; text-align: center; font-weight: bold; margin-bottom: 24px; border-bottom: 2px solid #334155; padding-bottom: 12px; overflow: hidden; }
+               .info-table { width: 100%%; border-collapse: collapse; margin-bottom: 20px; }
+               .info-table td { border: 1px solid #334155; padding: 6px 12px; }
+               .info-table td:first-child { background: #f1f5f9; font-weight: bold; width: 100px; text-align: center; }
+               .sign-table { border-collapse: collapse; font-size: 12px; text-align: center; float: right; margin: 0 0 12px 12px; }
+               .sign-table td { border: 1px solid #334155; padding: 4px 14px; }
+               .sign-table .header { background: #f1f5f9; font-weight: bold; }
+               .sign-table .body { width: 84px; height: 60px; vertical-align: middle; }
+               .section-title { font-weight: bold; font-size: 14px; background: #f1f5f9; border-left: 4px solid #3b82f6; padding: 6px 12px; margin: 20px 0 8px 0; }
+               .content-box { border: 1px solid #e2e8f0; padding: 12px 16px; min-height: 60px; line-height: 1.8; }
+               .action-table { width: 100%%; border-collapse: collapse; margin-top: 8px; }
+               .action-table th { background: #f1f5f9; border: 1px solid #334155; padding: 6px; text-align: center; }
+               .action-table td { border: 1px solid #e2e8f0; padding: 6px 10px; }
+               .clearfix::after { content: ""; display: table; clear: both; }
+             </style>
+             </head>
+             <body>
+             <div class="clearfix">
+               <table class="sign-table">
+                 <tr>%s</tr>
+                 <tr>%s</tr>
+               </table>
+               <h1>회 의 록</h1>
+             </div>
+             <table class="info-table">
+               <tr><td>회의명</td><td>%s</td></tr>
+               <tr><td>일시</td><td>%s ~ %s</td></tr>
+               <tr><td>장소</td><td>%s</td></tr>
+               <tr><td>주재자</td><td>%s</td></tr>
+               <tr><td>참석자</td><td>%s</td></tr>
+             </table>
+             <div class="section-title">1. 회의 목적</div>
+             <div class="content-box"></div>
+             <div class="section-title">2. 안건별 논의 내용</div>
+             <div class="content-box"></div>
+             <div class="section-title">3. 결정 사항</div>
+             <div class="content-box"></div>
+             <div class="section-title">4. 액션 아이템</div>
+             <table class="action-table">
+               <tr><th>담당자</th><th>내용</th><th>기한</th></tr>
+               <tr><td></td><td></td><td></td></tr>
+             </table>
+             <div class="section-title">5. 특이사항 / 기타</div>
+             <div class="content-box"></div>
+             </body>
+             </html>
+             """.formatted(
+             signHeaders,
+             signBodies,
+             detailVO.getMtngNm(),
+             detailVO.getBeginDt().format(DateUtil.DATETIME_FORMAT),
+             detailVO.getEndDt().format(DateUtil.DATETIME_FORMAT),
+             location,
+             detailVO.getCrtrNm(),
+             ptcptNames
+     );
+ }
 
 }
