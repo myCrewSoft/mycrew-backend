@@ -65,6 +65,12 @@ public enum ErrorCode {
 	NOT_SCHEDULE_OWNER(HttpStatus.FORBIDDEN, "SCH-001", "해당 일정에 대한 관리 권한이 없습니다."),
 	SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "SCH-002", "요청하신 일정을 찾을 수 없습니다."),
 	
+	// HOLIDAY
+	HOLIDAY_API_CALL_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "HOLIDAY_001", "공휴일 API 호출에 실패했습니다."),
+	HOLIDAY_NOT_FOUND(HttpStatus.NOT_FOUND, "HOLIDAY_002", "존재하지 않는 공휴일입니다."),
+	HOLIDAY_ALREADY_EXISTS(HttpStatus.CONFLICT, "HOLIDAY_003", "이미 등록된 공휴일입니다."),
+	HOLIDAY_API_MODIFY_DENIED(HttpStatus.FORBIDDEN, "HOLIDAY_004", "API로 동기화된 공휴일은 수정/삭제할 수 없습니다."),
+
 	// DRIVE
 	DRIVE_INSERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "DRIVE_001", "폴더 생성에 실패했습니다."),
     DRIVE_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "DRIVE_002", "드라이브 아이템을 찾을 수 없습니다."),
