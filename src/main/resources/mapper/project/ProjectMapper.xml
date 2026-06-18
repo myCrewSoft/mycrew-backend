@@ -234,4 +234,25 @@
 	      )
 	     WHERE ROWNUM &lt;= #{limit}
 	</select>
+
+	<!-- 관리자 대시보드 위젯용: 전체 프로젝트 상태별 집계 -->
+	<!-- 예정(01)이지만 시작일이 도래한 프로젝트는 진행 중(02)으로 집계한다. -->
+	<select id="selectProjectStatusCounts" resultType="ProjectStatusCountVO">
+	    SELECT
+	        COUNT(*)                                                          AS TOTAL_COUNT,
+	        NVL(SUM(CASE WHEN EFF_STAT = '01' THEN 1 ELSE 0 END), 0)          AS PLANNED_COUNT,
+	        NVL(SUM(CASE WHEN EFF_STAT = '02' THEN 1 ELSE 0 END), 0)          AS IN_PROGRESS_COUNT,
+	        NVL(SUM(CASE WHEN EFF_STAT = '03' THEN 1 ELSE 0 END), 0)          AS COMPLETED_COUNT,
+	        NVL(SUM(CASE WHEN EFF_STAT = '04' THEN 1 ELSE 0 END), 0)          AS STOPPED_COUNT
+	      FROM (
+	        SELECT
+	            CASE
+	                WHEN TRIM(P.PROJ_STAT_CD) = '01'
+	                 AND P.PROJ_BGNG_YMD &lt;= TRUNC(SYSDATE)
+	                THEN '02'
+	                ELSE TRIM(P.PROJ_STAT_CD)
+	            END AS EFF_STAT
+	          FROM TB_PROJECT P
+	      )
+	</select>
 </mapper>

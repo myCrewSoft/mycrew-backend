@@ -27,6 +27,7 @@ import com.mycrewsoft.domain.project.event.ProjectMemberRemovedEvent;
 import com.mycrewsoft.domain.project.event.ProjectMembersAddedEvent;
 import com.mycrewsoft.domain.project.event.ProjectStoppedEvent;
 import com.mycrewsoft.domain.project.mapper.ProjectMapper;
+import com.mycrewsoft.domain.project.vo.ProjectStatusCountVO;
 import com.mycrewsoft.domain.project.vo.ProjectVO;
 import com.mycrewsoft.domain.projectmember.dto.ProjectMemberResponseDto;
 import com.mycrewsoft.domain.projectmember.mapper.ProjectMemberMapper;
@@ -391,5 +392,13 @@ public class ProjectServiceImpl implements ProjectService{
 	    Long empId = SecurityUtil.getCurrentEmpId();
 	    List<ProjectVO> voList = projectMapper.selectProjectListForWidget(empId, WIDGET_PROJECT_LIMIT);
 	    return dtoMapper.toDtoList(voList, ProjectListResponseDto.class);
+	}
+
+	// 관리자 대시보드 위젯용: 전체 프로젝트 상태별 집계
+	@Override
+	@Transactional(readOnly = true)
+	public ProjectStatusCountVO getProjectStatusCountsForWidget() {
+	    // 권한은 호출 측(관리자 대시보드 서비스)에서 ADMIN_CONSOLE_ACCESS로 검증한다.
+	    return projectMapper.selectProjectStatusCounts();
 	}
 }

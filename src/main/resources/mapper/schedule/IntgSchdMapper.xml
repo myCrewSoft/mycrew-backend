@@ -202,5 +202,28 @@
 	      )
 	     WHERE ROWNUM &lt;= #{limit}
 	</select>
-	
+
+	<!-- 관리자 대시보드 위젯용: 오늘 + 다가오는 전사(C001)·간부(C003) 중요 일정 -->
+	<select id="selectImportantSchdListForAdminWidget" resultType="SchdWidgetVO">
+	    SELECT *
+	      FROM (
+	        SELECT
+	            S.SCHD_ID        AS id,
+	            S.SCHD_CLSF_CD   AS scheduleTypeCode,
+	            S.SCHD_NM        AS title,
+	            S.BEGIN_DT       AS startDt,
+	            S.END_DT         AS endDt,
+	            S.ALL_DAY_YN     AS allDayYn,
+	            NULL             AS deptNm,
+	            NULL             AS projNm,
+	            NULL             AS taskNm
+	          FROM TB_INTG_SCHD S
+	         WHERE S.DEL_YN = 'N'
+	           AND S.SCHD_CLSF_CD IN ('C001', 'C003')
+	           AND S.END_DT &gt;= #{beginDt}
+	         ORDER BY S.BEGIN_DT ASC
+	      )
+	     WHERE ROWNUM &lt;= #{limit}
+	</select>
+
 </mapper>

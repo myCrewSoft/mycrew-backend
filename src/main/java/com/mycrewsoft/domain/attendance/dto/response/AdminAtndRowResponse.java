@@ -42,6 +42,9 @@ public class AdminAtndRowResponse {
 	@Schema(description = "지각 시간(분)", example = "0")
 	private Integer lateMin;
 
+	@Schema(description = "조퇴 시간(분)", example = "0")
+	private Integer earlyLeaveMin;
+
 	@Schema(description = "실근무 시간(분)", example = "490")
 	private Integer workMin;
 

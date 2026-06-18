@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -1084,15 +1085,42 @@ public class MailServiceImpl implements MailService {
             if (attachment == null || attachment.getContent() == null || attachment.getContent().length == 0) {
                 continue;
             }
+
+            // 첨부 저장 실패(미지원 확장자/용량 초과 등)가 메일 동기화 트랜잭션 전체를 롤백시키지 않도록 격리한다.
+            // 파일 저장은 REQUIRES_NEW 별도 트랜잭션에서 수행하므로, 실패해도 바깥(메일 본문) 트랜잭션은 오염되지 않는다.
+            Long attachmentId;
+            try {
+                attachmentId = saveMailAttachment(attachment);
+            } catch (Exception e) {
+                log.warn("메일 첨부 저장 실패로 건너뜀. mailId={}, fileName={}, contentType={}, reason={}",
+                        mailId, attachment.getOriginalFileName(), attachment.getContentType(), e.getMessage());
+                continue;
+            }
+
+            mailMapper.insertAttachment(attachmentId, empId, mailId);
+        }
+    }
+
+    /**
+     * 메일 수신 첨부파일을 별도 트랜잭션(REQUIRES_NEW)에서 저장한다.
+     *
+     * <p>{@code fileService.upload}는 {@code @Transactional(REQUIRED)}이라 그대로 호출하면 메일 동기화 트랜잭션에
+     * 합류하여, 검증 실패 시 트랜잭션을 rollback-only로 마킹해 배치 전체가 롤백된다. 이를 막기 위해 첨부 저장만
+     * 독립 트랜잭션으로 분리한다. 실패 시 이 트랜잭션만 롤백되고 예외가 호출부로 전파되어 해당 첨부만 건너뛴다.</p>
+     */
+    private Long saveMailAttachment(GmailSyncedAttachment attachment) {
+        TransactionTemplate requiresNew = new TransactionTemplate(transactionTemplate.getTransactionManager());
+        requiresNew.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+
+        return requiresNew.execute(status -> {
             FileUploadRequestDto uploadRequest = new FileUploadRequestDto();
             uploadRequest.setFile(new InMemoryMailMultipartFile(
                     attachment.getOriginalFileName(),
                     attachment.getContentType(),
                     attachment.getContent()));
             uploadRequest.setFileCn("메일 수신 첨부파일");
-            Long attachmentId = fileService.upload(uploadRequest, MAIL_ATTACHMENT_BIZ_CD);
-            mailMapper.insertAttachment(attachmentId, empId, mailId);
-        }
+            return fileService.upload(uploadRequest, MAIL_ATTACHMENT_BIZ_CD);
+        });
     }
 
     private MailMessageRow toMailMessageRow(Long empId, Long mailId, GmailSyncedMessage message) {

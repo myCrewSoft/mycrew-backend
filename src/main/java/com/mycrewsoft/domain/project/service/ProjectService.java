@@ -59,4 +59,7 @@ public interface ProjectService {
 	// 위젯용
 	List<ProjectListResponseDto> getProjectListForWidget();
 
+	// 관리자 대시보드 위젯용: 전체 프로젝트 상태별 집계
+	com.mycrewsoft.domain.project.vo.ProjectStatusCountVO getProjectStatusCountsForWidget();
+
 }

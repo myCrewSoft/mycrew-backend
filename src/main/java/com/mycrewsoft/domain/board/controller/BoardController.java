@@ -60,6 +60,16 @@ public class BoardController {
 		return ResponseEntity.ok(ApiResponse.success("게시판 목록 불러오기 성공!", boardPage));
 	}
 
+	@Operation(summary = "내 게시글 목록 조회 (페이징 적용)",
+			description = "현재 로그인한 사용자가 작성한 게시글 목록을 최신순으로 조회합니다. 키워드 검색을 지원합니다.")
+	@GetMapping("/mine")
+	public ResponseEntity<ApiResponse<Page<BoardResponse>>> getMyBoardList(
+			@Validated @ModelAttribute BoardSearchRequest searchRequest,
+			@PageableDefault(size = 10, sort = "boardId", direction = Sort.Direction.DESC) Pageable pageable) {
+		Page<BoardResponse> boardPage = service.getMyBoardList(searchRequest, pageable);
+		return ResponseEntity.ok(ApiResponse.success("내 게시글 목록 불러오기 성공!", boardPage));
+	}
+
 	@Operation(summary = "부서게시글 목록 조회 (페이징 적용)")
 	@GetMapping("/DEPT/{deptCd}")
 	public ResponseEntity<ApiResponse<Page<BoardResponse>>> getDeptList(
