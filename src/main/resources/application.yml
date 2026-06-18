@@ -136,3 +136,8 @@ livekit:
 
 openai:
   api-key: ${OPENAI_API_KEY}
+
+holiday:
+  api:
+    key: ${HOLIDAY_API_KEY}
+    base-url: http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService
