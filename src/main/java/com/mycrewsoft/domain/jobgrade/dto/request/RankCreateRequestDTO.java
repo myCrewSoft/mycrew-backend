@@ -11,12 +11,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@Schema(description = "직급 생성 요청 DTO")
+@Schema(description = "직급 생성 요청 DTO (직급 ID는 서버에서 자동 생성됨)")
 public class RankCreateRequestDTO {
-
-    @NotBlank
-    @Schema(description = "직급 ID", example = "RANK_01")
-    private String rankId;
 
     @NotBlank
     @Schema(description = "직급 이름", example = "사원")

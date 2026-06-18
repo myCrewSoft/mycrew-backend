@@ -182,7 +182,6 @@ class AdminJobServiceImplTest {
 
     private RankCreateRequestDTO createRequest() {
         RankCreateRequestDTO request = new RankCreateRequestDTO();
-        request.setRankId("JG001");
         request.setRankName("Manager");
         request.setSortOrder(1);
         return request;

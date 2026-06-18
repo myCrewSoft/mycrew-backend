@@ -45,8 +45,9 @@ public class AdminJobServiceImpl implements AdminJobService {
     public RankResponseDTO createRank(RankCreateRequestDTO request) {
         assertJobManagePermission();
         validateCreateRequest(request);
-        String rankId = normalizeId(request.getRankId());
-        if (adminJobMapper.selectRankById(rankId) != null) {
+        // 직급 ID는 사용자 입력이 아니라 서버에서 DB 규약(RANK_NN)에 맞춰 자동 생성한다.
+        String rankId = adminJobMapper.selectNextRankCode();
+        if (!StringUtils.hasText(rankId) || adminJobMapper.selectRankById(rankId) != null) {
             throw new CustomException(ErrorCode.DUPLICATE_RANK_ID);
         }
 
@@ -140,7 +141,6 @@ public class AdminJobServiceImpl implements AdminJobService {
 
     private void validateCreateRequest(RankCreateRequestDTO request) {
         if (request == null
-                || !StringUtils.hasText(request.getRankId())
                 || !StringUtils.hasText(request.getRankName())
                 || request.getSortOrder() == null
                 || request.getSortOrder() < 0) {
