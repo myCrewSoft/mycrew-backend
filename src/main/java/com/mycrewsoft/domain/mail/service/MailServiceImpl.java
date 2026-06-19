@@ -2,9 +2,11 @@ package com.mycrewsoft.domain.mail.service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.dao.DuplicateKeyException;
@@ -42,6 +44,7 @@ import com.mycrewsoft.domain.mail.dto.response.MailSummaryResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSyncResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailTrashClearResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailUnreadCountResponse;
+import com.mycrewsoft.domain.mail.gmail.GmailLabelChange;
 import com.mycrewsoft.domain.mail.gmail.GmailMessageContent;
 import com.mycrewsoft.domain.mail.gmail.GmailSendCommand;
 import com.mycrewsoft.domain.mail.gmail.GmailSendResult;
@@ -82,6 +85,7 @@ public class MailServiceImpl implements MailService {
     private static final Set<String> BULK_ACTIONS = Set.of("read", "unread", "trash", "important");
     private static final List<String> SYSTEM_LABELS = List.of("INBOX", "SENT", "TRASH", "UNREAD", "IMPORTANT");
     private static final int WIDGET_MAIL_LIMIT = 5;	// 위젯 메일 개수
+    private static final int MAIL_BULK_CHUNK_SIZE = 1000;
 
     private final AuthorizationService authorizationService;
     private final MailMapper mailMapper;
@@ -422,11 +426,12 @@ public class MailServiceImpl implements MailService {
             return new MailTrashClearResponse(0);
         }
 
-        for (MailMessageRow row : trashRows) {
-            googleGmailClient.deleteMessage(account, row.getExternalMessageId());
-        }
+        googleGmailClient.deleteMessages(account, trashRows.stream()
+                .map(MailMessageRow::getExternalMessageId)
+                .filter(externalMessageId -> externalMessageId != null && !externalMessageId.isBlank())
+                .toList());
         transactionTemplate.executeWithoutResult(status ->
-                mailMapper.markMessagesDeleted(empId, trashRows.stream().map(MailMessageRow::getMailId).toList()));
+                markMessagesDeletedInChunks(empId, trashRows.stream().map(MailMessageRow::getMailId).toList()));
         return new MailTrashClearResponse(trashRows.size());
     }
 
@@ -532,6 +537,10 @@ public class MailServiceImpl implements MailService {
             }
         }
 
+        SyncLabelChangeResult labelChangeResult = persistLabelChanges(empId, result.getLabelChanges());
+        updated += labelChangeResult.updatedCount();
+        skipped += labelChangeResult.skippedCount();
+
         String latestHistoryId = latestHistoryId(result, account);
         if (latestHistoryId != null && !latestHistoryId.isBlank()) {
             mailMapper.updateMailAccountSyncState(empId, latestHistoryId);
@@ -542,12 +551,120 @@ public class MailServiceImpl implements MailService {
         }
 
         return new MailSyncResponse(
-                messages.size(),
+                messages.size() + labelChangeResult.updatedCount(),
                 inserted,
                 updated,
                 skipped,
                 latestHistoryId,
                 LocalDateTime.now());
+    }
+
+    private SyncLabelChangeResult persistLabelChanges(Long empId, List<GmailLabelChange> labelChanges) {
+        if (labelChanges == null || labelChanges.isEmpty()) {
+            return new SyncLabelChangeResult(0, 0);
+        }
+
+        Map<String, LabelChangeAccumulator> changesByExternalId = new LinkedHashMap<>();
+        for (GmailLabelChange change : labelChanges) {
+            if (change == null || change.getExternalMessageId() == null || change.getExternalMessageId().isBlank()) {
+                continue;
+            }
+            LabelChangeAccumulator accumulator = changesByExternalId.computeIfAbsent(
+                    change.getExternalMessageId(),
+                    ignored -> new LabelChangeAccumulator());
+            for (String label : change.getAddedLabels() == null ? List.<String>of() : change.getAddedLabels()) {
+                accumulator.apply(label, true);
+            }
+            for (String label : change.getRemovedLabels() == null ? List.<String>of() : change.getRemovedLabels()) {
+                accumulator.apply(label, false);
+            }
+        }
+        if (changesByExternalId.isEmpty()) {
+            return new SyncLabelChangeResult(0, 0);
+        }
+
+        Map<String, Long> mailIdByExternalId = loadMailIdsByExternalIds(empId, new ArrayList<>(changesByExternalId.keySet()));
+        Map<String, List<Long>> addedMailIdsByLabel = new LinkedHashMap<>();
+        Map<String, List<Long>> removedMailIdsByLabel = new LinkedHashMap<>();
+        int updatedCount = 0;
+        int skippedCount = 0;
+
+        for (Map.Entry<String, LabelChangeAccumulator> entry : changesByExternalId.entrySet()) {
+            Long mailId = mailIdByExternalId.get(entry.getKey());
+            if (mailId == null) {
+                skippedCount++;
+                continue;
+            }
+            LabelChangeAccumulator accumulator = entry.getValue();
+            if (accumulator.addedLabels().isEmpty() && accumulator.removedLabels().isEmpty()) {
+                continue;
+            }
+            updatedCount++;
+            for (String label : accumulator.removedLabels()) {
+                removedMailIdsByLabel.computeIfAbsent(label, ignored -> new ArrayList<>()).add(mailId);
+            }
+            for (String label : accumulator.addedLabels()) {
+                addedMailIdsByLabel.computeIfAbsent(label, ignored -> new ArrayList<>()).add(mailId);
+            }
+        }
+
+        for (Map.Entry<String, List<Long>> entry : removedMailIdsByLabel.entrySet()) {
+            deleteLabelMapsByTypeInChunks(empId, entry.getValue(), entry.getKey());
+        }
+        for (Map.Entry<String, List<Long>> entry : addedMailIdsByLabel.entrySet()) {
+            insertLabelMapsByTypeInChunks(empId, entry.getValue(), entry.getKey());
+        }
+        return new SyncLabelChangeResult(updatedCount, skippedCount);
+    }
+
+    private Map<String, Long> loadMailIdsByExternalIds(Long empId, List<String> externalMessageIds) {
+        Map<String, Long> mailIdByExternalId = new LinkedHashMap<>();
+        if (externalMessageIds == null || externalMessageIds.isEmpty()) {
+            return mailIdByExternalId;
+        }
+        for (int start = 0; start < externalMessageIds.size(); start += MAIL_BULK_CHUNK_SIZE) {
+            int end = Math.min(start + MAIL_BULK_CHUNK_SIZE, externalMessageIds.size());
+            List<MailMessageRow> rows = mailMapper.selectMailRowsByExternalMessageIds(empId, externalMessageIds.subList(start, end));
+            for (MailMessageRow row : rows == null ? List.<MailMessageRow>of() : rows) {
+                if (row.getExternalMessageId() != null && row.getMailId() != null) {
+                    mailIdByExternalId.put(row.getExternalMessageId(), row.getMailId());
+                }
+            }
+        }
+        return mailIdByExternalId;
+    }
+
+    private static class LabelChangeAccumulator {
+        private final Set<String> addedLabels = new LinkedHashSet<>();
+        private final Set<String> removedLabels = new LinkedHashSet<>();
+
+        void apply(String label, boolean added) {
+            if (label == null || label.isBlank()) {
+                return;
+            }
+            String normalized = label.trim();
+            if (!SYSTEM_LABELS.contains(normalized)) {
+                return;
+            }
+            if (added) {
+                removedLabels.remove(normalized);
+                addedLabels.add(normalized);
+            } else {
+                addedLabels.remove(normalized);
+                removedLabels.add(normalized);
+            }
+        }
+
+        Set<String> addedLabels() {
+            return addedLabels;
+        }
+
+        Set<String> removedLabels() {
+            return removedLabels;
+        }
+    }
+
+    private record SyncLabelChangeResult(int updatedCount, int skippedCount) {
     }
 
     @Override
@@ -585,6 +702,10 @@ public class MailServiceImpl implements MailService {
         MailAccountVO account = loadAccount(empId);
         requireScope(account, SCOPE_GMAIL_MODIFY);
 
+        if ("read".equals(action) || "important".equals(action) || "trash".equals(action)) {
+            return applyBulkLabelAction(empId, account, request.getMailIds(), action, Boolean.TRUE.equals(request.getImportant()));
+        }
+
         boolean important = Boolean.TRUE.equals(request.getImportant());
         int processed = 0;
         int failed = 0;
@@ -598,6 +719,145 @@ public class MailServiceImpl implements MailService {
             }
         }
         return new MailBulkResponse(processed, failed);
+    }
+
+    private MailBulkResponse applyBulkLabelAction(Long empId,
+                                                  MailAccountVO account,
+                                                  List<Long> requestedMailIds,
+                                                  String action,
+                                                  boolean important) {
+        BulkMailTargets targets = loadBulkMailTargets(empId, requestedMailIds);
+        if (targets.mailIds().isEmpty()) {
+            int failed = requestedMailIds == null ? 0 : requestedMailIds.size();
+            return new MailBulkResponse(0, failed);
+        }
+        if (targets.externalMessageIds().isEmpty()) {
+            return new MailBulkResponse(0, targets.mailIds().size());
+        }
+
+        try {
+            applyBulkGmailLabelAction(account, targets.externalMessageIds(), action, important);
+            transactionTemplate.executeWithoutResult(status ->
+                    applyBulkLocalLabelAction(empId, targets.actionableMailIds(), action, important));
+            return new MailBulkResponse(targets.actionableMailIds().size(), targets.failedCount());
+        } catch (Exception e) {
+            log.warn("Bulk mail label action failed. action={}, targetCount={}", action, targets.mailIds().size(), e);
+            return new MailBulkResponse(0, targets.mailIds().size());
+        }
+    }
+
+    private BulkMailTargets loadBulkMailTargets(Long empId, List<Long> requestedMailIds) {
+        List<Long> mailIds = normalizeMailIds(requestedMailIds);
+        if (mailIds.isEmpty()) {
+            return new BulkMailTargets(List.of(), List.of(), List.of(), 0);
+        }
+
+        List<MailMessageRow> rows = selectMailRowsByChunks(empId, mailIds);
+        List<Long> actionableMailIds = new ArrayList<>();
+        List<String> externalMessageIds = new ArrayList<>();
+        for (MailMessageRow row : rows) {
+            String externalMessageId = row.getExternalMessageId();
+            if (externalMessageId == null || externalMessageId.isBlank()) {
+                continue;
+            }
+            actionableMailIds.add(row.getMailId());
+            externalMessageIds.add(externalMessageId);
+        }
+        int failedCount = mailIds.size() - actionableMailIds.size();
+        return new BulkMailTargets(mailIds, actionableMailIds, externalMessageIds, failedCount);
+    }
+
+    private void applyBulkGmailLabelAction(MailAccountVO account,
+                                           List<String> externalMessageIds,
+                                           String action,
+                                           boolean important) {
+        switch (action) {
+            case "read" -> googleGmailClient.markRead(account, externalMessageIds);
+            case "important" -> googleGmailClient.updateImportant(account, externalMessageIds, important);
+            case "trash" -> googleGmailClient.trashMessages(account, externalMessageIds);
+            default -> throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private void applyBulkLocalLabelAction(Long empId, List<Long> mailIds, String action, boolean important) {
+        switch (action) {
+            case "read" -> deleteLabelMapsByTypeInChunks(empId, mailIds, "UNREAD");
+            case "important" -> {
+                if (important) {
+                    ensureSystemLabels(empId);
+                    insertLabelMapsByTypeInChunks(empId, mailIds, "IMPORTANT");
+                } else {
+                    deleteLabelMapsByTypeInChunks(empId, mailIds, "IMPORTANT");
+                }
+            }
+            case "trash" -> {
+                ensureSystemLabels(empId);
+                insertLabelMapsByTypeInChunks(empId, mailIds, "TRASH");
+            }
+            default -> throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private List<Long> normalizeMailIds(List<Long> requestedMailIds) {
+        if (requestedMailIds == null || requestedMailIds.isEmpty()) {
+            return List.of();
+        }
+        LinkedHashSet<Long> mailIds = new LinkedHashSet<>();
+        for (Long mailId : requestedMailIds) {
+            if (mailId != null) {
+                mailIds.add(mailId);
+            }
+        }
+        return new ArrayList<>(mailIds);
+    }
+
+    private List<MailMessageRow> selectMailRowsByChunks(Long empId, List<Long> mailIds) {
+        List<MailMessageRow> rows = new ArrayList<>();
+        for (int start = 0; start < mailIds.size(); start += MAIL_BULK_CHUNK_SIZE) {
+            int end = Math.min(start + MAIL_BULK_CHUNK_SIZE, mailIds.size());
+            rows.addAll(mailMapper.selectMailRows(empId, mailIds.subList(start, end)));
+        }
+        return rows;
+    }
+
+    private void deleteLabelMapsByTypeInChunks(Long empId, List<Long> mailIds, String labelTypeCd) {
+        if (mailIds == null || mailIds.isEmpty()) {
+            return;
+        }
+        for (int start = 0; start < mailIds.size(); start += MAIL_BULK_CHUNK_SIZE) {
+            int end = Math.min(start + MAIL_BULK_CHUNK_SIZE, mailIds.size());
+            mailMapper.deleteLabelMapsByType(empId, mailIds.subList(start, end), labelTypeCd);
+        }
+    }
+
+    private void insertLabelMapsByTypeInChunks(Long empId, List<Long> mailIds, String labelTypeCd) {
+        if (mailIds == null || mailIds.isEmpty()) {
+            return;
+        }
+        for (int start = 0; start < mailIds.size(); start += MAIL_BULK_CHUNK_SIZE) {
+            int end = Math.min(start + MAIL_BULK_CHUNK_SIZE, mailIds.size());
+            mailMapper.insertLabelMapsByType(
+                    mailMapper.selectNextMailLabelMapId(),
+                    empId,
+                    mailIds.subList(start, end),
+                    labelTypeCd);
+        }
+    }
+
+    private void markMessagesDeletedInChunks(Long empId, List<Long> mailIds) {
+        if (mailIds == null || mailIds.isEmpty()) {
+            return;
+        }
+        for (int start = 0; start < mailIds.size(); start += MAIL_BULK_CHUNK_SIZE) {
+            int end = Math.min(start + MAIL_BULK_CHUNK_SIZE, mailIds.size());
+            mailMapper.markMessagesDeleted(empId, mailIds.subList(start, end));
+        }
+    }
+
+    private record BulkMailTargets(List<Long> mailIds,
+                                   List<Long> actionableMailIds,
+                                   List<String> externalMessageIds,
+                                   int failedCount) {
     }
 
     private void applyBulkAction(Long empId, MailAccountVO account, Long mailId, String action, boolean important) {

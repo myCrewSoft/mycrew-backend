@@ -11,5 +11,6 @@ import lombok.Setter;
 public class GmailSyncResult {
 
     private List<GmailSyncedMessage> messages = new ArrayList<>();
+    private List<GmailLabelChange> labelChanges = new ArrayList<>();
     private String latestHistoryId;
 }

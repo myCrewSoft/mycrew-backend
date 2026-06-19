@@ -6,9 +6,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import java.time.LocalDateTime;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,6 +50,64 @@ class WebClientGoogleGmailClientTest {
         assertThat(calledUris).anyMatch(uri -> uri.contains("/history"));
         assertThat(calledUris).anyMatch(uri -> uri.contains("/messages?maxResults=10"));
         assertThat(calledUris).anyMatch(uri -> uri.contains("/messages/msg-1?format=full"));
+    }
+
+    @Test
+    void historySyncReturnsLabelChangesWithoutFetchingFullMessageForLabelOnlyChanges() {
+        List<String> calledUris = new ArrayList<>();
+        WebClient.Builder builder = WebClient.builder()
+                .exchangeFunction(request -> respondWithMessageAddedAndLabelChange(request, calledUris));
+        WebClientGoogleGmailClient client = new WebClientGoogleGmailClient(
+                builder,
+                new GoogleOAuthProperties(),
+                mock(MailAccountTokenService.class));
+
+        GmailSyncResult result = client.syncMessages(account(), "history-1", 10);
+
+        assertThat(result.getMessages()).hasSize(1);
+        assertThat(result.getMessages().getFirst().getExternalMessageId()).isEqualTo("msg-new");
+        assertThat(result.getLabelChanges()).hasSize(1);
+        assertThat(result.getLabelChanges().getFirst().getExternalMessageId()).isEqualTo("msg-old");
+        assertThat(result.getLabelChanges().getFirst().getAddedLabels()).containsExactly("UNREAD", "IMPORTANT");
+        assertThat(result.getLabelChanges().getFirst().getRemovedLabels()).containsExactly("TRASH");
+        assertThat(calledUris).anyMatch(uri -> uri.contains("/history"));
+        assertThat(calledUris).anyMatch(uri -> uri.contains("/messages/msg-new?format=full"));
+        assertThat(calledUris).noneMatch(uri -> uri.contains("/messages/msg-old?format=full"));
+    }
+
+    @Test
+    void initialSyncFetchesFullMessagesConcurrently() {
+        AtomicInteger inFlight = new AtomicInteger();
+        AtomicInteger maxInFlight = new AtomicInteger();
+        WebClient.Builder builder = WebClient.builder()
+                .exchangeFunction(request -> respondWithDelayedMessages(request, inFlight, maxInFlight));
+        WebClientGoogleGmailClient client = new WebClientGoogleGmailClient(
+                builder,
+                new GoogleOAuthProperties(),
+                mock(MailAccountTokenService.class));
+
+        GmailSyncResult result = client.syncMessages(account(), null, 3);
+
+        assertThat(result.getMessages()).hasSize(3);
+        assertThat(maxInFlight.get()).isGreaterThan(1);
+    }
+
+    @Test
+    void historySyncFetchesGenericMessagesWhenTypedEntriesAreMissing() {
+        List<String> calledUris = new ArrayList<>();
+        WebClient.Builder builder = WebClient.builder()
+                .exchangeFunction(request -> respondWithGenericHistoryMessage(request, calledUris));
+        WebClientGoogleGmailClient client = new WebClientGoogleGmailClient(
+                builder,
+                new GoogleOAuthProperties(),
+                mock(MailAccountTokenService.class));
+
+        GmailSyncResult result = client.syncMessages(account(), "history-1", 10);
+
+        assertThat(result.getMessages()).hasSize(1);
+        assertThat(result.getMessages().getFirst().getExternalMessageId()).isEqualTo("msg-generic");
+        assertThat(result.getLabelChanges()).isEmpty();
+        assertThat(calledUris).anyMatch(uri -> uri.contains("/messages/msg-generic?format=full"));
     }
 
     @Test
@@ -147,6 +207,82 @@ class WebClientGoogleGmailClientTest {
         verify(tokenService).markInvalid(account);
     }
 
+    @Test
+    void markReadUsesGmailBatchModifyEndpointForMultipleMessages() {
+        List<String> calledUris = new ArrayList<>();
+        WebClient.Builder builder = WebClient.builder()
+                .exchangeFunction(request -> {
+                    calledUris.add(request.url().toString());
+                    return Mono.just(ClientResponse.create(HttpStatus.OK).build());
+                });
+        WebClientGoogleGmailClient client = new WebClientGoogleGmailClient(
+                builder,
+                new GoogleOAuthProperties(),
+                mock(MailAccountTokenService.class));
+
+        client.markRead(account(), List.of("msg-1", "msg-2"));
+
+        assertThat(calledUris).containsExactly(
+                "https://gmail.googleapis.com/gmail/v1/users/me/messages/batchModify");
+    }
+
+    @Test
+    void updateImportantUsesGmailBatchModifyEndpointForMultipleMessages() {
+        List<String> calledUris = new ArrayList<>();
+        WebClient.Builder builder = WebClient.builder()
+                .exchangeFunction(request -> {
+                    calledUris.add(request.url().toString());
+                    return Mono.just(ClientResponse.create(HttpStatus.OK).build());
+                });
+        WebClientGoogleGmailClient client = new WebClientGoogleGmailClient(
+                builder,
+                new GoogleOAuthProperties(),
+                mock(MailAccountTokenService.class));
+
+        client.updateImportant(account(), List.of("msg-1", "msg-2"), true);
+
+        assertThat(calledUris).containsExactly(
+                "https://gmail.googleapis.com/gmail/v1/users/me/messages/batchModify");
+    }
+
+    @Test
+    void trashMessagesUsesGmailBatchModifyEndpoint() {
+        List<String> calledUris = new ArrayList<>();
+        WebClient.Builder builder = WebClient.builder()
+                .exchangeFunction(request -> {
+                    calledUris.add(request.url().toString());
+                    return Mono.just(ClientResponse.create(HttpStatus.OK).build());
+                });
+        WebClientGoogleGmailClient client = new WebClientGoogleGmailClient(
+                builder,
+                new GoogleOAuthProperties(),
+                mock(MailAccountTokenService.class));
+
+        client.trashMessages(account(), List.of("msg-1", "msg-2"));
+
+        assertThat(calledUris).containsExactly(
+                "https://gmail.googleapis.com/gmail/v1/users/me/messages/batchModify");
+    }
+
+    @Test
+    void deleteMessagesUsesGmailBatchDeleteEndpoint() {
+        List<String> calledUris = new ArrayList<>();
+        WebClient.Builder builder = WebClient.builder()
+                .exchangeFunction(request -> {
+                    calledUris.add(request.url().toString());
+                    return Mono.just(ClientResponse.create(HttpStatus.OK).build());
+                });
+        WebClientGoogleGmailClient client = new WebClientGoogleGmailClient(
+                builder,
+                new GoogleOAuthProperties(),
+                mock(MailAccountTokenService.class));
+
+        client.deleteMessages(account(), List.of("msg-1", "msg-2"));
+
+        assertThat(calledUris).containsExactly(
+                "https://gmail.googleapis.com/gmail/v1/users/me/messages/batchDelete");
+    }
+
     private Mono<ClientResponse> respond(ClientRequest request, List<String> calledUris) {
         String uri = request.url().toString();
         calledUris.add(uri);
@@ -189,6 +325,119 @@ class WebClientGoogleGmailClientTest {
                     """));
         }
         return Mono.just(ClientResponse.create(HttpStatus.INTERNAL_SERVER_ERROR).build());
+    }
+
+    private Mono<ClientResponse> respondWithMessageAddedAndLabelChange(ClientRequest request, List<String> calledUris) {
+        String uri = request.url().toString();
+        calledUris.add(uri);
+        if (uri.contains("/history")) {
+            return Mono.just(json(HttpStatus.OK, """
+                    {
+                      "history": [
+                        {
+                          "messages": [
+                            { "id": "msg-old", "threadId": "thread-old" }
+                          ],
+                          "messagesAdded": [
+                            { "message": { "id": "msg-new", "threadId": "thread-new" } }
+                          ],
+                          "labelsAdded": [
+                            {
+                              "message": { "id": "msg-old", "threadId": "thread-old" },
+                              "labelIds": ["UNREAD", "IMPORTANT"]
+                            }
+                          ],
+                          "labelsRemoved": [
+                            {
+                              "message": { "id": "msg-old", "threadId": "thread-old" },
+                              "labelIds": ["TRASH"]
+                            }
+                          ]
+                        }
+                      ],
+                      "historyId": "history-2"
+                    }
+                    """));
+        }
+        if (uri.contains("/messages/msg-new?format=full")) {
+            return Mono.just(messageResponse("msg-new", "thread-new"));
+        }
+        return Mono.just(ClientResponse.create(HttpStatus.INTERNAL_SERVER_ERROR).build());
+    }
+
+    private Mono<ClientResponse> respondWithDelayedMessages(ClientRequest request,
+                                                            AtomicInteger inFlight,
+                                                            AtomicInteger maxInFlight) {
+        String uri = request.url().toString();
+        if (uri.contains("/messages?maxResults=3")) {
+            return Mono.just(json(HttpStatus.OK, """
+                    {
+                      "messages": [
+                        { "id": "msg-1", "threadId": "thread-1" },
+                        { "id": "msg-2", "threadId": "thread-2" },
+                        { "id": "msg-3", "threadId": "thread-3" }
+                      ],
+                      "historyId": "history-list"
+                    }
+                    """));
+        }
+        if (uri.contains("/messages/msg-")) {
+            String messageId = uri.substring(uri.indexOf("/messages/") + "/messages/".length(), uri.indexOf("?format=full"));
+            return Mono.defer(() -> {
+                int current = inFlight.incrementAndGet();
+                maxInFlight.updateAndGet(previous -> Math.max(previous, current));
+                return Mono.delay(Duration.ofMillis(100))
+                        .map(ignored -> messageResponse(messageId, "thread-" + messageId))
+                        .doFinally(signalType -> inFlight.decrementAndGet());
+            });
+        }
+        return Mono.just(ClientResponse.create(HttpStatus.INTERNAL_SERVER_ERROR).build());
+    }
+
+    private Mono<ClientResponse> respondWithGenericHistoryMessage(ClientRequest request, List<String> calledUris) {
+        String uri = request.url().toString();
+        calledUris.add(uri);
+        if (uri.contains("/history")) {
+            return Mono.just(json(HttpStatus.OK, """
+                    {
+                      "history": [
+                        {
+                          "messages": [
+                            { "id": "msg-generic", "threadId": "thread-generic" }
+                          ]
+                        }
+                      ],
+                      "historyId": "history-2"
+                    }
+                    """));
+        }
+        if (uri.contains("/messages/msg-generic?format=full")) {
+            return Mono.just(messageResponse("msg-generic", "thread-generic"));
+        }
+        return Mono.just(ClientResponse.create(HttpStatus.INTERNAL_SERVER_ERROR).build());
+    }
+
+    private ClientResponse messageResponse(String messageId, String threadId) {
+        return json(HttpStatus.OK, """
+                {
+                  "id": "%s",
+                  "threadId": "%s",
+                  "historyId": "history-message-%s",
+                  "snippet": "hello",
+                  "internalDate": "1704067200000",
+                  "labelIds": ["INBOX"],
+                  "payload": {
+                    "mimeType": "text/plain",
+                    "headers": [
+                      { "name": "Subject", "value": "Hello" },
+                      { "name": "From", "value": "sender@example.com" },
+                      { "name": "To", "value": "user@example.com" },
+                      { "name": "Date", "value": "Mon, 01 Jan 2024 00:00:00 +0000" }
+                    ],
+                    "body": {}
+                  }
+                }
+                """.formatted(messageId, threadId, messageId));
     }
 
     private Mono<ClientResponse> respondWithLargeAttachment(ClientRequest request, String attachmentData) {

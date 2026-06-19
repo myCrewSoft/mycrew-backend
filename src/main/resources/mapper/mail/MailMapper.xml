@@ -207,6 +207,45 @@
           AND DEL_YN = 'N'
     </select>
 
+    <select id="selectMailRows" resultMap="MailMessageRowMap">
+        SELECT
+            MAIL_MSG_ID AS MAIL_ID,
+            EMP_ID,
+            EXTERNAL_MSG_ID AS EXTERNAL_MESSAGE_ID,
+            EXTERNAL_THREAD_ID AS THREAD_ID,
+            MESSAGE_ID_HEADER,
+            MAIL_SJ AS SUBJECT,
+            MAIL_CN AS CONTENT,
+            SNIPPET,
+            FROM_EMAIL,
+            TO_SUMMARY,
+            MAIL_SNDNG_DT AS SENT_AT,
+            INTERNAL_DATE,
+            DRAFT_YN,
+            BODY_SYNC_YN,
+            DEL_YN
+        FROM TB_MAIL_MESSAGE
+        WHERE EMP_ID = #{empId}
+          AND DEL_YN = 'N'
+          AND MAIL_MSG_ID IN
+          <foreach collection="mailIds" item="mailId" open="(" separator="," close=")">
+              #{mailId}
+          </foreach>
+    </select>
+
+    <select id="selectMailRowsByExternalMessageIds" resultMap="MailMessageRowMap">
+        SELECT
+            MAIL_MSG_ID AS MAIL_ID,
+            EMP_ID,
+            EXTERNAL_MSG_ID AS EXTERNAL_MESSAGE_ID
+        FROM TB_MAIL_MESSAGE
+        WHERE EMP_ID = #{empId}
+          AND EXTERNAL_MSG_ID IN
+          <foreach collection="externalMessageIds" item="externalMessageId" open="(" separator="," close=")">
+              #{externalMessageId}
+          </foreach>
+    </select>
+
     <select id="selectMailIdByExternalMessageId" resultType="long">
         SELECT MAIL_MSG_ID
         FROM TB_MAIL_MESSAGE
@@ -658,6 +697,36 @@
         )
     </insert>
 
+    <insert id="insertLabelMapsByType">
+        INSERT INTO TB_MAIL_LABEL_MAP (
+            MAIL_LABEL_MAP_ID,
+            MAIL_MSG_ID,
+            EMP_ID,
+            MAIL_LABEL_ID
+        )
+        SELECT
+            #{labelMapBaseId} + ROW_NUMBER() OVER (ORDER BY S.MAIL_MSG_ID) - 1,
+            S.MAIL_MSG_ID,
+            #{empId},
+            L.MAIL_LABEL_ID
+        FROM (
+            <foreach collection="mailIds" item="mailId" separator=" UNION ALL ">
+                SELECT #{mailId} AS MAIL_MSG_ID FROM DUAL
+            </foreach>
+        ) S
+        JOIN TB_MAIL_LABEL L
+          ON L.EMP_ID = #{empId}
+         AND TRIM(L.LABEL_TYPE_CD) = #{labelTypeCd}
+         AND L.USE_YN = 'Y'
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM TB_MAIL_LABEL_MAP LM
+            WHERE LM.EMP_ID = #{empId}
+              AND LM.MAIL_MSG_ID = S.MAIL_MSG_ID
+              AND LM.MAIL_LABEL_ID = L.MAIL_LABEL_ID
+        )
+    </insert>
+
     <delete id="deleteLabelMapByType">
         DELETE FROM TB_MAIL_LABEL_MAP LM
         WHERE LM.EMP_ID = #{empId}
@@ -668,6 +737,22 @@
               WHERE L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
                 AND L.EMP_ID = LM.EMP_ID
                 AND TRIM(L.LABEL_TYPE_CD) = #{labelTypeCd}
+          )
+    </delete>
+
+    <delete id="deleteLabelMapsByType">
+        DELETE FROM TB_MAIL_LABEL_MAP LM
+        WHERE LM.EMP_ID = #{empId}
+          AND LM.MAIL_MSG_ID IN
+          <foreach collection="mailIds" item="mailId" open="(" separator="," close=")">
+              #{mailId}
+          </foreach>
+          AND LM.MAIL_LABEL_ID IN (
+              SELECT L.MAIL_LABEL_ID
+              FROM TB_MAIL_LABEL L
+              WHERE L.EMP_ID = #{empId}
+                AND TRIM(L.LABEL_TYPE_CD) = #{labelTypeCd}
+                AND L.USE_YN = 'Y'
           )
     </delete>
 
