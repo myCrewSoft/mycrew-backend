@@ -37,4 +37,6 @@ public class ProjectVO {
 	private String projLdrNm;    // 프로젝트 장 이름
 	private String empNm;
 	private String deptNm;
+	private Integer memberCnt;
+	private String deadlineRisk;
 }
