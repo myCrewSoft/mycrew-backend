@@ -28,7 +28,7 @@
 | 분류 | 기술 |
 |------|------|
 | Language | Java 21 |
-| Framework | Spring Boot 3.3.x |
+| Framework | Spring Boot 3.5.14 |
 | Build | Maven |
 | ORM | MyBatis |
 | DB | Oracle DB (HikariCP) |
