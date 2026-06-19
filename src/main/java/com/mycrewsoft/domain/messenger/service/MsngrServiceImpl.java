@@ -54,7 +54,7 @@ public class MsngrServiceImpl implements MsngrService {
         Long empId = getCurrentEmpIdOrThrow();
         
         // 참여한 채팅방 목록 조회
-        List<MsngrChtrmListVO> voList = msngrMapper.selectChtrmListByEmpId(empId, 0);
+        List<MsngrChtrmListVO> voList = msngrMapper.selectChtrmListByEmpId(empId);
 
         // DTO 변환
         return msngrDtoMapper.toRoomResponseListFromList(voList);
@@ -468,7 +468,7 @@ public class MsngrServiceImpl implements MsngrService {
     @Override
     public List<ChatRoomResponse> getChtrmListForWidget() {
         Long empId = getCurrentEmpIdOrThrow();
-        List<MsngrChtrmListVO> voList = msngrMapper.selectChtrmListByEmpId(empId, WIDGET_MSNGR_LIMIT);
+        List<MsngrChtrmListVO> voList = msngrMapper.selectUnreadChtrmListByEmpId(empId, WIDGET_MSNGR_LIMIT);
         return msngrDtoMapper.toRoomResponseListFromList(voList);
     }
     
