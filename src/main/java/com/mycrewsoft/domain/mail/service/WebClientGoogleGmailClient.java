@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,7 @@ import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.mail.config.GoogleOAuthProperties;
 import com.mycrewsoft.domain.mail.dto.response.GoogleTokenResponse;
+import com.mycrewsoft.domain.mail.gmail.GmailLabelChange;
 import com.mycrewsoft.domain.mail.gmail.GmailMessageContent;
 import com.mycrewsoft.domain.mail.gmail.GmailSendCommand;
 import com.mycrewsoft.domain.mail.gmail.GmailSendResult;
@@ -37,6 +39,7 @@ import com.mycrewsoft.domain.mail.vo.MailAccountVO;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -48,6 +51,8 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
     private static final String GMAIL_USER_API = "https://gmail.googleapis.com/gmail/v1/users/me";
     private static final String GMAIL_API = GMAIL_USER_API + "/messages";
     private static final int GMAIL_MAX_IN_MEMORY_SIZE = 50 * 1024 * 1024;
+    private static final int GMAIL_BATCH_MODIFY_LIMIT = 1000;
+    private static final int GMAIL_SYNC_FETCH_CONCURRENCY = 8;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final WebClient.Builder webClientBuilder;
@@ -120,26 +125,46 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
 
     @Override
     public void markRead(MailAccountVO account, String externalMessageId) {
-        modifyLabels(account, externalMessageId, List.of(), List.of("UNREAD"));
+        markRead(account, List.of(externalMessageId));
+    }
+
+    @Override
+    public void markRead(MailAccountVO account, List<String> externalMessageIds) {
+        batchModifyLabels(account, externalMessageIds, List.of(), List.of("UNREAD"));
     }
 
     @Override
     public void markUnread(MailAccountVO account, String externalMessageId) {
-        modifyLabels(account, externalMessageId, List.of("UNREAD"), List.of());
+        markUnread(account, List.of(externalMessageId));
+    }
+
+    @Override
+    public void markUnread(MailAccountVO account, List<String> externalMessageIds) {
+        batchModifyLabels(account, externalMessageIds, List.of("UNREAD"), List.of());
     }
 
     @Override
     public void updateImportant(MailAccountVO account, String externalMessageId, boolean important) {
+        updateImportant(account, List.of(externalMessageId), important);
+    }
+
+    @Override
+    public void updateImportant(MailAccountVO account, List<String> externalMessageIds, boolean important) {
         if (important) {
-            modifyLabels(account, externalMessageId, List.of("IMPORTANT"), List.of());
+            batchModifyLabels(account, externalMessageIds, List.of("IMPORTANT"), List.of());
         } else {
-            modifyLabels(account, externalMessageId, List.of(), List.of("IMPORTANT"));
+            batchModifyLabels(account, externalMessageIds, List.of(), List.of("IMPORTANT"));
         }
     }
 
     @Override
     public void trashMessage(MailAccountVO account, String externalMessageId) {
         postWithoutBody(account, GMAIL_API + "/" + externalMessageId + "/trash");
+    }
+
+    @Override
+    public void trashMessages(MailAccountVO account, List<String> externalMessageIds) {
+        batchModifyLabels(account, externalMessageIds, List.of("TRASH"), List.of());
     }
 
     @Override
@@ -262,17 +287,34 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
                 .block();
 
         Set<String> messageIds = new LinkedHashSet<>();
+        Map<String, MutableLabelChange> labelChanges = new LinkedHashMap<>();
         if (response != null && response.get("history") instanceof List<?> historyList) {
             for (Object history : historyList) {
                 if (history instanceof Map<?, ?> historyMap) {
-                    collectHistoryMessageIds(historyMap, "messages", messageIds);
-                    collectHistoryMessageIds(historyMap, "messagesAdded", messageIds);
-                    collectHistoryMessageIds(historyMap, "labelsAdded", messageIds);
-                    collectHistoryMessageIds(historyMap, "labelsRemoved", messageIds);
+                    boolean hasTypedEntries = hasHistoryEntries(historyMap, "messagesAdded")
+                            || hasHistoryEntries(historyMap, "labelsAdded")
+                            || hasHistoryEntries(historyMap, "labelsRemoved");
+                    collectAddedMessageIds(historyMap, messageIds);
+                    collectLabelChanges(historyMap, "labelsAdded", labelChanges, true);
+                    collectLabelChanges(historyMap, "labelsRemoved", labelChanges, false);
+                    if (!hasTypedEntries) {
+                        collectGenericMessageIds(historyMap, messageIds);
+                    }
                 }
             }
         }
-        return fetchMessages(account, limitIds(messageIds, maxResults), value(response == null ? null : response.get("historyId")));
+        Set<String> fullFetchMessageIds = limitIds(messageIds, maxResults);
+        GmailSyncResult result = fetchMessages(account, fullFetchMessageIds, value(response == null ? null : response.get("historyId")));
+        for (Map.Entry<String, MutableLabelChange> entry : labelChanges.entrySet()) {
+            if (fullFetchMessageIds.contains(entry.getKey())) {
+                continue;
+            }
+            GmailLabelChange change = entry.getValue().toLabelChange(entry.getKey());
+            if (!change.getAddedLabels().isEmpty() || !change.getRemovedLabels().isEmpty()) {
+                result.getLabelChanges().add(change);
+            }
+        }
+        return result;
     }
 
     private Set<String> limitIds(Set<String> messageIds, int maxResults) {
@@ -286,29 +328,108 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
         return limited;
     }
 
+    private boolean hasHistoryEntries(Map<?, ?> historyMap, String key) {
+        return historyMap.get(key) instanceof List<?> list && !list.isEmpty();
+    }
+
     @SuppressWarnings("unchecked")
-    private void collectHistoryMessageIds(Map<?, ?> historyMap, String key, Set<String> messageIds) {
-        Object entries = historyMap.get(key);
+    private void collectAddedMessageIds(Map<?, ?> historyMap, Set<String> messageIds) {
+        Object entries = historyMap.get("messagesAdded");
         if (!(entries instanceof List<?> list)) {
             return;
         }
         for (Object entry : list) {
             if (entry instanceof Map<?, ?> entryMap) {
-                Object message = entryMap.get("message");
-                if (message instanceof Map<?, ?> messageMap && messageMap.get("id") != null) {
-                    messageIds.add(String.valueOf(messageMap.get("id")));
-                } else if (entryMap.get("id") != null) {
-                    messageIds.add(String.valueOf(entryMap.get("id")));
+                String messageId = messageId(entryMap);
+                if (messageId != null) {
+                    messageIds.add(messageId);
                 }
             }
         }
     }
 
+    private void collectGenericMessageIds(Map<?, ?> historyMap, Set<String> messageIds) {
+        Object entries = historyMap.get("messages");
+        if (!(entries instanceof List<?> list)) {
+            return;
+        }
+        for (Object entry : list) {
+            if (entry instanceof Map<?, ?> entryMap) {
+                String messageId = messageId(entryMap);
+                if (messageId != null) {
+                    messageIds.add(messageId);
+                }
+            }
+        }
+    }
+
+    private void collectLabelChanges(Map<?, ?> historyMap,
+                                     String key,
+                                     Map<String, MutableLabelChange> labelChanges,
+                                     boolean added) {
+        Object entries = historyMap.get(key);
+        if (!(entries instanceof List<?> list)) {
+            return;
+        }
+        for (Object entry : list) {
+            if (!(entry instanceof Map<?, ?> entryMap)) {
+                continue;
+            }
+            String messageId = messageId(entryMap);
+            if (messageId == null) {
+                continue;
+            }
+            List<String> labels = labelIds(entryMap);
+            if (labels.isEmpty()) {
+                continue;
+            }
+            MutableLabelChange change = labelChanges.computeIfAbsent(messageId, ignored -> new MutableLabelChange());
+            for (String label : labels) {
+                change.apply(label, added);
+            }
+        }
+    }
+
+    private String messageId(Map<?, ?> entryMap) {
+        Object message = entryMap.get("message");
+        if (message instanceof Map<?, ?> messageMap && messageMap.get("id") != null) {
+            return String.valueOf(messageMap.get("id"));
+        }
+        if (entryMap.get("id") != null) {
+            return String.valueOf(entryMap.get("id"));
+        }
+        return null;
+    }
+
+    private List<String> labelIds(Map<?, ?> entryMap) {
+        Object rawLabelIds = entryMap.get("labelIds");
+        if (!(rawLabelIds instanceof List<?> list)) {
+            return List.of();
+        }
+        List<String> labels = new ArrayList<>();
+        for (Object labelId : list) {
+            if (labelId != null) {
+                labels.add(String.valueOf(labelId));
+            }
+        }
+        return labels;
+    }
+
     private GmailSyncResult fetchMessages(MailAccountVO account, Set<String> messageIds, String latestHistoryId) {
         GmailSyncResult result = new GmailSyncResult();
         result.setLatestHistoryId(latestHistoryId);
-        for (String messageId : messageIds) {
-            Map<?, ?> response = fetchMessageMap(account, messageId);
+        if (messageIds == null || messageIds.isEmpty()) {
+            return result;
+        }
+
+        String accessToken = accessToken(account);
+        List<Map<?, ?>> responses = Flux.fromIterable(messageIds)
+                .flatMapSequential(
+                        messageId -> fetchMessageMap(accessToken, messageId),
+                        GMAIL_SYNC_FETCH_CONCURRENCY)
+                .collectList()
+                .block();
+        for (Map<?, ?> response : responses == null ? List.<Map<?, ?>>of() : responses) {
             if (response == null) {
                 continue;
             }
@@ -321,14 +442,39 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
         return result;
     }
 
-    private Map<?, ?> fetchMessageMap(MailAccountVO account, String messageId) {
+    private Mono<Map<?, ?>> fetchMessageMap(String accessToken, String messageId) {
         return webClient()
                 .get()
                 .uri(GMAIL_API + "/" + messageId + "?format=full")
-                .headers(headers -> headers.setBearerAuth(accessToken(account)))
+                .headers(headers -> headers.setBearerAuth(accessToken))
                 .retrieve()
                 .bodyToMono(Map.class)
-                .block();
+                .map(response -> (Map<?, ?>) response);
+    }
+
+    private static class MutableLabelChange {
+        private final Set<String> addedLabels = new LinkedHashSet<>();
+        private final Set<String> removedLabels = new LinkedHashSet<>();
+
+        void apply(String label, boolean added) {
+            if (label == null || label.isBlank()) {
+                return;
+            }
+            if (added) {
+                removedLabels.remove(label);
+                addedLabels.add(label);
+            } else {
+                addedLabels.remove(label);
+                removedLabels.add(label);
+            }
+        }
+
+        GmailLabelChange toLabelChange(String externalMessageId) {
+            return new GmailLabelChange(
+                    externalMessageId,
+                    new ArrayList<>(addedLabels),
+                    new ArrayList<>(removedLabels));
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -507,6 +653,93 @@ public class WebClientGoogleGmailClient implements GoogleGmailClient {
         } catch (Exception e) {
             throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
         }
+    }
+
+    private void batchModifyLabels(MailAccountVO account,
+                                   List<String> externalMessageIds,
+                                   List<String> addLabelIds,
+                                   List<String> removeLabelIds) {
+        List<String> ids = normalizeMessageIds(externalMessageIds);
+        if (ids.isEmpty()) {
+            return;
+        }
+        for (int start = 0; start < ids.size(); start += GMAIL_BATCH_MODIFY_LIMIT) {
+            int end = Math.min(start + GMAIL_BATCH_MODIFY_LIMIT, ids.size());
+            batchModifyLabelChunk(account, ids.subList(start, end), addLabelIds, removeLabelIds);
+        }
+    }
+
+    private void batchModifyLabelChunk(MailAccountVO account,
+                                       List<String> externalMessageIds,
+                                       List<String> addLabelIds,
+                                       List<String> removeLabelIds) {
+        try {
+            webClient()
+                    .post()
+                    .uri(GMAIL_API + "/batchModify")
+                    .headers(headers -> headers.setBearerAuth(accessToken(account)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(Map.of(
+                            "ids", externalMessageIds,
+                            "addLabelIds", addLabelIds,
+                            "removeLabelIds", removeLabelIds))
+                    .retrieve()
+                    .toBodilessEntity()
+                    .block();
+        } catch (CustomException e) {
+            throw e;
+        } catch (WebClientResponseException e) {
+            logGmailApiFailure("batch-modify-labels", e);
+            throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
+        } catch (Exception e) {
+            throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
+        }
+    }
+
+    @Override
+    public void deleteMessages(MailAccountVO account, List<String> externalMessageIds) {
+        List<String> ids = normalizeMessageIds(externalMessageIds);
+        if (ids.isEmpty()) {
+            return;
+        }
+        for (int start = 0; start < ids.size(); start += GMAIL_BATCH_MODIFY_LIMIT) {
+            int end = Math.min(start + GMAIL_BATCH_MODIFY_LIMIT, ids.size());
+            batchDeleteChunk(account, ids.subList(start, end));
+        }
+    }
+
+    private void batchDeleteChunk(MailAccountVO account, List<String> externalMessageIds) {
+        try {
+            webClient()
+                    .post()
+                    .uri(GMAIL_API + "/batchDelete")
+                    .headers(headers -> headers.setBearerAuth(accessToken(account)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(Map.of("ids", externalMessageIds))
+                    .retrieve()
+                    .toBodilessEntity()
+                    .block();
+        } catch (CustomException e) {
+            throw e;
+        } catch (WebClientResponseException e) {
+            logGmailApiFailure("batch-delete", e);
+            throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
+        } catch (Exception e) {
+            throw new CustomException(ErrorCode.MAIL_SYNC_FAILED);
+        }
+    }
+
+    private List<String> normalizeMessageIds(List<String> externalMessageIds) {
+        if (externalMessageIds == null || externalMessageIds.isEmpty()) {
+            return List.of();
+        }
+        LinkedHashSet<String> ids = new LinkedHashSet<>();
+        for (String externalMessageId : externalMessageIds) {
+            if (externalMessageId != null && !externalMessageId.isBlank()) {
+                ids.add(externalMessageId);
+            }
+        }
+        return new ArrayList<>(ids);
     }
 
     private void postWithoutBody(MailAccountVO account, String uri) {

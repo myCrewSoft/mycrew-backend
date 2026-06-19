@@ -33,14 +33,17 @@ import com.mycrewsoft.common.constant.PermissionCode;
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.file.service.FileService;
+import com.mycrewsoft.domain.mail.dto.request.MailBulkRequest;
 import com.mycrewsoft.domain.mail.dto.response.MailDetailResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailAccountStatusResponse;
+import com.mycrewsoft.domain.mail.dto.response.MailBulkResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailMutationResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailParticipantResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSendResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailSyncResponse;
 import com.mycrewsoft.domain.mail.dto.response.MailTrashClearResponse;
 import com.mycrewsoft.domain.mail.gmail.GmailMessageContent;
+import com.mycrewsoft.domain.mail.gmail.GmailLabelChange;
 import com.mycrewsoft.domain.mail.gmail.GmailSendCommand;
 import com.mycrewsoft.domain.mail.gmail.GmailSendResult;
 import com.mycrewsoft.domain.mail.gmail.GmailSyncResult;
@@ -117,6 +120,152 @@ class MailServiceImplTest {
 
         verify(mailMapper, never()).selectMailRow(EMP_ID, 10L);
         verifyNoInteractions(googleGmailClient);
+    }
+
+    @Test
+    void bulkReadUsesBatchLookupGmailModifyAndLocalDelete() {
+        authenticate(PermissionCode.MAIL_READ);
+        MailAccountVO account = account("https://www.googleapis.com/auth/gmail.modify");
+        MailMessageRow first = mailRow();
+        MailMessageRow second = mailRow();
+        second.setMailId(11L);
+        second.setExternalMessageId("gmail-11");
+        List<Long> mailIds = List.of(10L, 11L);
+        MailBulkRequest request = new MailBulkRequest();
+        request.setAction("read");
+        request.setMailIds(mailIds);
+
+        when(mailMapper.selectActiveMailAccount(EMP_ID)).thenReturn(account);
+        when(mailMapper.selectMailRows(EMP_ID, mailIds)).thenReturn(List.of(first, second));
+
+        MailBulkResponse response = service.bulkAction(request);
+
+        assertThat(response.getProcessed()).isEqualTo(2);
+        assertThat(response.getFailed()).isZero();
+        InOrder inOrder = inOrder(googleGmailClient, mailMapper);
+        inOrder.verify(googleGmailClient).markRead(account, List.of("gmail-10", "gmail-11"));
+        inOrder.verify(mailMapper).deleteLabelMapsByType(EMP_ID, mailIds, "UNREAD");
+        verify(mailMapper, never()).selectMailRow(EMP_ID, 10L);
+        verify(mailMapper, never()).selectMailRow(EMP_ID, 11L);
+        verify(mailMapper, never()).deleteLabelMapByType(EMP_ID, 10L, "UNREAD");
+        verify(mailMapper, never()).deleteLabelMapByType(EMP_ID, 11L, "UNREAD");
+    }
+
+    @Test
+    void bulkReadSkipsRowsWithoutExternalMessageId() {
+        authenticate(PermissionCode.MAIL_READ);
+        MailAccountVO account = account("https://www.googleapis.com/auth/gmail.modify");
+        MailMessageRow first = mailRow();
+        MailMessageRow second = mailRow();
+        second.setMailId(11L);
+        second.setExternalMessageId(null);
+        List<Long> mailIds = List.of(10L, 11L);
+        MailBulkRequest request = new MailBulkRequest();
+        request.setAction("read");
+        request.setMailIds(mailIds);
+
+        when(mailMapper.selectActiveMailAccount(EMP_ID)).thenReturn(account);
+        when(mailMapper.selectMailRows(EMP_ID, mailIds)).thenReturn(List.of(first, second));
+
+        MailBulkResponse response = service.bulkAction(request);
+
+        assertThat(response.getProcessed()).isEqualTo(1);
+        assertThat(response.getFailed()).isEqualTo(1);
+        InOrder inOrder = inOrder(googleGmailClient, mailMapper);
+        inOrder.verify(googleGmailClient).markRead(account, List.of("gmail-10"));
+        inOrder.verify(mailMapper).deleteLabelMapsByType(EMP_ID, List.of(10L), "UNREAD");
+        verify(mailMapper, never()).deleteLabelMapsByType(EMP_ID, mailIds, "UNREAD");
+    }
+
+    @Test
+    void bulkImportantUsesBatchLookupGmailModifyAndLocalInsert() {
+        authenticate(PermissionCode.MAIL_READ);
+        MailAccountVO account = account("https://www.googleapis.com/auth/gmail.modify");
+        MailMessageRow first = mailRow();
+        MailMessageRow second = mailRow();
+        second.setMailId(11L);
+        second.setExternalMessageId("gmail-11");
+        List<Long> mailIds = List.of(10L, 11L);
+        MailBulkRequest request = new MailBulkRequest();
+        request.setAction("important");
+        request.setImportant(true);
+        request.setMailIds(mailIds);
+
+        when(mailMapper.selectActiveMailAccount(EMP_ID)).thenReturn(account);
+        when(mailMapper.selectMailRows(EMP_ID, mailIds)).thenReturn(List.of(first, second));
+        when(mailMapper.selectNextMailLabelId()).thenReturn(1L, 2L, 3L, 4L, 5L);
+        when(mailMapper.selectNextMailLabelMapId()).thenReturn(20L);
+
+        MailBulkResponse response = service.bulkAction(request);
+
+        assertThat(response.getProcessed()).isEqualTo(2);
+        assertThat(response.getFailed()).isZero();
+        InOrder inOrder = inOrder(googleGmailClient, mailMapper);
+        inOrder.verify(googleGmailClient).updateImportant(account, List.of("gmail-10", "gmail-11"), true);
+        inOrder.verify(mailMapper).insertLabelMapsByType(20L, EMP_ID, mailIds, "IMPORTANT");
+        verify(mailMapper, never()).selectMailRow(EMP_ID, 10L);
+        verify(mailMapper, never()).selectMailRow(EMP_ID, 11L);
+        verify(mailMapper, never()).insertLabelMap(any(), any(), any(), any());
+    }
+
+    @Test
+    void bulkUnimportantUsesBatchLookupGmailModifyAndLocalDelete() {
+        authenticate(PermissionCode.MAIL_READ);
+        MailAccountVO account = account("https://www.googleapis.com/auth/gmail.modify");
+        MailMessageRow first = mailRow();
+        MailMessageRow second = mailRow();
+        second.setMailId(11L);
+        second.setExternalMessageId("gmail-11");
+        List<Long> mailIds = List.of(10L, 11L);
+        MailBulkRequest request = new MailBulkRequest();
+        request.setAction("important");
+        request.setImportant(false);
+        request.setMailIds(mailIds);
+
+        when(mailMapper.selectActiveMailAccount(EMP_ID)).thenReturn(account);
+        when(mailMapper.selectMailRows(EMP_ID, mailIds)).thenReturn(List.of(first, second));
+
+        MailBulkResponse response = service.bulkAction(request);
+
+        assertThat(response.getProcessed()).isEqualTo(2);
+        assertThat(response.getFailed()).isZero();
+        InOrder inOrder = inOrder(googleGmailClient, mailMapper);
+        inOrder.verify(googleGmailClient).updateImportant(account, List.of("gmail-10", "gmail-11"), false);
+        inOrder.verify(mailMapper).deleteLabelMapsByType(EMP_ID, mailIds, "IMPORTANT");
+        verify(mailMapper, never()).selectMailRow(EMP_ID, 10L);
+        verify(mailMapper, never()).selectMailRow(EMP_ID, 11L);
+        verify(mailMapper, never()).deleteLabelMapByType(EMP_ID, 10L, "IMPORTANT");
+        verify(mailMapper, never()).deleteLabelMapByType(EMP_ID, 11L, "IMPORTANT");
+    }
+
+    @Test
+    void bulkTrashUsesBatchLookupGmailModifyAndLocalInsert() {
+        authenticate(PermissionCode.MAIL_DELETE);
+        MailAccountVO account = account("https://www.googleapis.com/auth/gmail.modify");
+        MailMessageRow first = mailRow();
+        MailMessageRow second = mailRow();
+        second.setMailId(11L);
+        second.setExternalMessageId("gmail-11");
+        List<Long> mailIds = List.of(10L, 11L);
+        MailBulkRequest request = new MailBulkRequest();
+        request.setAction("trash");
+        request.setMailIds(mailIds);
+
+        when(mailMapper.selectActiveMailAccount(EMP_ID)).thenReturn(account);
+        when(mailMapper.selectMailRows(EMP_ID, mailIds)).thenReturn(List.of(first, second));
+        when(mailMapper.selectNextMailLabelId()).thenReturn(1L, 2L, 3L, 4L, 5L);
+        when(mailMapper.selectNextMailLabelMapId()).thenReturn(30L);
+
+        MailBulkResponse response = service.bulkAction(request);
+
+        assertThat(response.getProcessed()).isEqualTo(2);
+        assertThat(response.getFailed()).isZero();
+        InOrder inOrder = inOrder(googleGmailClient, mailMapper);
+        inOrder.verify(googleGmailClient).trashMessages(account, List.of("gmail-10", "gmail-11"));
+        inOrder.verify(mailMapper).insertLabelMapsByType(30L, EMP_ID, mailIds, "TRASH");
+        verify(mailMapper, never()).selectMailRow(EMP_ID, 10L);
+        verify(mailMapper, never()).selectMailRow(EMP_ID, 11L);
+        verify(mailMapper, never()).insertLabelMap(any(), any(), any(), any());
     }
 
     @Test
@@ -230,6 +379,41 @@ class MailServiceImplTest {
     }
 
     @Test
+    void syncMailsAppliesLabelChangesWithoutRewritingFullMessage() {
+        authenticate(PermissionCode.MAIL_READ);
+        MailAccountVO account = account("https://www.googleapis.com/auth/gmail.readonly");
+        account.setGoogleHistoryId("history-10");
+        GmailSyncResult syncResult = new GmailSyncResult();
+        syncResult.setLatestHistoryId("history-11");
+        syncResult.getLabelChanges().add(new GmailLabelChange(
+                "gmail-10",
+                List.of("UNREAD", "IMPORTANT"),
+                List.of("TRASH")));
+        MailMessageRow row = mailRow();
+
+        when(mailMapper.selectActiveMailAccount(EMP_ID)).thenReturn(account);
+        when(googleGmailClient.syncMessages(account, "history-10", 50)).thenReturn(syncResult);
+        when(mailMapper.selectNextMailLabelId()).thenReturn(1L, 2L, 3L, 4L, 5L);
+        when(mailMapper.selectMailRowsByExternalMessageIds(EMP_ID, List.of("gmail-10"))).thenReturn(List.of(row));
+        when(mailMapper.selectNextMailLabelMapId()).thenReturn(20L, 30L);
+
+        MailSyncResponse response = service.syncMails(50);
+
+        assertThat(response.getSyncedCount()).isEqualTo(1);
+        assertThat(response.getUpdatedCount()).isEqualTo(1);
+        assertThat(response.getInsertedCount()).isZero();
+        assertThat(response.getSkippedCount()).isZero();
+        InOrder inOrder = inOrder(googleGmailClient, mailMapper);
+        inOrder.verify(googleGmailClient).syncMessages(account, "history-10", 50);
+        inOrder.verify(mailMapper).deleteLabelMapsByType(EMP_ID, List.of(10L), "TRASH");
+        inOrder.verify(mailMapper).insertLabelMapsByType(20L, EMP_ID, List.of(10L), "UNREAD");
+        inOrder.verify(mailMapper).insertLabelMapsByType(30L, EMP_ID, List.of(10L), "IMPORTANT");
+        verify(mailMapper, never()).updateMailMessage(any(MailMessageRow.class));
+        verify(mailMapper, never()).deleteParticipantsByMail(EMP_ID, 10L);
+        verify(mailMapper, never()).deleteLabelMapsByMail(EMP_ID, 10L);
+    }
+
+    @Test
     void syncMailsCallsGmailBeforeLocalDbPreparation() {
         authenticate(PermissionCode.MAIL_READ);
         MailAccountVO account = account("https://www.googleapis.com/auth/gmail.readonly");
@@ -278,9 +462,10 @@ class MailServiceImplTest {
 
         assertThat(response.getDeletedCount()).isEqualTo(2);
         InOrder inOrder = inOrder(googleGmailClient, mailMapper);
-        inOrder.verify(googleGmailClient).deleteMessage(account, "gmail-10");
-        inOrder.verify(googleGmailClient).deleteMessage(account, "gmail-11");
+        inOrder.verify(googleGmailClient).deleteMessages(account, List.of("gmail-10", "gmail-11"));
         inOrder.verify(mailMapper).markMessagesDeleted(EMP_ID, List.of(10L, 11L));
+        verify(googleGmailClient, never()).deleteMessage(account, "gmail-10");
+        verify(googleGmailClient, never()).deleteMessage(account, "gmail-11");
     }
 
     @Test

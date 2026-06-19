@@ -41,6 +41,12 @@ public interface MailMapper {
 
     MailMessageRow selectMailRow(@Param("empId") Long empId, @Param("mailId") Long mailId);
 
+    List<MailMessageRow> selectMailRows(@Param("empId") Long empId,
+                                        @Param("mailIds") List<Long> mailIds);
+
+    List<MailMessageRow> selectMailRowsByExternalMessageIds(@Param("empId") Long empId,
+                                                            @Param("externalMessageIds") List<String> externalMessageIds);
+
     Long selectMailIdByExternalMessageId(@Param("empId") Long empId,
                                          @Param("externalMessageId") String externalMessageId);
 
@@ -93,9 +99,18 @@ public interface MailMapper {
                         @Param("mailId") Long mailId,
                         @Param("labelId") Long labelId);
 
+    void insertLabelMapsByType(@Param("labelMapBaseId") Long labelMapBaseId,
+                               @Param("empId") Long empId,
+                               @Param("mailIds") List<Long> mailIds,
+                               @Param("labelTypeCd") String labelTypeCd);
+
     void deleteLabelMapByType(@Param("empId") Long empId,
                               @Param("mailId") Long mailId,
                               @Param("labelTypeCd") String labelTypeCd);
+
+    void deleteLabelMapsByType(@Param("empId") Long empId,
+                               @Param("mailIds") List<Long> mailIds,
+                               @Param("labelTypeCd") String labelTypeCd);
 
     void deleteLabelMapsByMail(@Param("empId") Long empId, @Param("mailId") Long mailId);
 
