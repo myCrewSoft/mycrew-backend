@@ -72,7 +72,7 @@ public class DashboardServiceImpl implements DashboardService {
                     { "key": "projectProgress", "x": 8, "y": 0, "w": 4, "h": 3 },
                     { "key": "todaySchedule",   "x": 0, "y": 3, "w": 4, "h": 3 },
                     { "key": "task",            "x": 4, "y": 3, "w": 4, "h": 3 },
-                    { "key": "notice",          "x": 8, "y": 3, "w": 4, "h": 3 }
+                    { "key": "board",          "x": 8, "y": 3, "w": 4, "h": 3 }
                   ]
                 }
                 """;
