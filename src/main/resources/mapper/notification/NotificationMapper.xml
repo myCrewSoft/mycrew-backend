@@ -4,24 +4,28 @@
 
 <mapper namespace="com.mycrewsoft.domain.notification.mapper.NotificationMapper">
 
-    <select id="selectAlrmList" resultType="com.mycrewsoft.domain.notification.vo.NotificationQueryVO">
-        SELECT
-            R.ALRM_RCVR_ID,
-            A.ALRM_ID,
-            A.ALRM_TTLN,
-            A.ALRM_TYPE_CD,
-            A.ALRM_CN,
-            A.ALRM_SNDNG_DT,
-            R.ALRM_CFMTN_DT
-        FROM TB_ALRM_RCVR R
-        JOIN TB_ALRM A ON A.ALRM_ID = R.ALRM_ID
-        WHERE R.RCVR_EMP_ID = #{empId}
-          AND R.ALRM_DEL_YN = 'N'
-        ORDER BY A.ALRM_SNDNG_DT DESC
-        <if test="limit > 0">
-	    	WHERE ROWNUM &lt;= #{limit}
+    <select id="selectAlrmList" resultType="NotificationQueryVO">
+	    SELECT *
+	    FROM (
+	        SELECT
+	            R.ALRM_RCVR_ID,
+	            A.ALRM_ID,
+	            A.ALRM_TTLN,
+	            A.ALRM_TYPE_CD,
+	            A.ALRM_CN,
+	            A.ALRM_SNDNG_DT,
+	            R.ALRM_CFMTN_DT
+	        FROM TB_ALRM_RCVR R
+	        JOIN TB_ALRM A
+	            ON A.ALRM_ID = R.ALRM_ID
+	        WHERE R.RCVR_EMP_ID = #{empId}
+	          AND R.ALRM_DEL_YN = 'N'
+	        ORDER BY A.ALRM_SNDNG_DT DESC
+	    )
+	    <if test="limit != null and limit > 0">
+	        WHERE ROWNUM &lt;= #{limit}
 	    </if>
-    </select>
+	</select>
 
     <select id="selectUnreadCount" resultType="long">
         SELECT COUNT(*)

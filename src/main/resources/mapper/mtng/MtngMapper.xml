@@ -50,56 +50,70 @@
     </update>
 
     <select id="selectMtngList" resultType="MtngListVO">
-        SELECT
-            M.MTNG_ID,
-            M.MTNG_NM,
-            M.MTNG_TYPE_CD,
-            M.BEGIN_DT,
-            M.END_DT,
-            M.CRTR_ID,
-            E.EMP_NM AS CRTR_NM,
-            V.VCONF_ID,
-            V.ROOM_NM,
-            MM.MOM_STTUS_CD,
-            (SELECT COUNT(*) FROM TB_MTNG_PTCPT P WHERE P.MTNG_ID = M.MTNG_ID) AS PTCPT_CNT
-        FROM TB_MTNG M
-        INNER JOIN TB_MTNG_PTCPT MP
-            ON MP.MTNG_ID = M.MTNG_ID
-            AND MP.EMP_ID = #{empId}
-        LEFT JOIN TB_EMPLOYEE E
-            ON E.EMP_ID = M.CRTR_ID
-        LEFT JOIN TB_VIDEO_CONF V
-            ON V.MTNG_ID = M.MTNG_ID
-        LEFT JOIN TB_MTNG_MOM MM
-            ON MM.MTNG_ID = M.MTNG_ID
-            AND MM.DEL_DT IS NULL
-        LEFT JOIN TB_CONF_RM_RSRV R ON R.RSRV_ID = M.CONF_RM_RSRV_ID
-        LEFT JOIN TB_CONF_RM CR ON CR.CONF_RM_ID = R.CONF_RM_ID
-        WHERE M.DEL_YN = 'N'
-        <if test="beginDt != null">
-            AND M.END_DT &gt;= #{beginDt}
-        </if>
-        <if test="endDt != null">
-            AND M.BEGIN_DT &lt;= #{endDt}
-        </if>
-        <if test="keyword != null and keyword != ''">
-            AND (
-                M.MTNG_NM LIKE '%' || #{keyword} || '%'
-                OR MM.MOM_CN LIKE '%' || #{keyword} || '%'
-                OR EXISTS (
-                    SELECT 1
-                    FROM TB_MTNG_PTCPT KP
-                    INNER JOIN TB_EMPLOYEE KE ON KE.EMP_ID = KP.EMP_ID
-                    WHERE KP.MTNG_ID = M.MTNG_ID
-                        AND KE.EMP_NM LIKE '%' || #{keyword} || '%'
-                )
-            )
-        </if>
-        ORDER BY M.BEGIN_DT ASC
-        <if test="limit > 0">
-	    	WHERE ROWNUM &lt;= #{limit}
+	    SELECT *
+	    FROM (
+	        SELECT
+	            M.MTNG_ID,
+	            M.MTNG_NM,
+	            M.MTNG_TYPE_CD,
+	            M.BEGIN_DT,
+	            M.END_DT,
+	            M.CRTR_ID,
+	            E.EMP_NM AS CRTR_NM,
+	            V.VCONF_ID,
+	            V.ROOM_NM,
+	            MM.MOM_STTUS_CD,
+	            (
+	                SELECT COUNT(*)
+	                FROM TB_MTNG_PTCPT P
+	                WHERE P.MTNG_ID = M.MTNG_ID
+	            ) AS PTCPT_CNT
+	        FROM TB_MTNG M
+	        INNER JOIN TB_MTNG_PTCPT MP
+	            ON MP.MTNG_ID = M.MTNG_ID
+	           AND MP.EMP_ID = #{empId}
+	        LEFT JOIN TB_EMPLOYEE E
+	            ON E.EMP_ID = M.CRTR_ID
+	        LEFT JOIN TB_VIDEO_CONF V
+	            ON V.MTNG_ID = M.MTNG_ID
+	        LEFT JOIN TB_MTNG_MOM MM
+	            ON MM.MTNG_ID = M.MTNG_ID
+	           AND MM.DEL_DT IS NULL
+	        LEFT JOIN TB_CONF_RM_RSRV R
+	            ON R.RSRV_ID = M.CONF_RM_RSRV_ID
+	        LEFT JOIN TB_CONF_RM CR
+	            ON CR.CONF_RM_ID = R.CONF_RM_ID
+	        WHERE M.DEL_YN = 'N'
+	
+	        <if test="beginDt != null">
+	            AND M.END_DT &gt;= #{beginDt}
+	        </if>
+	
+	        <if test="endDt != null">
+	            AND M.BEGIN_DT &lt;= #{endDt}
+	        </if>
+	
+	        <if test="keyword != null and keyword != ''">
+	            AND (
+	                M.MTNG_NM LIKE '%' || #{keyword} || '%'
+	                OR MM.MOM_CN LIKE '%' || #{keyword} || '%'
+	                OR EXISTS (
+	                    SELECT 1
+	                    FROM TB_MTNG_PTCPT KP
+	                    INNER JOIN TB_EMPLOYEE KE
+	                        ON KE.EMP_ID = KP.EMP_ID
+	                    WHERE KP.MTNG_ID = M.MTNG_ID
+	                      AND KE.EMP_NM LIKE '%' || #{keyword} || '%'
+	                )
+	            )
+	        </if>
+	
+	        ORDER BY M.BEGIN_DT ASC
+	    )
+	    <if test="limit != null and limit > 0">
+	        WHERE ROWNUM &lt;= #{limit}
 	    </if>
-    </select>
+	</select>
 
     <select id="selectMtngDetail" resultType="MtngDetailVO">
         SELECT
