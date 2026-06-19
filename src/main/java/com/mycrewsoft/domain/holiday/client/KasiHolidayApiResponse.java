@@ -1,9 +1,7 @@
 package com.mycrewsoft.domain.holiday.client;
 
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.mycrewsoft.domain.holiday.vo.HolidayApiItemVO;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,7 +28,7 @@ public class KasiHolidayApiResponse {
     @NoArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Body {
-        private Items items;
+        private JsonNode items;
         private int totalCount;
     }
 
@@ -39,6 +37,6 @@ public class KasiHolidayApiResponse {
     @NoArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Items {
-        private List<HolidayApiItemVO> item;
+        private JsonNode item;
     }
 }
