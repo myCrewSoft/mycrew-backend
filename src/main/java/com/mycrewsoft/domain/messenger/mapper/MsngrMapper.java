@@ -14,8 +14,7 @@ public interface MsngrMapper {
 
     // 채팅방 목록 조회
 	List<MsngrChtrmListVO> selectChtrmListByEmpId(
-		@Param("empId") Long empId,
-		@Param("limit") int limit
+		@Param("empId") Long empId
 	);
 	
     // 채팅방 조회
@@ -93,5 +92,11 @@ public interface MsngrMapper {
     int updateProjectPtcptLeaveDt(
 	    @Param("chtrmId") Long chtrmId,
 	    @Param("empId") Long empId
+	);
+    
+    // 위젯용 안 읽은 메시지 수만
+    List<MsngrChtrmListVO> selectUnreadChtrmListByEmpId(
+		@Param("empId") Long empId,
+		@Param("limit") int limit
 	);
 }

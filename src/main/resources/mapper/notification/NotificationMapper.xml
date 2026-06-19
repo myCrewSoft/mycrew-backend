@@ -20,6 +20,7 @@
 	            ON A.ALRM_ID = R.ALRM_ID
 	        WHERE R.RCVR_EMP_ID = #{empId}
 	          AND R.ALRM_DEL_YN = 'N'
+	          AND R.ALRM_CFMTN_DT IS NULL
 	        ORDER BY A.ALRM_SNDNG_DT DESC
 	    )
 	    <if test="limit != null and limit > 0">
