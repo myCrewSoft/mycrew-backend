@@ -18,4 +18,64 @@
         FROM TB_PROJECT P
         ORDER BY P.PROJ_NM, P.PROJ_ID
     </select>
+    
+    <resultMap id="AdminProjectListVOMap" type="com.mycrewsoft.domain.project.vo.ProjectVO">
+	    <id     property="projId"       column="PROJ_ID"/>
+	    <result property="projNm"       column="PROJ_NM"/>
+	    <result property="projBgngYmd"  column="PROJ_BGNG_YMD"/>
+	    <result property="projEndYmd"   column="PROJ_END_YMD"/>
+	    <result property="projStatCd"   column="PROJ_STAT_CD"/>
+	    <result property="projLdrEmpId" column="PROJ_LDR_EMP_ID"/>
+	    <result property="projLdrNm"    column="PROJ_LDR_NM"/>
+	    <result property="projPrgrsRt"  column="PROJ_PRGRS_RT"/>
+	    <result property="memberCnt"    column="MEMBER_CNT"/>
+	    <result property="deadlineRisk" column="DEADLINE_RISK"/>
+	
+	    <collection property="projMemberList"
+	                ofType="com.mycrewsoft.domain.projectmember.vo.ProjectMemberVO">
+	        <result property="empId"  column="EMP_ID"/>
+	        <result property="empNm"  column="EMP_NM"/>
+	        <result property="deptNm" column="DEPT_NM"/>
+	    </collection>
+	</resultMap>
+
+	<select id="selectAdminProjectList" resultMap="AdminProjectListVOMap">
+	    SELECT
+	        P.PROJ_ID,
+	        P.PROJ_NM,
+	        P.PROJ_BGNG_YMD,
+	        P.PROJ_END_YMD,
+	        P.PROJ_STAT_CD,
+	        LDR.EMP_NM      AS PROJ_LDR_NM,
+	        P.PROJ_LDR_EMP_ID,
+	        P.PROJ_PRGRS_RT,
+	        (
+	            SELECT COUNT(*)
+	            FROM TB_PROJ_MEMBER PM2
+	            WHERE PM2.PROJ_ID  = P.PROJ_ID
+	              AND PM2.LEAVE_DT IS NULL
+	        ) AS MEMBER_CNT,
+	        CASE
+	            WHEN P.PROJ_STAT_CD = '02'
+	             AND P.PROJ_END_YMD &lt;= TRUNC(SYSDATE) + 7
+	            THEN 'Y'
+	            ELSE 'N'
+	        END AS DEADLINE_RISK,
+	        PM.EMP_ID,
+	        MBR.EMP_NM,
+	        D.DEPT_NM
+	    FROM TB_PROJECT P
+	    JOIN TB_EMPLOYEE LDR ON LDR.EMP_ID = P.PROJ_LDR_EMP_ID
+	    LEFT JOIN TB_PROJ_MEMBER PM  ON PM.PROJ_ID  = P.PROJ_ID
+	                                AND PM.LEAVE_DT IS NULL
+	    LEFT JOIN TB_EMPLOYEE MBR   ON MBR.EMP_ID  = PM.EMP_ID
+	    LEFT JOIN TB_DEPARTMENT D   ON D.DEPT_CD   = MBR.DEPT_CD
+	    ORDER BY
+	        CASE
+	            WHEN P.PROJ_STAT_CD = '02'
+	             AND P.PROJ_END_YMD &lt;= TRUNC(SYSDATE) + 7
+	            THEN 0 ELSE 1
+	        END,
+	        P.PROJ_CREAT_DT DESC
+	</select>
 </mapper>

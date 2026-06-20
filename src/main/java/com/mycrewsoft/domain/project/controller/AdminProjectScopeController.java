@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.mycrewsoft.common.response.ApiResponse;
 import com.mycrewsoft.domain.employee.dto.response.AdminScopeOptionResponseDTO;
+import com.mycrewsoft.domain.project.dto.AdminProjectListResponseDto;
 import com.mycrewsoft.domain.project.service.AdminProjectScopeService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,5 +28,12 @@ public class AdminProjectScopeController {
     @GetMapping("/scope-options")
     public ResponseEntity<ApiResponse<List<AdminScopeOptionResponseDTO>>> getProjectScopeOptions() {
         return ResponseEntity.ok(ApiResponse.success(adminProjectScopeService.getProjectScopeOptions()));
+    }
+    
+    @Operation(summary = "프로젝트 관리자 페이지 전체 목록 조회")
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<AdminProjectListResponseDto>>> getAdminProjectList(){
+    	
+    	return ResponseEntity.ok(ApiResponse.success(adminProjectScopeService.getAdminProjectList()));
     }
 }
