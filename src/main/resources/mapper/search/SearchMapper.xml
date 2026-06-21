@@ -4,129 +4,212 @@
 
 <mapper namespace="com.mycrewsoft.domain.search.mapper.SearchMapper">
 
+    <!--
+        한 번의 UNION ALL로 검색합니다.
+        같은 위치에는 같은 타입만 배치하고, 값이 없는 유형은 단순 NULL을 반환합니다.
+        CHAR(8)인 프로젝트/교육 날짜는 별도 문자열 컬럼으로 받아 Java에서 LocalDate로 변환합니다.
+    -->
     <select id="search" resultType="SearchVO">
-	    SELECT id, parentId, type, title, description, badgeText
-	    FROM (
-	        SELECT
-	            P.PROJ_ID       AS id,
-	            NULL            AS parentId,
-	            'PROJECT'       AS type,
-	            P.PROJ_NM       AS title,
-	            '프로젝트'       AS description,
-	            P.PROJ_STAT_CD  AS badgeText
-	        FROM TB_PROJECT P
-	        INNER JOIN TB_PROJ_MEMBER PM
-	            ON P.PROJ_ID = PM.PROJ_ID
-	           AND PM.EMP_ID = #{empId}
-	           AND PM.LEAVE_DT IS NULL
-	        WHERE P.PROJ_NM LIKE '%' || #{keyword} || '%'
-	
-	        UNION ALL
-	
-	        SELECT
-	            S.SCHD_ID                          AS id,
-	            NULL                               AS parentId,
-	            'SCHEDULE'                         AS type,
-	            S.SCHD_NM                          AS title,
-	            '일정'                              AS description,
-	            TO_CHAR(S.BEGIN_DT, 'YYYY.MM.DD')  AS badgeText
-	        FROM TB_INTG_SCHD S
-	        INNER JOIN TB_SCHD_TARGET ST
-	            ON S.SCHD_ID = ST.SCHD_ID
-	        INNER JOIN TB_EMPLOYEE E
-	            ON E.EMP_ID = #{empId}
-	        WHERE S.SCHD_NM LIKE '%' || #{keyword} || '%'
-	          AND (
-	              ST.TARGET_TYPE_CD = '001'
-	              OR (ST.TARGET_TYPE_CD = '002' AND ST.TARGET_ID = TO_CHAR(#{empId}))
-	              OR (ST.TARGET_TYPE_CD = '003' AND E.EXEC_YN = 'Y')
-	              OR (ST.TARGET_TYPE_CD = '004' AND ST.TARGET_ID = E.DEPT_CD)
-	              OR (ST.TARGET_TYPE_CD = '005' AND EXISTS (
-	                  SELECT 1 FROM TB_PROJ_MEMBER PM
-	                  WHERE PM.PROJ_ID = TO_NUMBER(ST.TARGET_ID)
-	                    AND PM.EMP_ID = #{empId}
-	                    AND PM.LEAVE_DT IS NULL
-	              ))
-	              OR (ST.TARGET_TYPE_CD = '006' AND EXISTS (
-	                  SELECT 1 FROM TB_TASK_PTCPT TP
-	                  WHERE TP.TASK_ID = TO_NUMBER(ST.TARGET_ID)
-	                    AND TP.EMP_ID = #{empId}
-	                    AND TP.LEAVE_DT IS NULL
-	              ))
-	              OR (ST.TARGET_TYPE_CD = '007' AND EXISTS (
-	                  SELECT 1 FROM TB_MTNG_PTCPT MP
-	                  WHERE MP.MTNG_ID = TO_NUMBER(ST.TARGET_ID)
-	                    AND MP.EMP_ID = #{empId}
-	              ))
-	              OR (ST.TARGET_TYPE_CD = '008' AND EXISTS (
-	                  SELECT 1 FROM TB_CONF_RM_RSRV CR
-	                  WHERE CR.RSRV_EMP_ID = #{empId}
-	                    AND CR.RSRV_ID = TO_NUMBER(ST.TARGET_ID)
-	              ))
-	          )
-	
-	        UNION ALL
-	
-	        SELECT
-	            M.MTNG_ID                          AS id,
-	            NULL                               AS parentId,
-	            'MEETING'                          AS type,
-	            M.MTNG_NM                          AS title,
-	            '회의'                              AS description,
-	            TO_CHAR(M.BEGIN_DT, 'YYYY.MM.DD')  AS badgeText
-	        FROM TB_MTNG M
-	        INNER JOIN TB_MTNG_PTCPT MP
-	            ON M.MTNG_ID = MP.MTNG_ID
-	           AND MP.EMP_ID = #{empId}
-	        WHERE M.MTNG_NM LIKE '%' || #{keyword} || '%'
-	
-	        UNION ALL
-	
-	        SELECT
-	            T.TASK_ID       AS id,
-	            T.PROJ_ID       AS parentId,
-	            'TASK'          AS type,
-	            T.TASK_NM       AS title,
-	            '업무'           AS description,
-	            T.TASK_STAT_CD  AS badgeText
-	        FROM TB_TASK T
-	        INNER JOIN TB_TASK_PTCPT TP
-	            ON T.TASK_ID = TP.TASK_ID
-	           AND TP.EMP_ID = #{empId}
-	           AND TP.LEAVE_DT IS NULL
-	        WHERE T.TASK_NM LIKE '%' || #{keyword} || '%'
-	
-	        UNION ALL
-	
-	        SELECT
-	            E.EDU_ID        AS id,
-	            NULL            AS parentId,
-	            'EDUCATION'     AS type,
-	            E.EDU_NM        AS title,
-	            '교육'           AS description,
-	            E.EDU_BEGIN_YMD AS badgeText
-	        FROM TB_EDU_MGMT E
-	        INNER JOIN TB_EDU_ATND_RLTM EA
-	            ON E.EDU_ID = EA.EDU_ID
-	           AND EA.EMP_ID = #{empId}
-	        WHERE E.EDU_NM LIKE '%' || #{keyword} || '%'
-	
-	        UNION ALL
-	
-	        SELECT
-	            MM.MAIL_MSG_ID                          AS id,
-	            NULL                                    AS parentId,
-	            'MAIL'                                  AS type,
-	            MM.MAIL_SJ                              AS title,
-	            '메일'                                   AS description,
-	            TO_CHAR(MM.MAIL_SNDNG_DT, 'YYYY.MM.DD') AS badgeText
-	        FROM TB_MAIL_MESSAGE MM
-	        WHERE MM.MAIL_SJ LIKE '%' || #{keyword} || '%'
-	          AND MM.EMP_ID = #{empId}
-	          AND MM.DEL_YN = 'N'
-	          AND MM.DRAFT_YN = 'N'
-	    )
-	</select>
+        SELECT *
+        FROM (
+            SELECT
+                P.PROJ_ID AS id,
+                NULL AS parentId,
+                'PROJECT' AS type,
+                P.PROJ_NM AS title,
+                SUBSTR(P.PROJ_CN, 1, 200) AS summary,
+                P.PROJ_STAT_CD AS statusCode,
+                LDR.EMP_NM AS managerName,
+                P.PROJ_PRGRS_RT AS progress,
+                P.PROJ_BGNG_YMD AS projectStartDateText,
+                P.PROJ_END_YMD AS projectEndDateText,
+                NULL AS projectName,
+                NULL AS priorityCode,
+                NULL AS dueDate,
+                NULL AS startDateTime,
+                NULL AS endDateTime,
+                NULL AS allDay,
+                NULL AS writerName,
+                NULL AS classificationCode,
+                NULL AS hostName,
+                NULL AS participantCount,
+                NULL AS meetingOnline,
+                NULL AS meetingTypeCode,
+                NULL AS educationStartDate,
+                NULL AS senderName,
+                NULL AS senderAddress,
+                NULL AS receivedAt,
+                NULL AS mailRead,
+                NULL AS hasAttachment,
+                NULL AS bodyPreview
+            FROM TB_PROJECT P
+            INNER JOIN TB_PROJ_MEMBER PM
+                ON PM.PROJ_ID = P.PROJ_ID
+               AND PM.EMP_ID = #{empId}
+               AND PM.LEAVE_DT IS NULL
+            INNER JOIN TB_EMPLOYEE LDR ON LDR.EMP_ID = P.PROJ_LDR_EMP_ID
+            WHERE UPPER(P.PROJ_NM) LIKE '%' || UPPER(#{keyword}) || '%'
+
+            UNION ALL
+
+            SELECT
+                T.TASK_ID, T.PROJ_ID, 'TASK', T.TASK_NM,
+                SUBSTR(T.TASK_CN, 1, 200),
+                T.TASK_STAT_CD, MNGR.EMP_NM, NULL,
+                NULL, NULL, P.PROJ_NM, T.TASK_PRIORITY_CD, T.TASK_END_DT,
+                NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                NULL, NULL, NULL, NULL, NULL, NULL
+            FROM TB_TASK T
+            INNER JOIN TB_TASK_PTCPT TP
+                ON TP.TASK_ID = T.TASK_ID
+               AND TP.EMP_ID = #{empId}
+               AND TP.LEAVE_DT IS NULL
+            INNER JOIN TB_PROJECT P ON P.PROJ_ID = T.PROJ_ID
+            LEFT JOIN TB_EMPLOYEE MNGR ON MNGR.EMP_ID = T.TASK_MNGR_ID
+            WHERE T.DEL_YN = 'N'
+              AND UPPER(T.TASK_NM) LIKE '%' || UPPER(#{keyword}) || '%'
+
+            UNION ALL
+
+            SELECT
+                S.SCHD_ID, NULL, 'SCHEDULE', S.SCHD_NM,
+                SUBSTR(S.SCHD_DETAIL_CN, 1, 200),
+                NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                S.BEGIN_DT, S.END_DT,
+                CASE WHEN S.ALL_DAY_YN = 'Y' THEN 1 ELSE 0 END,
+                WRTR.EMP_NM, S.SCHD_CLSF_CD,
+                NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+            FROM TB_INTG_SCHD S
+            INNER JOIN TB_EMPLOYEE WRTR ON WRTR.EMP_ID = S.SCHD_WRTR_ID
+            WHERE S.DEL_YN = 'N'
+              AND UPPER(S.SCHD_NM) LIKE '%' || UPPER(#{keyword}) || '%'
+              AND (
+                    S.SCHD_WRTR_ID = #{empId}
+                    OR EXISTS (
+                        SELECT 1
+                        FROM TB_SCHD_TARGET ST
+                        WHERE ST.SCHD_ID = S.SCHD_ID
+                          AND (
+                                ST.TARGET_TYPE_CD = '01'
+                                OR (ST.TARGET_TYPE_CD = '02' AND ST.TARGET_ID = TO_CHAR(#{empId}))
+                                OR (ST.TARGET_TYPE_CD = '03' AND EXISTS (
+                                    SELECT 1 FROM TB_EMPLOYEE CE
+                                    WHERE CE.EMP_ID = #{empId} AND CE.EXEC_YN = 'Y'
+                                ))
+                                OR (ST.TARGET_TYPE_CD = '04' AND ST.TARGET_ID = (
+                                    SELECT CE.DEPT_CD FROM TB_EMPLOYEE CE WHERE CE.EMP_ID = #{empId}
+                                ))
+                                OR (ST.TARGET_TYPE_CD = '05' AND EXISTS (
+                                    SELECT 1 FROM TB_PROJ_MEMBER PM2
+                                    WHERE TO_CHAR(PM2.PROJ_ID) = ST.TARGET_ID
+                                      AND PM2.EMP_ID = #{empId} AND PM2.LEAVE_DT IS NULL
+                                ))
+                                OR (ST.TARGET_TYPE_CD = '06' AND EXISTS (
+                                    SELECT 1 FROM TB_TASK_PTCPT TP2
+                                    WHERE TO_CHAR(TP2.TASK_ID) = ST.TARGET_ID
+                                      AND TP2.EMP_ID = #{empId} AND TP2.LEAVE_DT IS NULL
+                                ))
+                                OR (ST.TARGET_TYPE_CD = '07' AND EXISTS (
+                                    SELECT 1 FROM TB_MTNG_PTCPT MP2
+                                    WHERE TO_CHAR(MP2.MTNG_ID) = ST.TARGET_ID AND MP2.EMP_ID = #{empId}
+                                ))
+                                OR (ST.TARGET_TYPE_CD = '08' AND EXISTS (
+                                    SELECT 1 FROM TB_CONF_RM_RSRV CR
+                                    WHERE TO_CHAR(CR.RSRV_ID) = ST.TARGET_ID AND CR.RSRV_EMP_ID = #{empId}
+                                ))
+                          )
+                    )
+              )
+
+            UNION ALL
+
+            SELECT
+                M.MTNG_ID, NULL, 'MEETING', M.MTNG_NM, NULL,
+                CASE
+                    WHEN M.BEGIN_DT &gt; SYSDATE THEN 'SCHEDULED'
+                    WHEN M.END_DT &lt; SYSDATE THEN 'ENDED'
+                    ELSE 'LIVE'
+                END,
+                NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                M.BEGIN_DT, M.END_DT, NULL, NULL, NULL,
+                HOST.EMP_NM,
+                (SELECT COUNT(*) FROM TB_MTNG_PTCPT PC WHERE PC.MTNG_ID = M.MTNG_ID),
+                CASE WHEN M.MTNG_TYPE_CD IN ('01', '03') THEN 1 ELSE 0 END,
+                M.MTNG_TYPE_CD,
+                NULL, NULL, NULL, NULL, NULL, NULL, NULL
+            FROM TB_MTNG M
+            INNER JOIN TB_EMPLOYEE HOST ON HOST.EMP_ID = M.CRTR_ID
+            WHERE M.DEL_YN = 'N'
+              AND UPPER(M.MTNG_NM) LIKE '%' || UPPER(#{keyword}) || '%'
+              AND (
+                    M.CRTR_ID = #{empId}
+                    OR EXISTS (
+                        SELECT 1 FROM TB_MTNG_PTCPT MP
+                        WHERE MP.MTNG_ID = M.MTNG_ID AND MP.EMP_ID = #{empId}
+                    )
+              )
+
+            UNION ALL
+
+            SELECT
+                E.EDU_ID, NULL, 'EDUCATION', E.EDU_NM, NULL,
+                NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                E.EDU_BEGIN_YMD,
+                NULL, NULL, NULL, NULL, NULL, NULL
+            FROM TB_EDU_MGMT E
+            INNER JOIN TB_EDU_ATND_RLTM EA
+                ON EA.EDU_ID = E.EDU_ID
+               AND EA.EMP_ID = #{empId}
+            WHERE UPPER(E.EDU_NM) LIKE '%' || UPPER(#{keyword}) || '%'
+
+            UNION ALL
+
+            SELECT
+                MM.MAIL_MSG_ID, NULL, 'MAIL', MM.MAIL_SJ,
+                SUBSTR(MM.SNIPPET, 1, 200),
+                NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                CASE
+                    WHEN INSTR(MM.FROM_EMAIL, '&lt;') &gt; 0
+                    THEN TRIM(SUBSTR(MM.FROM_EMAIL, 1, INSTR(MM.FROM_EMAIL, '&lt;') - 1))
+                    ELSE MM.FROM_EMAIL
+                END,
+                CASE
+                    WHEN INSTR(MM.FROM_EMAIL, '&lt;') &gt; 0
+                    THEN SUBSTR(
+                        MM.FROM_EMAIL,
+                        INSTR(MM.FROM_EMAIL, '&lt;') + 1,
+                        INSTR(MM.FROM_EMAIL, '&gt;') - INSTR(MM.FROM_EMAIL, '&lt;') - 1
+                    )
+                    ELSE MM.FROM_EMAIL
+                END,
+                COALESCE(MM.INTERNAL_DATE, MM.MAIL_SNDNG_DT),
+                CASE WHEN EXISTS (
+                    SELECT 1
+                    FROM TB_MAIL_LABEL_MAP LM
+                    INNER JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+                    WHERE LM.EMP_ID = MM.EMP_ID
+                      AND LM.MAIL_MSG_ID = MM.MAIL_MSG_ID
+                      AND TRIM(L.LABEL_TYPE_CD) = 'UNREAD'
+                ) THEN 0 ELSE 1 END,
+                CASE WHEN EXISTS (
+                    SELECT 1 FROM TB_MAIL_ATTACHMENT MA
+                    WHERE MA.EMP_ID = MM.EMP_ID AND MA.MAIL_MSG_ID = MM.MAIL_MSG_ID
+                ) THEN 1 ELSE 0 END,
+                SUBSTR(MM.SNIPPET, 1, 500)
+            FROM TB_MAIL_MESSAGE MM
+            WHERE MM.EMP_ID = #{empId}
+              AND MM.DEL_YN = 'N'
+              AND MM.DRAFT_YN = 'N'
+              AND (
+                    UPPER(MM.MAIL_SJ) LIKE '%' || UPPER(#{keyword}) || '%'
+                    OR UPPER(MM.SNIPPET) LIKE '%' || UPPER(#{keyword}) || '%'
+                    OR UPPER(MM.FROM_EMAIL) LIKE '%' || UPPER(#{keyword}) || '%'
+              )
+        )
+        ORDER BY type, id
+    </select>
 
     <insert id="insertSearchHist">
         INSERT INTO TB_SEARCH_HIST (SEARCH_HIST_ID, EMP_ID, KEYWORD, REG_DT)
@@ -134,11 +217,7 @@
     </insert>
 
     <select id="readSearchHist" resultType="SearchHistVO">
-        SELECT
-            search_hist_id,
-            emp_id,
-            keyword,
-            reg_dt
+        SELECT search_hist_id, emp_id, keyword, reg_dt
         FROM TB_SEARCH_HIST
         WHERE emp_id = #{empId}
         ORDER BY reg_dt DESC
@@ -157,24 +236,18 @@
     <update id="mergeRecentItem">
         MERGE INTO TB_RECENT_ITEM T
         USING DUAL ON (
-            T.ENP_ID    = #{empId}
+            T.ENP_ID = #{empId}
             AND T.ITEM_TYPE = #{itemType}
-            AND T.ITEM_ID   = #{itemId}
+            AND T.ITEM_ID = #{itemId}
         )
-        WHEN MATCHED THEN
-            UPDATE SET ACCESSED_DT = SYSDATE
+        WHEN MATCHED THEN UPDATE SET ACCESSED_DT = SYSDATE
         WHEN NOT MATCHED THEN
             INSERT (RECENT_ITEM_ID, EMP_ID, ITEM_TYPE, ITEM_ID, ACCESSED_DT)
             VALUES (SEQ_RECENT_ITEM.NEXTVAL, #{empId}, #{itemType}, #{itemId}, SYSDATE)
     </update>
 
     <select id="readRecentItems" resultType="RecentItemVO">
-        SELECT
-            recent_item_id,
-            emp_id,
-            item_type,
-            item_id,
-            accessed_dt
+        SELECT recent_item_id, emp_id, item_type, item_id, accessed_dt
         FROM TB_RECENT_ITEM
         WHERE emp_id = #{empId}
         ORDER BY accessed_dt DESC
