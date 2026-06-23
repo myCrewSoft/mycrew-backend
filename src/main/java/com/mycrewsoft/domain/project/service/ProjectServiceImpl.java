@@ -1,9 +1,7 @@
 package com.mycrewsoft.domain.project.service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -32,6 +30,9 @@ import com.mycrewsoft.domain.project.vo.ProjectVO;
 import com.mycrewsoft.domain.projectmember.dto.ProjectMemberResponseDto;
 import com.mycrewsoft.domain.projectmember.mapper.ProjectMemberMapper;
 import com.mycrewsoft.domain.projectmember.vo.ProjectMemberVO;
+import com.mycrewsoft.domain.task.dto.response.TaskDashboardSummaryResponse;
+import com.mycrewsoft.domain.task.dto.response.TaskUpcomingResponse;
+import com.mycrewsoft.domain.task.mapper.TaskDashboardMapper;
 import com.mycrewsoft.security.authz.AuthorizationService;
 import com.mycrewsoft.security.authz.ResourceContext;
 import com.mycrewsoft.security.authz.ResourceType;
@@ -50,6 +51,7 @@ public class ProjectServiceImpl implements ProjectService{
 	private final DtoMapper dtoMapper;
 	private final MsngrServiceImpl msngrService;
 	private final ApplicationEventPublisher eventPublisher;
+	private final TaskDashboardMapper taskDashboardMapper;
 	
 	// 위젯 호출 개수
 	private static final int WIDGET_PROJECT_LIMIT = 2;
@@ -400,5 +402,63 @@ public class ProjectServiceImpl implements ProjectService{
 	public ProjectStatusCountVO getProjectStatusCountsForWidget() {
 	    // 권한은 호출 측(관리자 대시보드 서비스)에서 ADMIN_CONSOLE_ACCESS로 검증한다.
 	    return projectMapper.selectProjectStatusCounts();
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public String buildAiReference(Long projId) {
+	    Long empId = SecurityUtil.getCurrentEmpId();
+	    
+	    // 프로젝트 존재여부 확인
+	    ProjectVO proj = projectMapper.selectProject(projId, empId);
+	    if (proj == null) throw new CustomException(ErrorCode.PROJECT_NOT_FOUND);
+
+	    TaskDashboardSummaryResponse summary =
+	        taskDashboardMapper.selectTaskDashboardSummary(projId);
+	    List<TaskUpcomingResponse> upcoming =
+	        taskDashboardMapper.selectUpcomingTasks(projId);
+
+	    StringBuilder sb = new StringBuilder();
+
+	    sb.append("=== 1. 프로젝트 개요 ===\n");
+	    sb.append("프로젝트명: ").append(proj.getProjNm()).append("\n");
+	    sb.append("기간: ").append(proj.getProjBgngYmd())
+	      .append(" ~ ").append(proj.getProjEndYmd()).append("\n");
+	    sb.append("상태: ").append(statLabel(proj.getProjStatCd())).append("\n");
+	    sb.append("진척률: ").append(proj.getProjPrgrsRt()).append("%\n");
+	    if (proj.getProjCn() != null && !proj.getProjCn().isBlank()) {
+	        sb.append("설명: ").append(proj.getProjCn()).append("\n");
+	    }
+
+	    sb.append("\n=== 2. 업무 현황 ===\n");
+	    if (summary != null) {
+	        sb.append("전체: ").append(summary.getTotalCount()).append("건\n");
+	        sb.append("완료: ").append(summary.getCompletedCount()).append("건\n");
+	        sb.append("진행중: ").append(summary.getInProgressCount()).append("건\n");
+	        sb.append("중단: ").append(summary.getStopCount()).append("건\n");
+	    }
+
+	    sb.append("\n=== 3. 마감 임박 업무 (7일 이내) ===\n");
+	    if (upcoming == null || upcoming.isEmpty()) {
+	        sb.append("없음\n");
+	    } else {
+	        upcoming.forEach(t ->
+	            sb.append("- ").append(t.getTaskNm())
+	              .append(" | 담당: ").append(t.getTaskMngrNm())
+	              .append(" | 마감: ").append(t.getTaskEndDt()).append("\n")
+	        );
+	    }
+
+	    return sb.toString();
+	}
+
+	private String statLabel(String cd) {
+	    return switch (cd) {
+	        case "01" -> "예정";
+	        case "02" -> "진행중";
+	        case "03" -> "완료";
+	        case "04" -> "중단";
+	        default -> cd;
+	    };
 	}
 }
