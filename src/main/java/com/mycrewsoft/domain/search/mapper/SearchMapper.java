@@ -12,9 +12,9 @@ import java.util.List;
 public interface SearchMapper {
 
 	// 키워드 + 타입으로 검색
-	List<SearchVO> search(
-		@Param("keyword") String keyword,
-        @Param("empId") Long empId
+    List<SearchVO> search(
+            @Param("keyword") String keyword,
+            @Param("empId") Long empId
     );
 
     // 검색 이력 저장
