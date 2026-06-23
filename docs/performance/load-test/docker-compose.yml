@@ -1,0 +1,57 @@
+services:
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: mycrew-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: mycrew-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+
+  ngrinder-controller:
+    # nGrinder 3.5.9 Agent runs on Java 11 and fails while installing the
+    # Local DNS provider. 3.5.8 uses Java 8, which still provides the required
+    # sun.net.spi.nameservice.NameService API.
+    image: ngrinder/controller:3.5.8
+    container_name: mycrew-ngrinder-controller
+    ports:
+      - "8300:80"
+      - "16001:16001"
+      - "12000-12009:12000-12009"
+    volumes:
+      - ngrinder-controller-data:/opt/ngrinder-controller
+
+  ngrinder-agent:
+    image: ngrinder/agent:3.5.8
+    container_name: mycrew-ngrinder-agent
+    # The Docker entrypoint downloads the agent package from
+    # http://<controller>:<web-port>/agent/download. The worker then uses the
+    # controller's agent port internally.
+    command: ["ngrinder-controller:80"]
+    depends_on:
+      - ngrinder-controller
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  prometheus-data:
+  grafana-data:
+  ngrinder-controller-data:

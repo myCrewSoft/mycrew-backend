@@ -13,14 +13,6 @@ import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.security.util.SecurityUtil;
 
-/**
- * Central authorization service for scoped RBAC.
- *
- * Responsibilities:
- * - Check whether a user can access a resource with a PermissionCode.
- * - Expose the current user's scopes for list-query filtering.
- * - Keep scope matching rules in one place.
- */
 @Service
 public class AuthorizationService {
 
