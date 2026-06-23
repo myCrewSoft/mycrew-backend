@@ -2,7 +2,7 @@ package com.mycrewsoft.domain.search.service;
 
 import com.mycrewsoft.domain.search.dto.response.SearchResponse;
 import com.mycrewsoft.domain.search.enums.SearchType;
-import com.mycrewsoft.domain.search.mapper.SearchDtoMapper;
+import com.mycrewsoft.domain.search.factory.SearchResultFactoryProvider;
 import com.mycrewsoft.domain.search.mapper.SearchMapper;
 import com.mycrewsoft.domain.search.vo.RecentItemVO;
 import com.mycrewsoft.domain.search.vo.SearchHistVO;
@@ -22,7 +22,7 @@ import java.util.List;
 public class SearchServiceImpl implements SearchService {
 
     private final SearchMapper searchMapper;
-    private final SearchDtoMapper searchDtoMapper;
+    private final SearchResultFactoryProvider searchResultFactoryProvider;
     
     @Override
     @Transactional
@@ -37,7 +37,7 @@ public class SearchServiceImpl implements SearchService {
 
         return searchMapper.search(keyword, empId)
                 .stream()
-                .map(searchDtoMapper::toResponse)
+                .map(searchResultFactoryProvider::create)
                 .toList();
     }
 
