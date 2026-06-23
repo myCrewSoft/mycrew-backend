@@ -81,6 +81,7 @@ public class MailServiceImpl implements MailService {
     private static final String ACCOUNT_STATUS_ACTIVE = "ACTIVE";
     private static final String ACCOUNT_STATUS_TOKEN_INVALID = "TOKEN_INVALID";
     private static final String CONTENT_RENDER_MODE_SANDBOX_IFRAME = "SANDBOX_IFRAME";
+    private static final String DEFAULT_MAIL_SUBJECT = "(제목 없음)";
     private static final Set<String> MAILBOX_TYPES = Set.of("inbox", "sent", "all", "self", "tome", "important", "unread", "draft");
     private static final Set<String> BULK_ACTIONS = Set.of("read", "unread", "trash", "important");
     private static final List<String> SYSTEM_LABELS = List.of("INBOX", "SENT", "TRASH", "UNREAD", "IMPORTANT");
@@ -270,7 +271,7 @@ public class MailServiceImpl implements MailService {
         row.setEmpId(empId);
         row.setExternalMessageId(result.getExternalMessageId());
         row.setThreadId(result.getThreadId());
-        row.setSubject(subject);
+        row.setSubject(normalizeSubject(subject));
         row.setContent(content);
         row.setSnippet(buildSnippet(content));
         row.setFromEmail(account.getEmailAddr());
@@ -960,7 +961,7 @@ public class MailServiceImpl implements MailService {
         row.setExternalMessageId(externalMessageId != null ? externalMessageId : "DRAFT_" + mailId);
         row.setThreadId(threadId != null ? threadId : "DRAFT_" + mailId);
         row.setMessageIdHeader(messageIdHeader);
-        row.setSubject(subject);
+        row.setSubject(normalizeSubject(subject));
         row.setContent(content);
         row.setSnippet(buildSnippet(content));
         row.setFromEmail(account.getEmailAddr());
@@ -1272,6 +1273,13 @@ public class MailServiceImpl implements MailService {
         return keyword == null || keyword.isBlank() ? null : keyword.trim();
     }
 
+    private String normalizeSubject(String subject) {
+        if (subject == null || subject.isBlank()) {
+            return DEFAULT_MAIL_SUBJECT;
+        }
+        return subject.trim();
+    }
+
     private List<String> normalizeEmails(List<String> emails) {
         if (emails == null) {
             return List.of();
@@ -1390,7 +1398,7 @@ public class MailServiceImpl implements MailService {
         row.setExternalMessageId(message.getExternalMessageId());
         row.setThreadId(message.getThreadId());
         row.setMessageIdHeader(message.getMessageIdHeader());
-        row.setSubject(message.getSubject());
+        row.setSubject(normalizeSubject(message.getSubject()));
         row.setContent(message.getContent());
         row.setSnippet(message.getSnippet());
         row.setFromEmail(message.getFromEmail());
