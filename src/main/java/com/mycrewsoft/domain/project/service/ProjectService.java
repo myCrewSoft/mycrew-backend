@@ -61,5 +61,8 @@ public interface ProjectService {
 
 	// 관리자 대시보드 위젯용: 전체 프로젝트 상태별 집계
 	com.mycrewsoft.domain.project.vo.ProjectStatusCountVO getProjectStatusCountsForWidget();
+	
+	//프로젝트 보고서 AI
+	String buildAiReference(Long projId);
 
 }

@@ -26,11 +26,22 @@ public class PromptReportServiceImpl implements PromptService {
 				%s
 
 				[OUTPUT FORMAT]
-				- 핵심 요약 3줄 이내
-				"""
-				// ✔ Java 15+ Text Block 사용
-				// ✔ String.format 대신 formatted() 사용 (가독성 + 유지보수성)
-				.formatted(reference, question);
+		        아래 구조로 한국어 보고서를 작성하십시오.
+
+		        # 프로젝트 현황 보고서
+
+		        ## 1. 프로젝트 개요
+		        (프로젝트명, 기간, 상태, 진척률 요약)
+
+		        ## 2. 업무 현황
+		        (전체/완료/진행중/중단 건수와 간단한 분석)
+
+		        ## 3. 마감 임박 업무
+		        (7일 이내 마감 업무 목록, 없으면 "없음"으로 표기)
+
+		        ## 4. 종합 의견
+		        (현재 진척률과 업무 현황을 바탕으로 프로젝트 상태를 3~5문장으로 분석)
+		        """.formatted(reference, question);
 	}
 
 	@Override

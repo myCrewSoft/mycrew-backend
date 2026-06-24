@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.mycrewsoft.ai.chatbot.service.PromptService;
 import com.mycrewsoft.ai.chatbot.support.ApiSupportManager;
+import com.mycrewsoft.domain.project.service.ProjectService;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
@@ -30,6 +31,8 @@ import reactor.core.publisher.Flux;
 @Slf4j
 @RestController
 public class ChatGptController {
+	@Autowired
+	private ProjectService projectService;
 
 	@Autowired
 	private ChatClient chatClient; // Spring AI ChatClient (AI 모델 호출용)
@@ -84,7 +87,8 @@ public class ChatGptController {
 		@RequestParam String message,
 		@RequestParam String requestId,
 		@RequestParam String aiType,
-		@RequestParam(required = false) Long boardId
+		@RequestParam(required = false) Long boardId,
+		@RequestParam(required = false) Long projId
 	) {
 		log.debug("requestId : {}", requestId);
 		
@@ -99,7 +103,23 @@ public class ChatGptController {
 		} else if ("MEET".equalsIgnoreCase(aiType)) {
 			aiMessage = promptMeeting.build(message);
 		} else if ("REPT".equalsIgnoreCase(aiType)) {
-			aiMessage = promptReport.build(message);
+			Long parsedProjId = projId;
+		    String cleanMessage = message;
+		    if (parsedProjId == null && message.startsWith("projId:")) {
+		        String[] parts = message.split(" ", 2);
+		        try {
+		            parsedProjId = Long.parseLong(parts[0].replace("projId:", "").trim());
+		            cleanMessage = parts.length > 1 ? parts[1] : "";
+		        } catch (NumberFormatException e) {
+		            log.warn("projId 파싱 실패: {}", parts[0]);
+		        }
+		    }
+		    if (parsedProjId != null) {
+		        String reference = projectService.buildAiReference(parsedProjId);
+		        aiMessage = promptReport.build(cleanMessage, reference);
+		    } else {
+		        aiMessage = promptReport.build(message);
+		    }
 		} else if ("PORK".equalsIgnoreCase(aiType)) {
 			if (boardId == null) {
 		        throw new IllegalArgumentException("게시글 ID가 필요합니다.");
