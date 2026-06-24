@@ -33,7 +33,7 @@
 //         AdminScopeOptionResponseDTO option = new AdminScopeOptionResponseDTO("100", "100", "Migration");
 //         when(mapper.selectProjectScopeOptions()).thenReturn(List.of(option));
 
-//         AdminProjectScopeServiceImpl service = new AdminProjectScopeServiceImpl(authorizationService, mapper);
+        AdminProjectScopeServiceImpl service = new AdminProjectScopeServiceImpl(authorizationService, mapper, null);
 
 //         List<AdminScopeOptionResponseDTO> options = service.getProjectScopeOptions();
 
