@@ -15,6 +15,9 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
@@ -355,6 +358,35 @@ class MailServiceImplTest {
         verify(mailMapper).insertMailMessage(any(MailMessageRow.class));
         verify(mailMapper, times(2)).insertParticipant(any());
         verify(mailMapper).updateMailAccountSyncState(EMP_ID, "history-11");
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = "   ")
+    void syncMailsUsesDefaultSubjectWhenGmailSubjectIsBlank(String gmailSubject) {
+        authenticate(PermissionCode.MAIL_READ);
+        MailAccountVO account = account("https://www.googleapis.com/auth/gmail.readonly");
+        GmailSyncedMessage message = syncedMessage();
+        message.setSubject(gmailSubject);
+        GmailSyncResult syncResult = new GmailSyncResult();
+        syncResult.setMessages(List.of(message));
+        syncResult.setLatestHistoryId("history-11");
+
+        when(mailMapper.selectActiveMailAccount(EMP_ID)).thenReturn(account);
+        when(googleGmailClient.syncMessages(account, null, 50)).thenReturn(syncResult);
+        when(mailMapper.selectMailIdByExternalMessageId(EMP_ID, "gmail-new")).thenReturn(null);
+        when(mailMapper.selectNextMailMessageId()).thenReturn(100L);
+        when(mailMapper.selectNextMailLabelId()).thenReturn(1L, 2L, 3L, 4L, 5L);
+        when(mailMapper.selectLabelIdByType(EMP_ID, "INBOX")).thenReturn(1L);
+        when(mailMapper.selectLabelIdByType(EMP_ID, "UNREAD")).thenReturn(4L);
+        when(mailMapper.existsLabelMap(any(), any(), any())).thenReturn(0);
+        when(mailMapper.selectNextMailLabelMapId()).thenReturn(10L, 11L);
+
+        service.syncMails(50);
+
+        ArgumentCaptor<MailMessageRow> rowCaptor = ArgumentCaptor.forClass(MailMessageRow.class);
+        verify(mailMapper).insertMailMessage(rowCaptor.capture());
+        assertThat(rowCaptor.getValue().getSubject()).isEqualTo("(\uC81C\uBAA9 \uC5C6\uC74C)");
     }
 
     @Test
