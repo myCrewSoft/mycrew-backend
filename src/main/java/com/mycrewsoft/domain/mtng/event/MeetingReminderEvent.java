@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public class MeetingReminderEvent {
+    private final Long meetingId;
     private final String meetingNm;
     private final List<Long> empIds;    
 }

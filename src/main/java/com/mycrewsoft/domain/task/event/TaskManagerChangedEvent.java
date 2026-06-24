@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public class TaskManagerChangedEvent {
+    private final Long taskId;
+    private final Long projId;
     private final String taskNm;
     private final String managerNm;
     private final List<Long> rcvrEmpIds;    

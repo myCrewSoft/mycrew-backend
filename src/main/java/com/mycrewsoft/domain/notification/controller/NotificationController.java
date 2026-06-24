@@ -71,6 +71,15 @@ public class NotificationController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
+    @Operation(summary = "알림 개별 읽음 처리", description = "로그인한 사용자의 알림 하나를 읽음 처리합니다.")
+    @PatchMapping("/{alrmRcvrId}/read")
+    public ResponseEntity<ApiResponse<Void>> readAlrm(@PathVariable Long alrmRcvrId) {
+
+        notificationService.readAlrm(alrmRcvrId);
+
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
     @Operation(summary = "알림 삭제", description = "알림을 논리 삭제합니다. 본인 알림이 아닌 경우 처리되지 않습니다.")
     @DeleteMapping("/{alrmRcvrId}")
     public ResponseEntity<ApiResponse<Void>> deleteAlrm(@PathVariable Long alrmRcvrId) {

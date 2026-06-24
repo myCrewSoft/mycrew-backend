@@ -38,7 +38,7 @@ class NotificationSendIntegrationTest {
         rcvrVO.setRcvrEmpId(TEST_EMP_ID);
         notificationMapper.insertAlrmRcvr(rcvrVO);
 
-        List<NotificationQueryVO> result = notificationMapper.selectAlrmList(TEST_EMP_ID);
+        List<NotificationQueryVO> result = notificationMapper.selectAlrmList(TEST_EMP_ID, 0);
 
         assertThat(result).isNotEmpty();
         assertThat(result.get(0).getAlrmTtln()).isEqualTo("통합 테스트 알림");

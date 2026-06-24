@@ -30,6 +30,7 @@ import com.mycrewsoft.domain.mtng.event.MeetingInvitedEvent;
 import com.mycrewsoft.domain.mail.event.MailReceivedEvent;
 import com.mycrewsoft.domain.mtng.event.MeetingReminderEvent;
 import com.mycrewsoft.domain.notification.service.NotificationService;
+import com.mycrewsoft.domain.notification.enums.NotificationTargetType;
 import com.mycrewsoft.domain.project.event.ProjectClosedEvent;
 import com.mycrewsoft.domain.project.event.ProjectCompletedEvent;
 import com.mycrewsoft.domain.project.event.ProjectCreatedEvent;
@@ -83,7 +84,10 @@ public class NotificationEventListener {
             "신청하신 [" + event.getApprovalNm() + "] 결재가 승인되었습니다.",
             "02",
             null,
-            List.of(event.getRcvrEmpId())
+            List.of(event.getRcvrEmpId()),
+            NotificationTargetType.APPROVAL,
+            event.getDrftDocSn(),
+            null
         );
     }
 
@@ -94,7 +98,10 @@ public class NotificationEventListener {
             "신청하신 [" + event.getApprovalNm() + "] 결재가 반려되었습니다.",
             "02",
             null,
-            List.of(event.getRcvrEmpId())
+            List.of(event.getRcvrEmpId()),
+            NotificationTargetType.APPROVAL,
+            event.getDrftDocSn(),
+            null
         );
     }
 
@@ -105,7 +112,10 @@ public class NotificationEventListener {
             event.getApplicantNm() + " 님이 [" + event.getApprovalNm() + "] 결재를 요청했습니다.",
             "02",
             null,
-            event.getApproverIds()
+            event.getApproverIds(),
+            NotificationTargetType.APPROVAL,
+            event.getDrftDocSn(),
+            null
         );
     }
 
@@ -116,7 +126,10 @@ public class NotificationEventListener {
             "[" + event.getApprovalNm() + "] 결재의 처리 기한이 임박했습니다.(3일 전)",
             "02",
             null,
-            List.of(event.getApproverId())
+            List.of(event.getApproverId()),
+            NotificationTargetType.APPROVAL,
+            event.getDrftDocSn(),
+            null
         );
     }
 
@@ -127,7 +140,10 @@ public class NotificationEventListener {
             event.getApplicantNm() + " 님이 [" + event.getApprovalNm() + "] 결재 요청을 취소했습니다.",
             "02",
             null,
-            event.getApproverIds()
+            event.getApproverIds(),
+            NotificationTargetType.APPROVAL,
+            event.getDrftDocSn(),
+            null
         );
     }
 
@@ -140,7 +156,10 @@ public class NotificationEventListener {
             "[" + event.getProjNm() + "] 프로젝트에 등록되었습니다.",
             "04",
             null,
-            event.getEmpIds()
+            event.getEmpIds(),
+            NotificationTargetType.PROJECT,
+            event.getProjId(),
+            null
         );
     }
     @Async
@@ -150,7 +169,10 @@ public class NotificationEventListener {
     			"[" + event.getProjNm() + "] 프로젝트에 등록되었습니다.",
     			"04",
     			null,
-    			event.getEmpIds()
+				event.getEmpIds(),
+				NotificationTargetType.PROJECT,
+				event.getProjId(),
+				null
     			);
     }
     
@@ -161,7 +183,10 @@ public class NotificationEventListener {
     			"[" + event.getProjNm() + "] 프로젝트에서 제외되었습니다.",
     			"04",
     			null,
-    			List.of(event.getEmpId())
+				List.of(event.getEmpId()),
+				NotificationTargetType.PROJECT,
+				event.getProjId(),
+				null
     			);
     }
 
@@ -172,7 +197,10 @@ public class NotificationEventListener {
             "[" + event.getProjNm() + "] 프로젝트의 마감일이 하루 남았습니다.",
             "04",
             null,
-            event.getEmpIds()
+            event.getEmpIds(),
+            NotificationTargetType.PROJECT,
+            event.getProjId(),
+            null
         );
     }
 
@@ -183,7 +211,10 @@ public class NotificationEventListener {
             "[" + event.getProjNm() + "] 프로젝트가 마감되었습니다.",
             "04",
             null,
-            event.getEmpIds()
+            event.getEmpIds(),
+            NotificationTargetType.PROJECT,
+            event.getProjId(),
+            null
         );
     }
 
@@ -194,7 +225,10 @@ public class NotificationEventListener {
             "[" + event.getProjNm() + "] 프로젝트가 중지되었습니다.",
             "04",
             null,
-            event.getEmpIds()
+            event.getEmpIds(),
+            NotificationTargetType.PROJECT,
+            event.getProjId(),
+            null
         );
     }
 
@@ -205,7 +239,10 @@ public class NotificationEventListener {
             "[" + event.getProjNm() + "] 프로젝트의 담당자가 [" + event.getManagerNm() + "] 으로 변경되었습니다.",
             "04",
             null,
-            event.getEmpIds()
+            event.getEmpIds(),
+            NotificationTargetType.PROJECT,
+            event.getProjId(),
+            null
         );
     }
 
@@ -216,7 +253,10 @@ public class NotificationEventListener {
             "[" + event.getProjNm() + "] 프로젝트가 완료 처리되었습니다.",
             "04",
             null,
-            event.getEmpIds()
+            event.getEmpIds(),
+            NotificationTargetType.PROJECT,
+            event.getProjId(),
+            null
         );
     }
 
@@ -229,7 +269,10 @@ public class NotificationEventListener {
             "[" + event.getTaskNm() + "] 업무가 배정되었습니다.",
             "05",
             null,
-            event.getRcvrEmpIds()
+            event.getRcvrEmpIds(),
+            NotificationTargetType.TASK,
+            event.getTaskId(),
+            event.getProjId()
         );
     }
 
@@ -240,7 +283,10 @@ public class NotificationEventListener {
             "[" + event.getTaskNm() + "] 업무에서 제외되었습니다.",
             "05",
             null,
-            event.getRcvrEmpIds()
+            event.getRcvrEmpIds(),
+            NotificationTargetType.TASK,
+            event.getTaskId(),
+            event.getProjId()
         );
     }
 
@@ -251,7 +297,10 @@ public class NotificationEventListener {
             "[" + event.getTaskNm() + "] 업무의 마감일이 하루 남았습니다.",
             "05",
             null,
-            event.getRcvrEmpIds()
+            event.getRcvrEmpIds(),
+            NotificationTargetType.TASK,
+            event.getTaskId(),
+            event.getProjId()
         );
     }
 
@@ -262,7 +311,10 @@ public class NotificationEventListener {
             "[" + event.getTaskNm() + "] 업무가 취소되었습니다.",
             "05",
             null,
-            event.getRcvrEmpIds()
+            event.getRcvrEmpIds(),
+            NotificationTargetType.TASK,
+            event.getTaskId(),
+            event.getProjId()
         );
     }
 
@@ -273,7 +325,10 @@ public class NotificationEventListener {
             "[" + event.getTaskNm() + "] 업무 상태가 변경되었습니다.",
             "05",
             null,
-            event.getRcvrEmpIds()
+            event.getRcvrEmpIds(),
+            NotificationTargetType.TASK,
+            event.getTaskId(),
+            event.getProjId()
         );
     }
 
@@ -282,9 +337,12 @@ public class NotificationEventListener {
     public void handleProjectManagerChanged(TaskManagerChangedEvent event) {
         notificationService.sendAlrm(
             "[" + event.getTaskNm() + "] 업무의 담당자가 [" + event.getManagerNm() + "] 으로 변경되었습니다.",
-            "04",
+            "05",
             null,
-            event.getRcvrEmpIds()
+            event.getRcvrEmpIds(),
+            NotificationTargetType.TASK,
+            event.getTaskId(),
+            event.getProjId()
         );
     }
 
@@ -295,7 +353,10 @@ public class NotificationEventListener {
             "[" + event.getTaskNm() + "] 업무가 완료 처리되었습니다.",
             "05",
             null,
-            event.getRcvrEmpIds()
+            event.getRcvrEmpIds(),
+            NotificationTargetType.TASK,
+            event.getTaskId(),
+            event.getProjId()
         );
     }
 
@@ -306,7 +367,10 @@ public class NotificationEventListener {
             "[" + event.getTaskNm() + "] 업무의 마감일이 변경되었습니다.",
             "05",
             null,
-            event.getRcvrEmpIds()
+            event.getRcvrEmpIds(),
+            NotificationTargetType.TASK,
+            event.getTaskId(),
+            event.getProjId()
         );
     }
 
@@ -319,7 +383,10 @@ public class NotificationEventListener {
             "[" + event.getMeetingNm() + "] 회의에 초대되었습니다.",
             "06",
             null,
-            event.getEmpIds()
+            event.getEmpIds(),
+            NotificationTargetType.MEETING,
+            event.getMeetingId(),
+            null
         );
     }
 
@@ -330,7 +397,10 @@ public class NotificationEventListener {
             "[" + event.getMeetingNm() + "] 회의가 종료되었습니다.",
             "06",
             null,
-            event.getEmpIds()
+            event.getEmpIds(),
+            NotificationTargetType.MEETING,
+            event.getMtngId(),
+            null
         );
     }
 
@@ -341,7 +411,10 @@ public class NotificationEventListener {
             "[" + event.getMeetingNm() + "] 회의 시작까지 10분 남았습니다.",
             "06",
             null,
-            event.getEmpIds()
+            event.getEmpIds(),
+            NotificationTargetType.MEETING,
+            event.getMeetingId(),
+            null
         );
     }
 
@@ -352,7 +425,10 @@ public class NotificationEventListener {
             "[" + event.getMeetingNm() + "] 회의 일정이 [" + event.getMeetingDt() + "] 로 변경되었습니다.",
             "06",
             null,
-            event.getEmpIds()
+            event.getEmpIds(),
+            NotificationTargetType.MEETING,
+            event.getMeetingId(),
+            null
         );
     }
 
@@ -365,7 +441,10 @@ public class NotificationEventListener {
             "[" + event.getSchdNm() + "] 일정이 등록되었습니다.",
             "03",
             null,
-            event.getEmpIds()
+            event.getEmpIds(),
+            NotificationTargetType.SCHEDULE,
+            event.getSchdId(),
+            null
         );
     }
 
@@ -376,7 +455,10 @@ public class NotificationEventListener {
             "[" + event.getSchdNm() + "] 일정이 취소되었습니다.",
             "03",
             null,
-            event.getEmpIds()
+            event.getEmpIds(),
+            NotificationTargetType.SCHEDULE,
+            event.getSchdId(),
+            null
         );
     }
 
@@ -387,7 +469,10 @@ public class NotificationEventListener {
             "[" + event.getSchdNm() + "] 일정이 변경되었습니다.",
             "03",
             null,
-            event.getEmpIds()
+            event.getEmpIds(),
+            NotificationTargetType.SCHEDULE,
+            event.getSchdId(),
+            null
         );
     }
 
@@ -398,7 +483,10 @@ public class NotificationEventListener {
             "[" + event.getSchdNm() + "] 일정 시작 시간이 다가오고 있습니다.",
             "03",
             null,
-            event.getEmpIds()
+            event.getEmpIds(),
+            NotificationTargetType.SCHEDULE,
+            event.getSchdId(),
+            null
         );
     }
 

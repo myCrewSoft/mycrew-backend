@@ -27,7 +27,7 @@ public class ApprovalDeadlineScheduler {
 
         for (ApprovalDeadlineVO vo : list) {
             eventPublisher.publishEvent(
-                new ApprovalDeadlineEvent(vo.getDocTtl(), vo.getAprvrEmpId())
+                new ApprovalDeadlineEvent(vo.getDocTtl(), vo.getAprvrEmpId(), vo.getDrftDocSn())
             );
         }
     }

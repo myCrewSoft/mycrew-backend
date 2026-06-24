@@ -14,6 +14,9 @@ public class AlrmVO {
     private String alrmTtln;	// 알림 제목
     private String alrmTypeCd;	// 알림 타입
     private String alrmCn;		// 알림 내용
+    private String targetType;
+    private Long targetId;
+    private Long parentTargetId;
     
     private LocalDateTime alrmSndngDt;	// 알림 발송 일시
     

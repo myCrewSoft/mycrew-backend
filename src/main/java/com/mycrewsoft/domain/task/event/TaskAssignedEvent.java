@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TaskAssignedEvent {
 	private final Long taskId;
+	private final Long projId;
 	private final String taskNm;
 	private final LocalDateTime taskBgngYmd;
 	private final LocalDateTime taskEndYmd;

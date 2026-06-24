@@ -27,7 +27,7 @@ public class MeetingReminderScheduler {
 
         for (MeetingReminderVO vo : list) {
             eventPublisher.publishEvent(
-                new MeetingReminderEvent(vo.getVconfNm(), vo.getEmpIds())
+                new MeetingReminderEvent(vo.getMeetingId(), vo.getVconfNm(), vo.getEmpIds())
             );
             log.info("[MeetingReminderScheduler] 회의 시작 10분 전 알림 - 회의: {}", vo.getVconfNm());
         }

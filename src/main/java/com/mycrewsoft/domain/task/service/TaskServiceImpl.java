@@ -104,15 +104,16 @@ public class TaskServiceImpl implements TaskService {
 
         // 업무 배정 알림
         eventPublisher.publishEvent(
-    	    new TaskAssignedEvent(
-    	        task.getTaskId(),
-    	        task.getTaskNm(),
-    	        task.getTaskBgngDt(),
-    	        task.getTaskEndDt(),
-    	        request.getEmpIdList(),
-    	        SecurityUtil.getCurrentEmpId()
-    	    )
-    	);
+            new TaskAssignedEvent(
+                task.getTaskId(),
+                projId,
+                task.getTaskNm(),
+                task.getTaskBgngDt(),
+                task.getTaskEndDt(),
+                request.getEmpIdList(),
+                SecurityUtil.getCurrentEmpId()
+            )
+        );
         }
         
         // 프로젝트 진척률 최신화
@@ -157,7 +158,7 @@ public class TaskServiceImpl implements TaskService {
         if (request.getTaskEndDt() != null &&
             !request.getTaskEndDt().equals(existing.getTaskEndDt())) {
             eventPublisher.publishEvent(
-                new TaskDeadlineChangedEvent(existing.getTaskNm(), existing.getRcvrEmpIds())
+                new TaskDeadlineChangedEvent(taskId, projId, existing.getTaskNm(), existing.getRcvrEmpIds())
             );
         }
 
@@ -165,7 +166,7 @@ public class TaskServiceImpl implements TaskService {
         if (request.getTaskStatCd() != null &&
             !request.getTaskStatCd().equals(existing.getTaskStatCd())) {
             eventPublisher.publishEvent(
-                new TaskStatusChangedEvent(existing.getTaskNm(), existing.getRcvrEmpIds())
+                new TaskStatusChangedEvent(taskId, projId, existing.getTaskNm(), existing.getRcvrEmpIds())
             );
         }
     }
@@ -193,7 +194,7 @@ public class TaskServiceImpl implements TaskService {
 
         // 업무 담당자 변경 알림
         eventPublisher.publishEvent(
-            new TaskManagerChangedEvent(existing.getTaskNm(), existing.getTaskMngrNm(), existing.getRcvrEmpIds())
+            new TaskManagerChangedEvent(taskId, projId, existing.getTaskNm(), existing.getTaskMngrNm(), existing.getRcvrEmpIds())
         );
     }
 
@@ -218,15 +219,16 @@ public class TaskServiceImpl implements TaskService {
 
         // 업무 배정 알림
         eventPublisher.publishEvent(
-    	    new TaskAssignedEvent(
-	    		existing.getTaskId(),
-	    		existing.getTaskNm(),
-	    		existing.getTaskBgngDt(),
-	    		existing.getTaskEndDt(),
-	    		empIdList,
-    	        SecurityUtil.getCurrentEmpId()
-    	    )
-    	);
+            new TaskAssignedEvent(
+                existing.getTaskId(),
+                projId,
+                existing.getTaskNm(),
+                existing.getTaskBgngDt(),
+                existing.getTaskEndDt(),
+                empIdList,
+                SecurityUtil.getCurrentEmpId()
+            )
+        );
     }
 
     @Override
@@ -249,7 +251,7 @@ public class TaskServiceImpl implements TaskService {
         }
         // 업무 제외 알림
         eventPublisher.publishEvent(
-            new TaskMemberRemovedEvent(existing.getTaskNm(), empIdList)
+            new TaskMemberRemovedEvent(taskId, projId, existing.getTaskNm(), empIdList)
         );
     }
 
@@ -268,7 +270,7 @@ public class TaskServiceImpl implements TaskService {
 
         // 업무 취소 알림
         eventPublisher.publishEvent(
-            new TaskCancelledEvent(existing.getTaskNm(), existing.getRcvrEmpIds())
+            new TaskCancelledEvent(taskId, projId, existing.getTaskNm(), existing.getRcvrEmpIds())
         );
 
         // 참여자 먼저 삭제 후 업무 논리 삭제

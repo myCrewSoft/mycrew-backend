@@ -9,4 +9,5 @@ import lombok.RequiredArgsConstructor;
 public class ApprovalRejectedEvent {
     private final String ApprovalNm;
     private final Long RcvrEmpId;
+    private final Long drftDocSn;
 }

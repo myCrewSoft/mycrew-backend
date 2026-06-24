@@ -22,6 +22,9 @@ public interface NotificationDtoMapper {
     @Mapping(target = "alrmTypeCd", source = "alrmVO.alrmTypeCd")
     @Mapping(target = "alrmTtln", source = "alrmVO.alrmTtln")
     @Mapping(target = "alrmCn", source = "alrmVO.alrmCn")
+    @Mapping(target = "targetType", source = "alrmVO.targetType")
+    @Mapping(target = "targetId", source = "alrmVO.targetId")
+    @Mapping(target = "parentTargetId", source = "alrmVO.parentTargetId")
     @Mapping(target = "alrmSndngDt", source = "alrmVO.alrmSndngDt")
     @Mapping(target = "alrmCfmtnDt", source = "alrmRcvrVO.alrmCfmtnDt")
     NotificationResponse toResponse(AlrmVO alrmVO, AlrmRcvrVO alrmRcvrVO);

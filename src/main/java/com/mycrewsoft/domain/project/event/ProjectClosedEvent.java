@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public class ProjectClosedEvent {
+    private final Long projId;
     private final String projNm;
     private final List<Long> empIds;
 }

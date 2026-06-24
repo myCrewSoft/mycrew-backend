@@ -61,13 +61,13 @@ class NotificationServiceTest {
 
         try (MockedStatic<SecurityUtil> securityUtil = Mockito.mockStatic(SecurityUtil.class)) {
             securityUtil.when(SecurityUtil::getCurrentEmpId).thenReturn(empId);
-            given(notificationMapper.selectAlrmList(empId)).willReturn(voList);
+            given(notificationMapper.selectAlrmList(empId, 0)).willReturn(voList);
             given(dtoMapper.toResponseList(voList)).willReturn(responseList);
 
             List<NotificationResponse> result = notificationService.readAlrmList();
 
             assertThat(result).hasSize(2);
-            verify(notificationMapper, times(1)).selectAlrmList(empId);
+            verify(notificationMapper, times(1)).selectAlrmList(empId, 0);
         }
     }
 
@@ -100,6 +100,38 @@ class NotificationServiceTest {
         verify(notificationMapper, times(1)).insertAlrm(alrmVO);
         verify(notificationMapper, times(2)).insertAlrmRcvr(any());
         verify(sseEmitterService, times(2)).send(anyLong(), any());
+    }
+
+    @Test
+    @DisplayName("알림 개별 읽음 처리 성공")
+    void readAlrm_success() {
+        Long empId = 1L;
+        Long alrmRcvrId = 10L;
+
+        try (MockedStatic<SecurityUtil> securityUtil = Mockito.mockStatic(SecurityUtil.class)) {
+            securityUtil.when(SecurityUtil::getCurrentEmpId).thenReturn(empId);
+            given(notificationMapper.updateRead(alrmRcvrId, empId)).willReturn(1);
+
+            notificationService.readAlrm(alrmRcvrId);
+
+            verify(notificationMapper, times(1)).updateRead(alrmRcvrId, empId);
+        }
+    }
+
+    @Test
+    @DisplayName("알림 개별 읽음 처리 실패 - 본인 알림 아님")
+    void readAlrm_fail_notFound() {
+        Long empId = 1L;
+        Long alrmRcvrId = 10L;
+
+        try (MockedStatic<SecurityUtil> securityUtil = Mockito.mockStatic(SecurityUtil.class)) {
+            securityUtil.when(SecurityUtil::getCurrentEmpId).thenReturn(empId);
+            given(notificationMapper.updateRead(alrmRcvrId, empId)).willReturn(0);
+
+            assertThatThrownBy(() -> notificationService.readAlrm(alrmRcvrId))
+                    .isInstanceOf(CustomException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOTIFICATION_NOT_FOUND);
+        }
     }
 
     @Test

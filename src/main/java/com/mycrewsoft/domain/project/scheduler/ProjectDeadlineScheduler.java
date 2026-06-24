@@ -27,7 +27,7 @@ public class ProjectDeadlineScheduler {
 
         for (ProjectDeadlineVO vo : list) {
             eventPublisher.publishEvent(
-                new ProjectDeadlineEvent(vo.getProjNm(), vo.getEmpIds())
+                new ProjectDeadlineEvent(vo.getProjId(), vo.getProjNm(), vo.getEmpIds())
             );
             log.info("[ProjectDeadlineScheduler] 마감 알림 발송 - 프로젝트: {}", vo.getProjNm());
         }
