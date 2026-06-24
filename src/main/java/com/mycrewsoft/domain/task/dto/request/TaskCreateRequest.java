@@ -3,6 +3,7 @@ package com.mycrewsoft.domain.task.dto.request;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 
@@ -31,7 +32,8 @@ public class TaskCreateRequest {
     private String taskTypeCd;
     
     @NotBlank
-    @Schema(description = "업무 상태 코드", example = "01")
+    @Schema(description = "업무 상태 코드 (00:미착수 / 01:진행중 / 02:완료 / 03:일시중지 / 04:중지)", example = "00")
+    @Pattern(regexp = "0[0-4]", message = "업무 상태 코드는 00, 01, 02, 03, 04 중 하나여야 합니다.")
     private String taskStatCd;
 
     @NotNull

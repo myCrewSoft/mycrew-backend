@@ -3,6 +3,7 @@ package com.mycrewsoft.domain.task.dto.request;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 
@@ -24,7 +25,8 @@ public class TaskUpdateRequest {
     @Schema(description = "업무담당자 사번", example = "1031")
     private Long taskMngrId;
 
-    @Schema(description = "업무상태코드 (00:해야할일 / 01:진행중 / 02:완료 / 03:중단)", example = "01")
+    @Schema(description = "업무 상태 코드 (00:미착수 / 01:진행중 / 02:완료 / 03:일시중지 / 04:중지)", example = "01")
+    @Pattern(regexp = "0[0-4]", message = "업무 상태 코드는 00, 01, 02, 03, 04 중 하나여야 합니다.")
     private String taskStatCd;
 
     @Schema(description = "업무우선순위코드 (01:높음 / 02:중간 / 03:낮음)", example = "02")

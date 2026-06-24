@@ -1,5 +1,6 @@
 package com.mycrewsoft.domain.task.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -14,6 +15,8 @@ import java.util.Objects;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -101,6 +104,7 @@ class TaskServiceImplTest2 {
             secUtil.when(SecurityUtil::getCurrentEmpId).thenReturn(CURRENT_EMP_ID);
             mockProjectMember(true);
             given(taskDtoMapper.toVO(any(TaskCreateRequest.class))).willReturn(taskVO);
+            given(projectMapper.updateProjectPrgrsRtd(PROJ_ID)).willReturn(1);
 
             // insertTask 호출 시 taskId를 채워주는 Mock
             Mockito.doAnswer(invocation -> {
@@ -114,6 +118,7 @@ class TaskServiceImplTest2 {
             taskService.createTask(PROJ_ID, request);
 
             verify(taskMapper, times(1)).insertTask(taskVO);
+            assertThat(taskVO.getTaskStatCd()).isEqualTo("01");
             verify(taskMapper, times(2)).insertTaskPtcpt(any());
             verify(eventPublisher, times(1)).publishEvent(any(TaskAssignedEvent.class));
         }
@@ -131,6 +136,7 @@ class TaskServiceImplTest2 {
             secUtil.when(SecurityUtil::getCurrentEmpId).thenReturn(CURRENT_EMP_ID);
             mockProjectMember(true);
             given(taskDtoMapper.toVO(request)).willReturn(taskVO);
+            given(projectMapper.updateProjectPrgrsRtd(PROJ_ID)).willReturn(1);
 
             taskService.createTask(PROJ_ID, request);
 
@@ -169,6 +175,7 @@ class TaskServiceImplTest2 {
             mockProjectMember(true);
             given(taskMapper.selectTaskDetail(TASK_ID)).willReturn(existing);
             given(taskDtoMapper.toVO(any(TaskUpdateRequest.class))).willReturn(taskVO);
+            given(projectMapper.updateProjectPrgrsRtd(PROJ_ID)).willReturn(1);
 
             taskService.updateTask(PROJ_ID, TASK_ID, request);
 
@@ -190,6 +197,46 @@ class TaskServiceImplTest2 {
             assertThatThrownBy(() -> taskService.updateTask(PROJ_ID, TASK_ID, request))
                     .isInstanceOf(CustomException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.TASK_NOT_FOUND);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"02", "04"})
+    @DisplayName("완료 또는 중지 상태인 업무는 수정할 수 없다")
+    void updateTask_fail_nonEditableStatus(String taskStatCd) {
+        TaskUpdateRequest request = makeUpdateRequest("01");
+        TaskDetailVO existing = makeTaskDetailVO(CURRENT_EMP_ID);
+        existing.setTaskStatCd(taskStatCd);
+
+        try (MockedStatic<SecurityUtil> secUtil = Mockito.mockStatic(SecurityUtil.class)) {
+            secUtil.when(SecurityUtil::getCurrentEmpId).thenReturn(CURRENT_EMP_ID);
+            mockProjectMember(true);
+            given(taskMapper.selectTaskDetail(TASK_ID)).willReturn(existing);
+
+            assertThatThrownBy(() -> taskService.updateTask(PROJ_ID, TASK_ID, request))
+                    .isInstanceOf(CustomException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.TASK_INVALID_STAT_TRANSITION);
+
+            verify(taskMapper, times(0)).updateTask(anyLong(), any());
+        }
+    }
+
+    @Test
+    @DisplayName("허용되지 않은 상태 코드로 업무를 수정할 수 없다")
+    void updateTask_fail_invalidStatusCode() {
+        TaskUpdateRequest request = makeUpdateRequest("05");
+        TaskDetailVO existing = makeTaskDetailVO(CURRENT_EMP_ID);
+
+        try (MockedStatic<SecurityUtil> secUtil = Mockito.mockStatic(SecurityUtil.class)) {
+            secUtil.when(SecurityUtil::getCurrentEmpId).thenReturn(CURRENT_EMP_ID);
+            mockProjectMember(true);
+            given(taskMapper.selectTaskDetail(TASK_ID)).willReturn(existing);
+
+            assertThatThrownBy(() -> taskService.updateTask(PROJ_ID, TASK_ID, request))
+                    .isInstanceOf(CustomException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.TASK_INVALID_STAT_TRANSITION);
+
+            verify(taskMapper, times(0)).updateTask(anyLong(), any());
         }
     }
 
@@ -283,6 +330,7 @@ class TaskServiceImplTest2 {
             secUtil.when(SecurityUtil::getCurrentEmpId).thenReturn(CURRENT_EMP_ID);
             given(taskMapper.selectTaskDetail(TASK_ID)).willReturn(existing);
             given(projectMapper.selectProjectLeaderId(PROJ_ID)).willReturn(CURRENT_EMP_ID);
+            given(projectMapper.updateProjectPrgrsRtd(PROJ_ID)).willReturn(1);
 
             taskService.deleteTask(PROJ_ID, TASK_ID);
 

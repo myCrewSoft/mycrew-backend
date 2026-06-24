@@ -7,13 +7,16 @@
         T.TASK_ID,
         T.PROJ_ID,
         T.TASK_NM,
+        T.TASK_CN,
         T.TASK_TYPE_CD,
         T.TASK_MNGR_ID,
         E.EMP_NM      AS TASK_MNGR_NM,
+        E.PRFL_IMG_FILE_ID,
         T.TASK_STAT_CD,
         T.TASK_PRIORITY_CD,
         T.TASK_IMPRTNC_CD,
         T.TASK_PRGRS_SMRY,
+        T.TASK_BGNG_DT,
         T.TASK_END_DT
     </sql>
 
@@ -26,6 +29,7 @@
         T.TASK_TYPE_CD,
         T.TASK_MNGR_ID,
         E.EMP_NM      AS TASK_MNGR_NM,
+        E.PRFL_IMG_FILE_ID,
         T.TASK_STAT_CD,
         T.TASK_PRIORITY_CD,
         T.TASK_IMPRTNC_CD,
