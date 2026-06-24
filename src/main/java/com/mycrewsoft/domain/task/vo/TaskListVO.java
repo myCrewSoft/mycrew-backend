@@ -16,6 +16,7 @@ public class TaskListVO {
     private Long taskId;
     private Long projId;
     private String taskNm;
+    private String taskCn;
     private String taskTypeCd;
     private Long taskMngrId;
     private String taskMngrNm;       // TB_EMPLOYEE JOIN - DB 컬럼 아님
@@ -24,5 +25,6 @@ public class TaskListVO {
     private String taskPriorityCd;
     private String taskImprtncCd;
     private Integer taskPrgrsSmry;
+    private LocalDateTime taskBgngDt;
     private LocalDateTime taskEndDt;
 }

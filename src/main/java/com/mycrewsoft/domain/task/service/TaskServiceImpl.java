@@ -2,6 +2,7 @@ package com.mycrewsoft.domain.task.service;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -45,6 +46,8 @@ public class TaskServiceImpl implements TaskService {
     
     // 위젯 호출 개수
     private static final int WIDGET_TASK_LIMIT = 3;
+    private static final Set<String> TASK_STATUS_CODES = Set.of("00", "01", "02", "03", "04");
+    private static final Set<String> NON_EDITABLE_TASK_STATUS_CODES = Set.of("02", "04");
     
     @Override
     public List<TaskListResponse> getTaskList(Long projId) {
@@ -86,11 +89,13 @@ public class TaskServiceImpl implements TaskService {
         // 해당 프로젝트의 참여자인지 확인
         validateProjectParticipant(currentEmpId, projId);
 
+        validateTaskStatus(request.getTaskStatCd());
+
         // DTO -> VO 변환
         TaskVO task = taskDtoMapper.toVO(request);
         task.setFrstRgtrId(currentEmpId);
         task.setLastMdfrId(currentEmpId);
-        task.setTaskStatCd("00");
+        task.setTaskStatCd(request.getTaskStatCd());
 
         // DB에 저장
         taskMapper.insertTask(task);
@@ -134,6 +139,11 @@ public class TaskServiceImpl implements TaskService {
         // 존재하는 업무인지 확인
         TaskDetailVO existing = taskMapper.selectTaskDetail(taskId);
         if (existing == null) throw new CustomException(ErrorCode.TASK_NOT_FOUND);
+
+        validateTaskEditable(existing.getTaskStatCd());
+        if (request.getTaskStatCd() != null) {
+            validateTaskStatus(request.getTaskStatCd());
+        }
 
         // DTO -> VO 변환
         TaskVO task = taskDtoMapper.toVO(request);
@@ -296,6 +306,18 @@ public class TaskServiceImpl implements TaskService {
         boolean isProjectMember = projectMemberList.stream()
                 .anyMatch(member -> Objects.equals(member.getEmpId(), currentEmpId));
         if (!isProjectMember) throw new CustomException(ErrorCode.PROJECT_NOT_PARTICIPANT);
+    }
+
+    private void validateTaskStatus(String taskStatusCode) {
+        if (!TASK_STATUS_CODES.contains(taskStatusCode)) {
+            throw new CustomException(ErrorCode.TASK_INVALID_STAT_TRANSITION);
+        }
+    }
+
+    private void validateTaskEditable(String taskStatusCode) {
+        if (NON_EDITABLE_TASK_STATUS_CODES.contains(taskStatusCode)) {
+            throw new CustomException(ErrorCode.TASK_INVALID_STAT_TRANSITION);
+        }
     }
 
     // 담당자만 가능 → TASK_NOT_OWNER
