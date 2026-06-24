@@ -16,7 +16,7 @@ public class NotificationResponse {
     @Schema(description = "알림 ID", example = "101")
     private Long alrmId;
 
-    @Schema(description = "알림 타입 코드 (01: 일정, 02: 회의, 03: 공지사항, 04: 교육, 05: 프로젝트, 06: 업무", example = "01")
+    @Schema(description = "알림 타입 코드", example = "05")
     private String alrmTypeCd;
 
     @Schema(description = "알림 제목", example = "결재 요청이 도착했습니다.")
@@ -24,6 +24,20 @@ public class NotificationResponse {
 
     @Schema(description = "알림 내용", example = "신데렐라님이 휴가신청서 결재를 요청했습니다.")
     private String alrmCn;
+
+    @Schema(
+        description = "알림 이동 대상 종류",
+        example = "TASK",
+        allowableValues = {"APPROVAL", "SCHEDULE", "MEETING", "PROJECT", "TASK"},
+        nullable = true
+    )
+    private String targetType;
+
+    @Schema(description = "알림 대상 ID", example = "45", nullable = true)
+    private Long targetId;
+
+    @Schema(description = "상위 대상 ID. 업무 알림에서는 프로젝트 ID", example = "12", nullable = true)
+    private Long parentTargetId;
 
     @Schema(description = "알림 발송 일시", example = "2025-06-01T09:00:00")
     private LocalDateTime alrmSndngDt;

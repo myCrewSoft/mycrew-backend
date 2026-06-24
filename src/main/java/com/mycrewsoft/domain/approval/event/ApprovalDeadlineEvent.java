@@ -9,4 +9,5 @@ import lombok.RequiredArgsConstructor;
 public class ApprovalDeadlineEvent {
     private final String ApprovalNm;
     private final Long ApproverId;
+    private final Long drftDocSn;
 }

@@ -266,9 +266,9 @@ public class ProjectServiceImpl implements ProjectService{
 
 	        switch (updateReqDto.getProjStatCd()) {
 	            case "03" -> eventPublisher.publishEvent(
-	                new ProjectCompletedEvent(vo.getProjNm(), memberEmpIds));
+	                new ProjectCompletedEvent(vo.getProjId(), vo.getProjNm(), memberEmpIds));
 	            case "04" -> eventPublisher.publishEvent(
-	                new ProjectStoppedEvent(vo.getProjNm(), memberEmpIds));
+	                new ProjectStoppedEvent(vo.getProjId(), vo.getProjNm(), memberEmpIds));
 	        }
 	    }
 	}

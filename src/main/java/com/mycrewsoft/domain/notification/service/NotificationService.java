@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.mycrewsoft.domain.notification.dto.response.NotificationResponse;
 import com.mycrewsoft.domain.notification.dto.response.NotificationUnreadCountResponse;
+import com.mycrewsoft.domain.notification.enums.NotificationTargetType;
 import com.mycrewsoft.domain.notification.vo.AlrmVO;
 
 public interface NotificationService {
@@ -18,7 +19,19 @@ public interface NotificationService {
 
     void sendAlrm(String ttln, String typeCd, String cn, List<Long> rcvrEmpIds);
 
+    void sendAlrm(
+            String ttln,
+            String typeCd,
+            String cn,
+            List<Long> rcvrEmpIds,
+            NotificationTargetType targetType,
+            Long targetId,
+            Long parentTargetId
+    );
+
     void readAllAlrm();
+
+    void readAlrm(Long alrmRcvrId);
 
     void deleteAlrm(Long alrmRcvrId);
     

@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public class ProjectManagerChangedEvent {
+    private final Long projId;
     private final String projNm;
     private final String managerNm;
     private final List<Long> empIds;

@@ -224,6 +224,7 @@
     <select id="selectTasksDueTomorrow" resultType="TaskDeadlineVO">
         SELECT
             T.TASK_ID,
+            T.PROJ_ID,
             T.TASK_NM,
             P.EMP_ID AS RCVR_EMP_IDS
         FROM TB_TASK T

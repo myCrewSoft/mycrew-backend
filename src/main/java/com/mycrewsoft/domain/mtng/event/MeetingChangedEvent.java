@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public class MeetingChangedEvent {
+    private final Long meetingId;
     private final String meetingNm;
     private final LocalDateTime meetingDt;
     private final List<Long> empIds;

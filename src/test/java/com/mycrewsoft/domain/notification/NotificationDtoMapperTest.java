@@ -24,12 +24,18 @@ class NotificationDtoMapperTest {
         NotificationQueryVO vo = new NotificationQueryVO();
         vo.setAlrmRcvrId(10L);
         vo.setAlrmId(101L);
+        vo.setTargetType("TASK");
+        vo.setTargetId(45L);
+        vo.setParentTargetId(12L);
         vo.setAlrmCfmtnDt(confirmedAt);
 
         NotificationResponse result = dtoMapper.toResponse(vo);
 
         assertThat(result.getAlrmRcvrId()).isEqualTo(10L);
         assertThat(result.getAlrmId()).isEqualTo(101L);
+        assertThat(result.getTargetType()).isEqualTo("TASK");
+        assertThat(result.getTargetId()).isEqualTo(45L);
+        assertThat(result.getParentTargetId()).isEqualTo(12L);
         assertThat(result.getAlrmCfmtnDt()).isEqualTo(confirmedAt);
     }
 
@@ -38,6 +44,8 @@ class NotificationDtoMapperTest {
         AlrmVO alrmVO = new AlrmVO();
         alrmVO.setAlrmId(101L);
         alrmVO.setAlrmTtln("테스트 알림");
+        alrmVO.setTargetType("MEETING");
+        alrmVO.setTargetId(30L);
 
         AlrmRcvrVO alrmRcvrVO = new AlrmRcvrVO();
         alrmRcvrVO.setAlrmRcvrId(10L);
@@ -48,5 +56,7 @@ class NotificationDtoMapperTest {
         assertThat(result.getAlrmRcvrId()).isEqualTo(10L);
         assertThat(result.getAlrmId()).isEqualTo(101L);
         assertThat(result.getAlrmTtln()).isEqualTo("테스트 알림");
+        assertThat(result.getTargetType()).isEqualTo("MEETING");
+        assertThat(result.getTargetId()).isEqualTo(30L);
     }
 }

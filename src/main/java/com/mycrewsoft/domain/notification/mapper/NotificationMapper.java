@@ -12,8 +12,6 @@ import com.mycrewsoft.domain.notification.vo.NotificationQueryVO;
 @Mapper
 public interface NotificationMapper {
 
-    List<NotificationQueryVO> selectAlrmList(@Param("rcvrEmpId") Long rcvrEmpId);
-
     long selectUnreadCount(@Param("rcvrEmpId") Long rcvrEmpId);
 
     int insertAlrm(AlrmVO alrmVO);
@@ -21,6 +19,8 @@ public interface NotificationMapper {
     int insertAlrmRcvr(AlrmRcvrVO alrmRcvrVO);
     
     int updateReadAll(@Param("rcvrEmpId") Long rcvrEmpId);
+
+    int updateRead(@Param("alrmRcvrId") Long alrmRcvrId, @Param("rcvrEmpId") Long rcvrEmpId);
 
     int updateDelYn(@Param("alrmRcvrId") Long alrmRcvrId, @Param("rcvrEmpId") Long rcvrEmpId);
     

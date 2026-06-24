@@ -9,6 +9,7 @@ import lombok.Setter;
 @Setter
 public class TaskDeadlineVO {
     private Long taskId;
+    private Long projId;
     private String taskNm;
     private List<Long> rcvrEmpIds;
 }

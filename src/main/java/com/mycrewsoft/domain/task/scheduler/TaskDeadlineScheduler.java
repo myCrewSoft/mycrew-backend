@@ -27,7 +27,7 @@ public class TaskDeadlineScheduler {
 
         for (TaskDeadlineVO task : tasks) {
             eventPublisher.publishEvent(
-                new TaskDeadlineEvent(task.getTaskNm(), task.getRcvrEmpIds())
+                new TaskDeadlineEvent(task.getTaskId(), task.getProjId(), task.getTaskNm(), task.getRcvrEmpIds())
             );
         }
     }

@@ -12,4 +12,5 @@ public class ApprovalCancelledEvent {
     private final String ApplicantNm;
     private final String ApprovalNm;
     private final List<Long> ApproverIds;
+    private final Long drftDocSn;
 }

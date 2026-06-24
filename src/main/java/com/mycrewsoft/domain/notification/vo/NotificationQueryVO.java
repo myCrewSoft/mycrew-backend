@@ -14,6 +14,9 @@ public class NotificationQueryVO {
     private String alrmTypeCd;
     private String alrmTtln;
     private String alrmCn;
+    private String targetType;
+    private Long targetId;
+    private Long parentTargetId;
     private LocalDateTime alrmSndngDt;
     private LocalDateTime alrmCfmtnDt;
 }

@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public class ScheduleChangedEvent {
+    private final Long schdId;
     private final String schdNm;
     private final List<Long> empIds;    
 }

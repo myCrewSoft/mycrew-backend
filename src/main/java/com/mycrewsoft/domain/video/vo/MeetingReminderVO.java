@@ -8,6 +8,7 @@ import lombok.Setter;
 @Setter
 public class MeetingReminderVO {
     private Long vconfId;
+    private Long meetingId;
     private String vconfNm;
     private List<Long> empIds;
 }

@@ -11,6 +11,7 @@ import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.notification.dto.response.NotificationResponse;
 import com.mycrewsoft.domain.notification.dto.response.NotificationUnreadCountResponse;
+import com.mycrewsoft.domain.notification.enums.NotificationTargetType;
 import com.mycrewsoft.domain.notification.mapper.NotificationDtoMapper;
 import com.mycrewsoft.domain.notification.mapper.NotificationMapper;
 import com.mycrewsoft.domain.notification.vo.AlrmRcvrVO;
@@ -92,6 +93,20 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public void sendAlrm(String ttln, String typeCd, String cn, List<Long> rcvrEmpIds) {
+        sendAlrm(ttln, typeCd, cn, rcvrEmpIds, null, null, null);
+    }
+
+    @Override
+    @Transactional
+    public void sendAlrm(
+            String ttln,
+            String typeCd,
+            String cn,
+            List<Long> rcvrEmpIds,
+            NotificationTargetType targetType,
+            Long targetId,
+            Long parentTargetId
+    ) {
         // null 체크
         if (StringUtils.isBlank(ttln)) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
@@ -102,12 +117,19 @@ public class NotificationServiceImpl implements NotificationService {
         if (rcvrEmpIds == null || rcvrEmpIds.isEmpty()) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
+        if ((targetType == null && (targetId != null || parentTargetId != null))
+                || (targetType != null && targetId == null)) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
 
         // vo 생성
         AlrmVO alrmVO = new AlrmVO();
         alrmVO.setAlrmTtln(ttln);
         alrmVO.setAlrmTypeCd(typeCd);
         alrmVO.setAlrmCn(cn);
+        alrmVO.setTargetType(targetType == null ? null : targetType.name());
+        alrmVO.setTargetId(targetId);
+        alrmVO.setParentTargetId(parentTargetId);
 
         // 알림 발송
         sendAlrm(alrmVO, rcvrEmpIds);
@@ -123,6 +145,15 @@ public class NotificationServiceImpl implements NotificationService {
 
         // 알림 읽기
         notificationMapper.updateReadAll(rcvrEmpId);
+    }
+
+    @Override
+    @Transactional
+    public void readAlrm(Long alrmRcvrId) {
+        Long rcvrEmpId = SecurityUtil.getCurrentEmpId();
+
+        int result = notificationMapper.updateRead(alrmRcvrId, rcvrEmpId);
+        if (result == 0) throw new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND);
     }
 
     // 알림 삭제(논리 삭제)

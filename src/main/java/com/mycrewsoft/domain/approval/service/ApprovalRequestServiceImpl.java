@@ -69,7 +69,7 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
         String applicantNm = employeeMapper.selectEmployeeProfileByEmpId(empId).getEmpNm();
         List<Long> approverIds = approvalDraftMapper.selectApproverEmpIdsByStep(firstStep.getAprvlStepSn());
         eventPublisher.publishEvent(
-            new ApprovalRequestedEvent(savedDoc.getDocTtl(), applicantNm, approverIds)
+            new ApprovalRequestedEvent(applicantNm, savedDoc.getDocTtl(), approverIds, drftDocSn)
         );
         
         return new ApprovalMutationResponse(
@@ -114,7 +114,7 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
         if (currentStep != null) {
             List<Long> approverIds = approvalDraftMapper.selectApproverEmpIdsByStep(currentStep.getAprvlStepSn());
             eventPublisher.publishEvent(
-                new ApprovalCancelledEvent(savedDoc.getDocTtl(), applicantNm, approverIds)
+                new ApprovalCancelledEvent(applicantNm, savedDoc.getDocTtl(), approverIds, drftDocSn)
             );
         }
         
@@ -180,7 +180,7 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
                 .selectEmployeeProfileByEmpId(savedDoc.getEmpId()).getEmpNm();
             List<Long> nextApproverIds = approvalDraftMapper.selectApproverEmpIdsByStep(nextStep.getAprvlStepSn());
             eventPublisher.publishEvent(
-                new ApprovalRequestedEvent(savedDoc.getDocTtl(), applicantNm, nextApproverIds)
+                new ApprovalRequestedEvent(applicantNm, savedDoc.getDocTtl(), nextApproverIds, drftDocSn)
             );
             
            
@@ -256,7 +256,7 @@ public class ApprovalRequestServiceImpl implements ApprovalRequestService {
         
         // 반려 시 기안자에게 알림
         eventPublisher.publishEvent(
-            new ApprovalRejectedEvent(savedDoc.getDocTtl(), savedDoc.getEmpId())
+            new ApprovalRejectedEvent(savedDoc.getDocTtl(), savedDoc.getEmpId(), drftDocSn)
         );
         
         return new ApprovalMutationResponse(

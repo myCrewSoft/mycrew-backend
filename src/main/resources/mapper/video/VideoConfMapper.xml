@@ -79,6 +79,7 @@
     <select id="selectConfsStartingSoon" resultMap="meetingReminderResultMap">
         SELECT
             V.VCONF_ID,
+            M.MTNG_ID AS MEETING_ID,
             V.VCONF_NM,
             P.EMP_ID AS P_EMP_ID
         FROM TB_VIDEO_CONF V
