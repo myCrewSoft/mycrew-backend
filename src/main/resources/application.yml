@@ -92,7 +92,7 @@ server:
   port: 80
 
 cors:
-  allowed-origins: http://192.168.35.113:5173
+  allowed-origins: http://localhost:5173
   allowed-methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
   allowed-headers: Authorization,Content-Type,Accept
   allow-credentials: true
@@ -106,12 +106,12 @@ google:
   oauth:
     client-id: ${GOOGLE_OAUTH_CLIENT_ID:727057848148-08dmtdfppmnoqblbukb3aegv1avmq6c9.apps.googleusercontent.com}
     client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET:}
-    redirect-uri: http://192.168.35.113/api/mail/oauth/google/callback
-    frontend-success-uri: http://192.168.35.113:5173/first-login?mailConnected=Y
-    frontend-failure-uri: http://192.168.35.113:5173/first-login?mailConnected=N
-    frontend-mail-success-uri: http://192.168.35.113:5173/mail
-    frontend-my-page-success-uri: http://192.168.35.113:5173/mypage?mailConnected=Y
-    frontend-my-page-failure-uri: http://192.168.35.113:5173/mypage?mailConnected=N
+    redirect-uri: http://localhost/api/mail/oauth/google/callback
+    frontend-success-uri: http://localhost:5173/first-login?mailConnected=Y
+    frontend-failure-uri: http://localhost:5173/first-login?mailConnected=N
+    frontend-mail-success-uri: http://localhost:5173/mail
+    frontend-my-page-success-uri: http://localhost:5173/mypage?mailConnected=Y
+    frontend-my-page-failure-uri: http://localhost:5173/mypage?mailConnected=N
     scopes:
       - openid
       - email
@@ -127,7 +127,7 @@ springdoc:
     url: /api/v3/api-docs
 
 websocket:
-  allowed-origins: http://192.168.35.113:5173
+  allowed-origins: http://localhost:5173
 
 livekit:
   url: ${LIVEKIT_URL}
