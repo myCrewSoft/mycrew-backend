@@ -20,6 +20,8 @@ public class TaskListVO {
     private String taskTypeCd;
     private Long taskMngrId;
     private String taskMngrNm;       // TB_EMPLOYEE JOIN - DB 컬럼 아님
+    private String taskMngrDeptNm;       // DB 컬럼 아님
+    private String taskMngrJobGrdNm;       // TDB 컬럼 아님
     private Long prflImgFileId;
     private String taskStatCd;
     private String taskPriorityCd;

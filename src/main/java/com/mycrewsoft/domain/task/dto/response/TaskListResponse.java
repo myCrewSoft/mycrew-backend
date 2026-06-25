@@ -32,6 +32,12 @@ public class TaskListResponse {
 
     @Schema(description = "업무담당자 이름 (JOIN)", example = "김민준")
     private String taskMngrNm;
+    
+    @Schema(description = "업무담당자 부서 (JOIN)", example = "개발부")
+    private String taskMngrDeptNm;
+    
+    @Schema(description = "업무담당자 직급 (JOIN)", example = "팀장")
+    private String taskMngrJobGrdNm;
 
     @Schema(description = "담당자 프로필 이미지 파일 ID")
     private Long prflImgFileId;
