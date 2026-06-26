@@ -722,6 +722,73 @@ public class MailServiceImpl implements MailService {
         return new MailBulkResponse(processed, failed);
     }
 
+    /**
+     * 포트폴리오 캡처용 레거시 예시 코드.
+     * 실제 서비스에서는 사용하지 않고, 다수 메일 처리에서 피해야 할 단건 반복 패턴을 보여주기 위한 코드다.
+     */
+    @Deprecated
+    @SuppressWarnings("unused")
+    private MailBulkResponse legacyBulkActionOneByOneForPortfolio(Long empId,
+                                                                  MailAccountVO account,
+                                                                  List<Long> requestedMailIds,
+                                                                  String action,
+                                                                  boolean important) {
+        List<Long> mailIds = normalizeMailIds(requestedMailIds);
+        int processed = 0;
+        int failed = 0;
+
+        for (Long mailId : mailIds) {
+            try {
+                // 문제점 1: 다수 메일 처리인데 매 반복마다 단건 SELECT를 수행한다.
+                MailMessageRow row = mailMapper.selectMailRow(empId, mailId);
+                if (row == null || row.getExternalMessageId() == null || row.getExternalMessageId().isBlank()) {
+                    failed++;
+                    continue;
+                }
+
+                // 문제점 2: Gmail batch API 대신 메일마다 단건 외부 API를 호출한다.
+                switch (action) {
+                    case "read" -> googleGmailClient.markRead(account, row.getExternalMessageId());
+                    case "unread" -> googleGmailClient.markUnread(account, row.getExternalMessageId());
+                    case "trash" -> googleGmailClient.trashMessage(account, row.getExternalMessageId());
+                    case "important" -> googleGmailClient.updateImportant(account, row.getExternalMessageId(), important);
+                    default -> throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+                }
+
+                // 문제점 3: DB 변경도 배치 없이 메일마다 단건 트랜잭션과 단건 쿼리로 처리한다.
+                transactionTemplate.executeWithoutResult(status -> {
+                    switch (action) {
+                        case "read" -> mailMapper.deleteLabelMapByType(empId, mailId, "UNREAD");
+                        case "unread" -> {
+                            ensureSystemLabels(empId);
+                            addLabel(empId, mailId, "UNREAD");
+                        }
+                        case "trash" -> {
+                            ensureSystemLabels(empId);
+                            addLabel(empId, mailId, "TRASH");
+                        }
+                        case "important" -> {
+                            ensureSystemLabels(empId);
+                            if (important) {
+                                addLabel(empId, mailId, "IMPORTANT");
+                            } else {
+                                mailMapper.deleteLabelMapByType(empId, mailId, "IMPORTANT");
+                            }
+                        }
+                        default -> throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+                    }
+                });
+
+                processed++;
+            } catch (Exception e) {
+                log.warn("Legacy one-by-one bulk mail action failed. action={}, mailId={}", action, mailId, e);
+                failed++;
+            }
+        }
+
+        return new MailBulkResponse(processed, failed);
+    }
+
     private MailBulkResponse applyBulkLabelAction(Long empId,
                                                   MailAccountVO account,
                                                   List<Long> requestedMailIds,

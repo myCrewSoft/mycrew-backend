@@ -13,7 +13,7 @@ public interface AdminJobMapper {
 
     List<RankResponseDTO> selectRanks();
 
-    /** 직급 ID 자동 생성 (RANK_NN 형식, DB 규약 준수) */
+    /** 직급 ID 자동 생성 (JOB01 형식, DB 길이 제약 준수) */
     String selectNextRankCode();
 
     RankResponseDTO selectRankById(@Param("rankId") String rankId);

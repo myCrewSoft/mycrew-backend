@@ -26,14 +26,14 @@
         ORDER BY G.SORT_ORDER ASC, G.JOB_GRD_CD ASC
     </select>
 
-    <!-- 직급 ID 자동 생성: RANK_ + 2자리 0패딩 일련번호 (부서 DEPT_NNN 방식과 동일 규약). -->
+    <!-- 직급 ID 자동 생성: JOB_GRD_CD VARCHAR2(5) 제약에 맞춰 JOB + 2자리 일련번호를 사용한다. -->
     <!-- 비활성(USE_YN='N') 행까지 포함해 MAX를 계산하여 PK 재사용/충돌을 방지한다. -->
     <select id="selectNextRankCode" resultType="java.lang.String">
-        SELECT 'RANK_' || LPAD(
+        SELECT 'JOB' || LPAD(
             NVL((
-                SELECT MAX(TO_NUMBER(SUBSTR(TRIM(JOB_GRD_CD), 6)))
+                SELECT MAX(TO_NUMBER(SUBSTR(TRIM(JOB_GRD_CD), 4)))
                 FROM TB_JOB_GRADE
-                WHERE REGEXP_LIKE(TRIM(JOB_GRD_CD), '^RANK_[0-9]+$')
+                WHERE REGEXP_LIKE(TRIM(JOB_GRD_CD), '^JOB[0-9]+$')
             ), 0) + 1,
             2,
             '0'
