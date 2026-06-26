@@ -36,7 +36,7 @@
         INSERT INTO TB_MTNG_MOM (
             MOM_ID, MTNG_ID, MOM_CN, MOM_STTUS_CD, EDTR_ID, CREAT_DT
         ) VALUES (
-            #{momId}, #{mtngId}, #{momCn}, '01', #{edtrId}, SYSDATE
+            #{momId}, #{mtngId}, #{momCn}, #{momSttusCd}, #{edtrId}, SYSDATE
         )
     </insert>
 
@@ -49,6 +49,12 @@
         LEFT JOIN TB_EMPLOYEE HE ON HE.EMP_ID = H.EDTR_ID
         WHERE M.MTNG_ID = #{mtngId}
         AND M.DEL_DT IS NULL
+        AND M.MOM_ID = (
+            SELECT MAX(MOM_ID)
+            FROM TB_MTNG_MOM
+            WHERE MTNG_ID = #{mtngId}
+            AND DEL_DT IS NULL
+        )
     </select>
 
     <update id="updateMtngMom">

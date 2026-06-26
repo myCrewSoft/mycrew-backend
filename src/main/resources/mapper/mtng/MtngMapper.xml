@@ -77,8 +77,12 @@
 	        LEFT JOIN TB_VIDEO_CONF V
 	            ON V.MTNG_ID = M.MTNG_ID
 	        LEFT JOIN TB_MTNG_MOM MM
-	            ON MM.MTNG_ID = M.MTNG_ID
-	           AND MM.DEL_DT IS NULL
+	            ON MM.MOM_ID = (
+	                SELECT MAX(MOM_ID)
+	                FROM TB_MTNG_MOM
+	                WHERE MTNG_ID = M.MTNG_ID
+	                AND DEL_DT IS NULL
+	            )
 	        LEFT JOIN TB_CONF_RM_RSRV R
 	            ON R.RSRV_ID = M.CONF_RM_RSRV_ID
 	        LEFT JOIN TB_CONF_RM CR
@@ -140,8 +144,12 @@
         LEFT JOIN TB_VIDEO_CONF V
             ON V.MTNG_ID = M.MTNG_ID
         LEFT JOIN TB_MTNG_MOM MM
-            ON MM.MTNG_ID = M.MTNG_ID
-            AND MM.DEL_DT IS NULL
+            ON MM.MOM_ID = (
+                SELECT MAX(MOM_ID)
+                FROM TB_MTNG_MOM
+                WHERE MTNG_ID = M.MTNG_ID
+                AND DEL_DT IS NULL
+            )
         LEFT JOIN TB_VIDEO_RCRDG VR
             ON VR.VCONF_ID = V.VCONF_ID
             AND VR.DEL_DT IS NULL
@@ -232,8 +240,12 @@
         LEFT JOIN TB_CONF_RM CR
             ON CR.CONF_RM_ID = R.CONF_RM_ID
         LEFT JOIN TB_MTNG_MOM MM
-            ON MM.MTNG_ID = M.MTNG_ID
-            AND MM.DEL_DT IS NULL
+            ON MM.MOM_ID = (
+                SELECT MAX(MOM_ID)
+                FROM TB_MTNG_MOM
+                WHERE MTNG_ID = M.MTNG_ID
+                AND DEL_DT IS NULL
+            )
         WHERE V.VCONF_ID = #{vconfId}
     </select>
 </mapper>

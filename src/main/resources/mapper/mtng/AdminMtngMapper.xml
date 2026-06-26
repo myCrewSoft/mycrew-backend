@@ -38,7 +38,13 @@
                 LEFT JOIN TB_VIDEO_CONF VC   ON VC.MTNG_ID = M.MTNG_ID
                 LEFT JOIN TB_CONF_RM_RSRV RR ON RR.RSRV_ID = M.CONF_RM_RSRV_ID
                 LEFT JOIN TB_CONF_RM CR      ON CR.CONF_RM_ID = RR.CONF_RM_ID
-                LEFT JOIN TB_MTNG_MOM MOM    ON MOM.MTNG_ID = M.MTNG_ID
+                LEFT JOIN TB_MTNG_MOM MOM
+                    ON MOM.MOM_ID = (
+                        SELECT MAX(MOM_ID)
+                        FROM TB_MTNG_MOM
+                        WHERE MTNG_ID = M.MTNG_ID
+                        AND DEL_DT IS NULL
+                    )
                 WHERE 1 = 1
                 <if test="includeDeleted == false">
                     AND M.DEL_YN = 'N'
@@ -81,7 +87,13 @@
         FROM TB_MTNG M
         LEFT JOIN TB_EMPLOYEE E    ON E.EMP_ID = M.CRTR_ID
         LEFT JOIN TB_VIDEO_CONF VC ON VC.MTNG_ID = M.MTNG_ID
-        LEFT JOIN TB_MTNG_MOM MOM  ON MOM.MTNG_ID = M.MTNG_ID
+        LEFT JOIN TB_MTNG_MOM MOM
+            ON MOM.MOM_ID = (
+                SELECT MAX(MOM_ID)
+                FROM TB_MTNG_MOM
+                WHERE MTNG_ID = M.MTNG_ID
+                AND DEL_DT IS NULL
+            )
         WHERE 1 = 1
         <if test="includeDeleted == false">
             AND M.DEL_YN = 'N'
@@ -133,7 +145,13 @@
         LEFT JOIN TB_VIDEO_CONF VC   ON VC.MTNG_ID = M.MTNG_ID
         LEFT JOIN TB_CONF_RM_RSRV RR ON RR.RSRV_ID = M.CONF_RM_RSRV_ID
         LEFT JOIN TB_CONF_RM CR      ON CR.CONF_RM_ID = RR.CONF_RM_ID
-        LEFT JOIN TB_MTNG_MOM MOM    ON MOM.MTNG_ID = M.MTNG_ID
+        LEFT JOIN TB_MTNG_MOM MOM
+            ON MOM.MOM_ID = (
+                SELECT MAX(MOM_ID)
+                FROM TB_MTNG_MOM
+                WHERE MTNG_ID = M.MTNG_ID
+                AND DEL_DT IS NULL
+            )
         WHERE M.MTNG_ID = #{mtngId}
     </select>
 
@@ -169,7 +187,13 @@
                           AND M.DEL_YN = 'N'
                      THEN 1 ELSE 0 END) AS AI_PENDING_CNT
         FROM TB_MTNG M
-        LEFT JOIN TB_MTNG_MOM MOM ON MOM.MTNG_ID = M.MTNG_ID
+        LEFT JOIN TB_MTNG_MOM MOM
+            ON MOM.MOM_ID = (
+                SELECT MAX(MOM_ID)
+                FROM TB_MTNG_MOM
+                WHERE MTNG_ID = M.MTNG_ID
+                AND DEL_DT IS NULL
+            )
     </select>
 
     <select id="selectMtngTypeStats" resultType="MtngAnalyticsVO">
@@ -214,7 +238,13 @@
                 )
             END
         FROM TB_MTNG M
-        LEFT JOIN TB_MTNG_MOM MOM ON MOM.MTNG_ID = M.MTNG_ID
+        LEFT JOIN TB_MTNG_MOM MOM
+            ON MOM.MOM_ID = (
+                SELECT MAX(MOM_ID)
+                FROM TB_MTNG_MOM
+                WHERE MTNG_ID = M.MTNG_ID
+                AND DEL_DT IS NULL
+            )
         WHERE M.DEL_YN = 'N'
           AND M.END_DT &lt; SYSDATE
     </select>
