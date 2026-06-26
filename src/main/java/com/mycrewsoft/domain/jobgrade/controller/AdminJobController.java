@@ -28,7 +28,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/admin")
 @RequiredArgsConstructor
-@Tag(name = "Admin Job API", description = "관리자 직급 관리 API")
+@Tag(name = "관리자 직급 관리", description = "관리자 직급 관리 API")
 public class AdminJobController {
 
     private final AdminJobService adminJobService;

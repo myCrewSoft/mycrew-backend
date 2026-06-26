@@ -17,6 +17,9 @@ import java.util.Locale;
 
 import org.junit.jupiter.api.Test;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 class MailReadPerformanceTest {
 
     private static final int DEFAULT_TARGET_COUNT = 2_000;
@@ -24,7 +27,11 @@ class MailReadPerformanceTest {
 
     @Test
     void compareSingleRowLoopWithIndexedBatchMailProcessing() throws Exception {
-        assumeTrue(Boolean.getBoolean("mail.performance.enabled"),
+        boolean enabled = Boolean.getBoolean("mail.performance.enabled");
+        if (!enabled) {
+            log.info("Mail performance benchmark skipped. Add VM option -Dmail.performance.enabled=true to run it.");
+        }
+        assumeTrue(enabled,
                 "Run with -Dmail.performance.enabled=true to execute the mail performance benchmark.");
 
         int targetCount = Integer.getInteger("mail.performance.target-count", DEFAULT_TARGET_COUNT);
@@ -646,13 +653,12 @@ class MailReadPerformanceTest {
     }
 
     private void printReport(int targetCount, List<ScenarioResult> results) {
-        System.out.println();
-        System.out.println("===== Mail Performance Benchmark =====");
-        System.out.println("targetCount=" + targetCount);
+        log.info("===== Mail Performance Benchmark =====");
+        log.info("targetCount={}", targetCount);
         for (ScenarioResult result : results) {
             printScenario(result);
         }
-        System.out.println("======================================");
+        log.info("======================================");
     }
 
     private void printScenario(ScenarioResult result) {
@@ -660,19 +666,17 @@ class MailReadPerformanceTest {
         double reduction = 100.0 * (result.singleRowLoop().sqlExecutions() - result.indexedBatch().sqlExecutions())
                 / result.singleRowLoop().sqlExecutions();
 
-        System.out.println();
-        System.out.println("scenario=" + result.scenario());
+        log.info("scenario={}", result.scenario());
         printMeasurement(result.singleRowLoop());
         printMeasurement(result.indexedBatch());
-        System.out.printf(Locale.ROOT, "elapsedImprovement=%.2fx%n", improvement);
-        System.out.printf(Locale.ROOT, "sqlExecutionReduction=%.2f%%%n", reduction);
+        log.info("elapsedImprovement={}", String.format(Locale.ROOT, "%.2fx", improvement));
+        log.info("sqlExecutionReduction={}", String.format(Locale.ROOT, "%.2f%%", reduction));
     }
 
     private void printMeasurement(Measurement measurement) {
-        System.out.printf(Locale.ROOT,
-                "%s: elapsed=%.3f ms, sqlExecutions=%d, affectedRows=%d%n",
+        log.info("{}: elapsed={} ms, sqlExecutions={}, affectedRows={}",
                 measurement.name(),
-                measurement.elapsedMillis(),
+                String.format(Locale.ROOT, "%.3f", measurement.elapsedMillis()),
                 measurement.sqlExecutions(),
                 measurement.affectedRows());
     }

@@ -26,7 +26,7 @@ class AdminJobControllerTest {
         AdminJobService service = Mockito.mock(AdminJobService.class);
         AdminJobController controller = new AdminJobController(service);
         RankResponseDTO rank = new RankResponseDTO();
-        rank.setRankId("JG001");
+        rank.setRankId("JOB01");
         when(service.getRanks()).thenReturn(List.of(rank));
 
         ApiResponse<List<RankResponseDTO>> response = controller.getRanks();
@@ -42,7 +42,7 @@ class AdminJobControllerTest {
         AdminJobController controller = new AdminJobController(service);
         RankCreateRequestDTO request = new RankCreateRequestDTO();
         RankResponseDTO rank = new RankResponseDTO();
-        rank.setRankId("JG001");
+        rank.setRankId("JOB01");
         when(service.createRank(request)).thenReturn(rank);
 
         ApiResponse<RankResponseDTO> response = controller.createRank(request);
@@ -58,14 +58,14 @@ class AdminJobControllerTest {
         AdminJobController controller = new AdminJobController(service);
         RankUpdateRequestDTO request = new RankUpdateRequestDTO();
         RankResponseDTO rank = new RankResponseDTO();
-        rank.setRankId("JG001");
-        when(service.updateRank("JG001", request)).thenReturn(rank);
+        rank.setRankId("JOB01");
+        when(service.updateRank("JOB01", request)).thenReturn(rank);
 
-        ApiResponse<RankResponseDTO> response = controller.updateRank("JG001", request);
+        ApiResponse<RankResponseDTO> response = controller.updateRank("JOB01", request);
 
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData()).isEqualTo(rank);
-        verify(service).updateRank("JG001", request);
+        verify(service).updateRank("JOB01", request);
     }
 
     @Test
@@ -73,12 +73,12 @@ class AdminJobControllerTest {
         AdminJobService service = Mockito.mock(AdminJobService.class);
         AdminJobController controller = new AdminJobController(service);
         RankDeleteRequestDTO request = new RankDeleteRequestDTO();
-        request.setReplacementRankId("JG002");
+        request.setReplacementRankId("JOB02");
 
-        ApiResponse<String> response = controller.deleteRank("JG001", request);
+        ApiResponse<String> response = controller.deleteRank("JOB01", request);
 
         assertThat(response.isSuccess()).isTrue();
-        verify(service).deleteRank("JG001", request);
+        verify(service).deleteRank("JOB01", request);
     }
 
     @Test
@@ -87,14 +87,14 @@ class AdminJobControllerTest {
         AdminJobController controller = new AdminJobController(service);
         RankAssignRequestDTO request = new RankAssignRequestDTO();
         RankResponseDTO rank = new RankResponseDTO();
-        rank.setRankId("JG001");
-        when(service.assignRank("JG001", request)).thenReturn(rank);
+        rank.setRankId("JOB01");
+        when(service.assignRank("JOB01", request)).thenReturn(rank);
 
-        ApiResponse<RankResponseDTO> response = controller.assignRank("JG001", request);
+        ApiResponse<RankResponseDTO> response = controller.assignRank("JOB01", request);
 
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData()).isEqualTo(rank);
-        verify(service).assignRank("JG001", request);
+        verify(service).assignRank("JOB01", request);
     }
 
     @Test
@@ -103,13 +103,13 @@ class AdminJobControllerTest {
         AdminJobController controller = new AdminJobController(service);
         RankRevokeRequestDTO request = new RankRevokeRequestDTO();
         RankResponseDTO rank = new RankResponseDTO();
-        rank.setRankId("JG001");
-        when(service.revokeRank("JG001", request)).thenReturn(rank);
+        rank.setRankId("JOB01");
+        when(service.revokeRank("JOB01", request)).thenReturn(rank);
 
-        ApiResponse<RankResponseDTO> response = controller.revokeRank("JG001", request);
+        ApiResponse<RankResponseDTO> response = controller.revokeRank("JOB01", request);
 
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData()).isEqualTo(rank);
-        verify(service).revokeRank("JG001", request);
+        verify(service).revokeRank("JOB01", request);
     }
 }

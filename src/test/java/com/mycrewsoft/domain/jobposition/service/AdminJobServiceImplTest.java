@@ -47,7 +47,7 @@ class AdminJobServiceImplTest {
     @Test
     void getRanksChecksJobManagePermissionAndReturnsRanks() {
         RankResponseDTO rank = new RankResponseDTO();
-        rank.setRankId("JG001");
+        rank.setRankId("JOB01");
         when(adminJobMapper.selectRanks()).thenReturn(List.of(rank));
 
         AdminJobServiceImpl service = service();
@@ -61,7 +61,8 @@ class AdminJobServiceImplTest {
     @Test
     void createRankRejectsDuplicateRankId() {
         RankCreateRequestDTO request = createRequest();
-        when(adminJobMapper.selectRankById("JG001")).thenReturn(new RankResponseDTO());
+        when(adminJobMapper.selectNextRankCode()).thenReturn("JOB01");
+        when(adminJobMapper.selectRankById("JOB01")).thenReturn(new RankResponseDTO());
 
         AdminJobServiceImpl service = service();
 
@@ -78,26 +79,26 @@ class AdminJobServiceImplTest {
         RankUpdateRequestDTO request = new RankUpdateRequestDTO();
         request.setRankName("Senior Manager");
         request.setSortOrder(2);
-        RankResponseDTO existing = rank("JG001", "Manager", 1);
-        RankResponseDTO updated = rank("JG001", "Senior Manager", 2);
-        when(adminJobMapper.selectRankById("JG001")).thenReturn(existing, updated);
+        RankResponseDTO existing = rank("JOB01", "Manager", 1);
+        RankResponseDTO updated = rank("JOB01", "Senior Manager", 2);
+        when(adminJobMapper.selectRankById("JOB01")).thenReturn(existing, updated);
 
         AdminJobServiceImpl service = service();
 
-        RankResponseDTO response = service.updateRank("JG001", request);
+        RankResponseDTO response = service.updateRank("JOB01", request);
 
         assertThat(response).isEqualTo(updated);
-        verify(adminJobMapper).updateRank("JG001", "Senior Manager", 2, null);
+        verify(adminJobMapper).updateRank("JOB01", "Senior Manager", 2, null);
     }
 
     @Test
     void deleteRankWithAssignedEmployeesRequiresReplacementRank() {
-        when(adminJobMapper.selectRankById("JG001")).thenReturn(rank("JG001", "Manager", 1));
-        when(adminJobMapper.selectEmpIdsByRankId("JG001")).thenReturn(List.of(20260001L));
+        when(adminJobMapper.selectRankById("JOB01")).thenReturn(rank("JOB01", "Manager", 1));
+        when(adminJobMapper.selectEmpIdsByRankId("JOB01")).thenReturn(List.of(20260001L));
 
         AdminJobServiceImpl service = service();
 
-        assertThatThrownBy(() -> service.deleteRank("JG001", new RankDeleteRequestDTO()))
+        assertThatThrownBy(() -> service.deleteRank("JOB01", new RankDeleteRequestDTO()))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
@@ -108,19 +109,19 @@ class AdminJobServiceImplTest {
     @Test
     void deleteRankTransfersEmployeesDisablesRankAndRefreshesAffectedEmployees() {
         RankDeleteRequestDTO request = new RankDeleteRequestDTO();
-        request.setReplacementRankId("JG002");
+        request.setReplacementRankId("JOB02");
         List<Long> affectedEmpIds = List.of(20260001L, 20260002L);
-        when(adminJobMapper.selectRankById("JG001")).thenReturn(rank("JG001", "Manager", 1));
-        when(adminJobMapper.selectRankById("JG002")).thenReturn(rank("JG002", "Staff", 2));
-        when(adminJobMapper.selectEmpIdsByRankId("JG001")).thenReturn(affectedEmpIds);
+        when(adminJobMapper.selectRankById("JOB01")).thenReturn(rank("JOB01", "Manager", 1));
+        when(adminJobMapper.selectRankById("JOB02")).thenReturn(rank("JOB02", "Staff", 2));
+        when(adminJobMapper.selectEmpIdsByRankId("JOB01")).thenReturn(affectedEmpIds);
 
         AdminJobServiceImpl service = service();
 
-        service.deleteRank("JG001", request);
+        service.deleteRank("JOB01", request);
 
         InOrder order = inOrder(adminJobMapper, rbacAuthorizationChangeService);
-        order.verify(adminJobMapper).updateEmployeeRank("JG001", "JG002");
-        order.verify(adminJobMapper).disableRank("JG001", null);
+        order.verify(adminJobMapper).updateEmployeeRank("JOB01", "JOB02");
+        order.verify(adminJobMapper).disableRank("JOB01", null);
         order.verify(rbacAuthorizationChangeService).refreshEmployeesPermissions(affectedEmpIds);
     }
 
@@ -128,16 +129,16 @@ class AdminJobServiceImplTest {
     void assignRankUpdatesEmployeesAndRefreshesPermissions() {
         RankAssignRequestDTO request = new RankAssignRequestDTO();
         request.setEmpIds(List.of(20260001L, 20260002L));
-        RankResponseDTO assignedRank = rank("JG001", "Manager", 1);
-        when(adminJobMapper.selectRankById("JG001")).thenReturn(assignedRank);
+        RankResponseDTO assignedRank = rank("JOB01", "Manager", 1);
+        when(adminJobMapper.selectRankById("JOB01")).thenReturn(assignedRank);
         when(adminJobMapper.countEnabledEmployeesByIds(request.getEmpIds())).thenReturn(2);
 
         AdminJobServiceImpl service = service();
 
-        RankResponseDTO response = service.assignRank("JG001", request);
+        RankResponseDTO response = service.assignRank("JOB01", request);
 
         assertThat(response).isEqualTo(assignedRank);
-        verify(adminJobMapper).updateEmployeesRank("JG001", request.getEmpIds());
+        verify(adminJobMapper).updateEmployeesRank("JOB01", request.getEmpIds());
         verify(rbacAuthorizationChangeService).refreshEmployeesPermissions(request.getEmpIds());
     }
 
@@ -145,12 +146,12 @@ class AdminJobServiceImplTest {
     void assignRankRejectsMissingEmployees() {
         RankAssignRequestDTO request = new RankAssignRequestDTO();
         request.setEmpIds(List.of(20260001L, 20260002L));
-        when(adminJobMapper.selectRankById("JG001")).thenReturn(rank("JG001", "Manager", 1));
+        when(adminJobMapper.selectRankById("JOB01")).thenReturn(rank("JOB01", "Manager", 1));
         when(adminJobMapper.countEnabledEmployeesByIds(request.getEmpIds())).thenReturn(1);
 
         AdminJobServiceImpl service = service();
 
-        assertThatThrownBy(() -> service.assignRank("JG001", request))
+        assertThatThrownBy(() -> service.assignRank("JOB01", request))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.USER_NOT_FOUND);
@@ -162,17 +163,16 @@ class AdminJobServiceImplTest {
     void revokeRankTransfersSelectedEmployeesToReplacementRankAndRefreshesPermissions() {
         RankRevokeRequestDTO request = new RankRevokeRequestDTO();
         request.setEmpIds(List.of(20260001L, 20260002L));
-        RankResponseDTO sourceRank = rank("JG001", "Manager", 1);
-        when(adminJobMapper.selectRankById("JG001")).thenReturn(sourceRank);
-        when(adminJobMapper.selectRankById("JG002")).thenReturn(rank("JG002", "Staff", 2));
-        when(adminJobMapper.countEmployeesByRankAndIds("JG001", request.getEmpIds())).thenReturn(2);
+        RankResponseDTO sourceRank = rank("JOB01", "Manager", 1);
+        when(adminJobMapper.selectRankById("JOB01")).thenReturn(sourceRank);
+        when(adminJobMapper.countEmployeesByRankAndIds("JOB01", request.getEmpIds())).thenReturn(2);
 
         AdminJobServiceImpl service = service();
 
-        RankResponseDTO response = service.revokeRank("JG001", request);
+        RankResponseDTO response = service.revokeRank("JOB01", request);
 
         assertThat(response).isEqualTo(sourceRank);
-        verify(adminJobMapper).updateSelectedEmployeesRank("JG001", request.getEmpIds());
+        verify(adminJobMapper).updateSelectedEmployeesRank("JOB01", request.getEmpIds());
         verify(rbacAuthorizationChangeService).refreshEmployeesPermissions(request.getEmpIds());
     }
 

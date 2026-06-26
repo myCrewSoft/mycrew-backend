@@ -10,7 +10,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Schema(description = "직급 정보 응답 DTO")
 public class RankResponseDTO {
-	@Schema(description = "직급 ID", example = "RANK_01")
+	@Schema(description = "직급 ID", example = "JOB01")
     private String rankId;
 	@Schema(description = "직급 이름", example = "사원")
     private String rankName;
