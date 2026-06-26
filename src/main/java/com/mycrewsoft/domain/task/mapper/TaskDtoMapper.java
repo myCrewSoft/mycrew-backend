@@ -22,7 +22,6 @@ public interface TaskDtoMapper {
     /** TaskCreateRequest → TaskVO 변환 (Service에서 frstRgtrId, lastMdfrId, taskStatCd 직접 세팅) */
     @Mapping(target = "taskId",         ignore = true)
     @Mapping(target = "taskStatCd",     ignore = true)
-    @Mapping(target = "taskPrgrsSmry",  ignore = true)
     @Mapping(target = "frstRegDt",      ignore = true)
     @Mapping(target = "frstRgtrId",     ignore = true)
     @Mapping(target = "lastMdfcnDt",    ignore = true)

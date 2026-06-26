@@ -1,6 +1,8 @@
 package com.mycrewsoft.domain.task.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -47,6 +49,10 @@ public class TaskCreateRequest {
     @NotBlank
     @Schema(description = "중요도코드", example = "01")
     private String taskImprtncCd;
+
+    @Min(0) @Max(100)
+    @Schema(description = "진척률(0~100)", example = "0")
+    private Integer taskPrgrsSmry;
 
     @Schema(description = "업무 시작일시")
     private LocalDateTime taskBgngDt;
