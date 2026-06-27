@@ -114,7 +114,7 @@ public class FileServiceImpl implements FileService {
 	public Resource download(Long atchFileDtlId) {
 		//파일이 존재하는지 정보 조회
 		FileDtlVo fileDtlVo = mapper.selectDtlById(atchFileDtlId);
-		if(fileDtlVo == null || fileDtlVo.getDelYn() == "Y") {
+		if(fileDtlVo == null || "Y".equals(fileDtlVo.getDelYn())) {
 			throw new CustomException(ErrorCode.FILE_NOT_FOUND);
 		}
 		

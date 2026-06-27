@@ -76,6 +76,28 @@
         VALUES (#{rcrdgId}, #{vconfId}, #{rcrdgAtchFileId}, SYSDATE)
     </insert>
 
+    <select id="countAccessibleRcrdg" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_VIDEO_RCRDG R
+        INNER JOIN TB_VIDEO_CONF V
+            ON V.VCONF_ID = R.VCONF_ID
+        INNER JOIN TB_MTNG M
+            ON M.MTNG_ID = V.MTNG_ID
+        WHERE R.VCONF_ID = #{vconfId}
+          AND R.RCRDG_ATCH_FILE_ID = #{atchFileDtlId}
+          AND R.DEL_DT IS NULL
+          AND M.DEL_YN = 'N'
+          AND (
+              M.CRTR_ID = #{empId}
+              OR EXISTS (
+                  SELECT 1
+                  FROM TB_MTNG_PTCPT P
+                  WHERE P.MTNG_ID = M.MTNG_ID
+                    AND P.EMP_ID = #{empId}
+              )
+          )
+    </select>
+
     <select id="selectConfsStartingSoon" resultMap="meetingReminderResultMap">
         SELECT
             V.VCONF_ID,

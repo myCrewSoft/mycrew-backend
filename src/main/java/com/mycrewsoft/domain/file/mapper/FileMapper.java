@@ -21,7 +21,7 @@ public interface FileMapper {
 	int deleteDtl(@Param("atchFileDtlId") Long atchFileDtlId, @Param("dltrsId") Long dltrsId);
 	
 	//파일 정보 조회
-	FileDtlVo selectDtlById(Long atchFiledtlId);
+	FileDtlVo selectDtlById(@Param("atchFileDtlId") Long atchFileDtlId);
 	
 	//파일 복원 (파일 삭제 상태 변경)
 	int restoreFile(Long atchFileDtlId);
