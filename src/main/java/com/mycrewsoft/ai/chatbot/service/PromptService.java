@@ -25,6 +25,11 @@ public interface PromptService {
      */
     public String build(String question, String reference);
 
+    default String buildChunkSummary(String chatLogChunk) {
+        throw new UnsupportedOperationException("buildChunkSummary() not implemented");
+    }
+
+
     /**
      * 일반 질문용 프롬프트 생성 메서드 (Non-RAG)
      *
