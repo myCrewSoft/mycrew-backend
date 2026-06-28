@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.mycrewsoft.ai.chatbot.ChatbotTools;
 import com.mycrewsoft.ai.chatbot.service.PromptService;
 import com.mycrewsoft.ai.chatbot.support.ApiSupportManager;
 import com.mycrewsoft.domain.project.service.ProjectService;
@@ -39,6 +40,8 @@ public class ChatGptController {
 
 	@Autowired
 	private ApiSupportManager apiSupportManager; // Stop 요청 관리용 컴포넌트
+	@Autowired
+	private ChatbotTools chatbotTools;
 	
 	@Autowired
 	@Qualifier("promptApprovalService")
@@ -131,12 +134,22 @@ public class ChatGptController {
 		
 		// Spring AI ChatClient를 사용하여 사용자 메시지 전송
 		// Flux<String>으로 AI의 응답을 스트리밍
-		Flux<String> origin = chatClient.prompt()
-				.user(
-					aiMessage
-				).stream() // 스트리밍 모드 활성화
-				.content() // 응답 내용 추출
-				.delayElements(Duration.ofMillis(20)); // 부드러운 전송 위해 딜레이 추가
+		Flux<String> origin;
+
+		if ("APPR".equalsIgnoreCase(aiType) || "MEET".equalsIgnoreCase(aiType)
+				|| "REPT".equalsIgnoreCase(aiType) || "PORK".equalsIgnoreCase(aiType)) {
+			origin = chatClient.prompt()
+					.user(aiMessage)
+					.stream().content()
+					.delayElements(Duration.ofMillis(20));
+		} else {
+			// 일반 챗봇 - Tool 사용
+			origin = chatClient.prompt()
+					.user(aiMessage)
+					.tools(chatbotTools)
+					.stream().content()
+					.delayElements(Duration.ofMillis(20));
+		}
 
 		return origin
 				// Stop 버튼 클릭 시 스트리밍 중단
