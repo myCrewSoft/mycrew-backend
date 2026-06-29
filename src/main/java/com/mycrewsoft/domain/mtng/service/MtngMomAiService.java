@@ -55,8 +55,7 @@ public class MtngMomAiService {
         }
 
         // 회의록 AI 초안 재생성 (실패 시 수동 재시도, 수정 이력 저장 포함)
-        public void regenerateAiDraft(Long mtngId) {
-                Long empId = SecurityUtil.getCurrentEmpId();
+        public void regenerateAiDraft(Long mtngId, Long empId) {
 
                 MtngDetailVO mtngVO = mtngMapper.selectMtngDetail(mtngId);
                 if (mtngVO == null)
