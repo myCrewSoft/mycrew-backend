@@ -13,6 +13,4 @@ public interface VideoConfService {
     // 화상회의 종료 처리 (퇴장 로그 정리 + AI 회의록 초안 생성)
     void endConf(Long vconfId);
 
-    // 녹취록 파일 저장
-    void saveRcrdg(Long vconfId, Long atchFileId);
 }

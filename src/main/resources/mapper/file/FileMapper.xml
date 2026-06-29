@@ -62,13 +62,17 @@
 	
 <select id="selectDtlById" resultType="com.mycrewsoft.domain.file.vo.FileDtlVo">
 	SELECT
+		ATCH_FILE_DTL_ID,
 		ATCH_FILE_ID,
+		ORGNL_FILE_NM,
 		SAVE_PATH_NM,
 		SAVE_FILE_NM,
 		ATCH_FILE_TY_CD,
+		FILE_EXTSN,
+		FILE_SZ,
 		DEL_YN
 	FROM TB_CMMN_ATCH_FILE_DTL
-	WHERE ATCH_FILE_DTL_ID = #{atchFilDtlId}
+	WHERE ATCH_FILE_DTL_ID = #{atchFileDtlId}
 </select>
 
 <update id="restoreFile">

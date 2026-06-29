@@ -133,7 +133,9 @@
             V.VCONF_ID,
             V.ROOM_NM,
             MM.MOM_ID,
-            MM.MOM_STTUS_CD
+            MM.MOM_STTUS_CD,
+            VR.RCRDG_ATCH_FILE_ID,
+            VR.CREAT_DT AS RCRDG_CREAT_DT
         FROM TB_MTNG M
         LEFT JOIN TB_EMPLOYEE E
             ON E.EMP_ID = M.CRTR_ID
@@ -151,8 +153,12 @@
                 AND DEL_DT IS NULL
             )
         LEFT JOIN TB_VIDEO_RCRDG VR
-            ON VR.VCONF_ID = V.VCONF_ID
-            AND VR.DEL_DT IS NULL
+            ON VR.RCRDG_ID = (
+                SELECT MAX(VR2.RCRDG_ID)
+                FROM TB_VIDEO_RCRDG VR2
+                WHERE VR2.VCONF_ID = V.VCONF_ID
+                  AND VR2.DEL_DT IS NULL
+            )
         WHERE M.MTNG_ID = #{mtngId}
             AND M.DEL_YN = 'N'
     </select>

@@ -68,19 +68,36 @@ public class MeetingEndedEventListener {
         }
     }
 
-    private String buildReference(Long vconfId, MtngDetailVO detailVO,
-            List<MtngPtcptDetailVO> ptcptList) {
-        List<VideoChatLogVO> chatLogs =
-                videoConfMapper.selectChatLogsByVconfId(vconfId);
+    private String buildReference(Long vconfId, MtngDetailVO detailVO, List<MtngPtcptDetailVO> ptcptList) {
+        List<VideoChatLogVO> chatLogs = videoConfMapper.selectChatLogsByVconfId(vconfId);
 
         String ptcptNames = ptcptList.stream()
                 .map(MtngPtcptDetailVO::getEmpNm)
                 .collect(Collectors.joining(", "));
 
-        String logs = chatLogs.stream()
+        // 1단계: 대화 로그를 30줄씩 청크로 분할
+        List<String> logLines = chatLogs.stream()
                 .map(log -> "[" + log.getMbrId() + "] " + log.getSpkngCn())
-                .collect(Collectors.joining("\n"));
+                .collect(Collectors.toList());
 
+        int chunkSize = 30;
+        StringBuilder summaries = new StringBuilder();
+
+        // 2단계: 청크별 LLM 요약 호출
+        for (int i = 0; i < logLines.size(); i += chunkSize) {
+            List<String> chunk = logLines.subList(i, Math.min(i + chunkSize, logLines.size()));
+            String chunkText = String.join("\n", chunk);
+
+            String summary = chatClient.prompt()
+                    .user(promptMeetingService.buildChunkSummary(chunkText))
+                    .call()
+                    .content();
+
+            summaries.append("[요약 ").append(i / chunkSize + 1).append("]\n");
+            summaries.append(summary).append("\n\n");
+        }
+
+        // 3단계: 요약 결과로 reference 구성
         return """
                 회의명: %s
                 일시: %s ~ %s
@@ -88,7 +105,7 @@ public class MeetingEndedEventListener {
                 주재자: %s
                 참석자: %s
 
-                [대화 로그]
+                [대화 로그 요약]
                 %s
                 """.formatted(
                 detailVO.getMtngNm(),
@@ -97,7 +114,8 @@ public class MeetingEndedEventListener {
                 detailVO.getConfRmNm() != null ? detailVO.getConfRmNm() : "온라인",
                 detailVO.getCrtrNm(),
                 ptcptNames,
-                logs
+                summaries.toString()
         );
     }
+
 }

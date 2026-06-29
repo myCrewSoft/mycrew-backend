@@ -36,6 +36,12 @@ public interface VideoConfMapper {
     // 녹취록 단건 등록
     void insertRcrdg(VideoRcrdgVO vo);
 
+    // 현재 사용자가 해당 회의 녹취 파일을 조회할 수 있는지 확인
+    int countAccessibleRcrdg(
+            @Param("vconfId") Long vconfId,
+            @Param("atchFileDtlId") Long atchFileDtlId,
+            @Param("empId") Long empId);
+
     // 회의 시작 10분 전 알림 (TB_MTNG 기준)
     List<MeetingReminderVO> selectConfsStartingSoon();
 

@@ -4,15 +4,16 @@ import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.domain.mtng.enums.MtngSttus;
 import com.mycrewsoft.domain.mtng.event.MeetingEndedEvent;
+import com.mycrewsoft.domain.mtng.mapper.AdminMtngMapper;
 import com.mycrewsoft.domain.mtng.mapper.MtngMapper;
 import com.mycrewsoft.domain.mtng.service.MtngMomService;
 import com.mycrewsoft.domain.mtng.vo.MtngDetailVO;
 import com.mycrewsoft.domain.mtng.vo.MtngPtcptDetailVO;
+import com.mycrewsoft.domain.video.config.LiveKitRoomService;
 import com.mycrewsoft.domain.video.config.LiveKitTokenProvider;
 import com.mycrewsoft.domain.video.dto.response.VideoTokenResponse;
 import com.mycrewsoft.domain.video.mapper.VideoConfMapper;
 import com.mycrewsoft.domain.video.vo.VideoPtcptLogVO;
-import com.mycrewsoft.domain.video.vo.VideoRcrdgVO;
 import com.mycrewsoft.security.util.SecurityUtil;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,11 +31,10 @@ public class VideoConfServiceImpl implements VideoConfService {
     private final VideoConfMapper videoConfMapper;
     private final MtngMapper mtngMapper;
     private final MtngMomService mtngMomService;
+    private final AdminMtngMapper adminMtngMapper;
     private final LiveKitTokenProvider liveKitTokenProvider;
+    private final LiveKitRoomService liveKitRoomService;
     private final ApplicationEventPublisher eventPublisher;
-
-    // chatClient, promptMeetingService 제거
-    // → MeetingEndedEventListener로 이동
 
     @Override
     @Transactional
@@ -107,6 +107,9 @@ public class VideoConfServiceImpl implements VideoConfService {
                 .map(MtngPtcptDetailVO::getEmpId)
                 .toList();
 
+        adminMtngMapper.updateMtngForceEnd(detailVO.getMtngId());
+        liveKitRoomService.deleteRoom(detailVO.getRoomNm());
+
         // 이벤트 발행 후 즉시 응답
         // AI 회의록 생성은 MeetingEndedEventListener가 @Async로 처리
         eventPublisher.publishEvent(
@@ -119,24 +122,4 @@ public class VideoConfServiceImpl implements VideoConfService {
         );
     }
 
-    @Override
-    @Transactional
-    public void saveRcrdg(Long vconfId, Long atchFileId) {
-        Long empId = SecurityUtil.getCurrentEmpId();
-
-        MtngDetailVO detailVO = mtngMapper.selectMtngDetailByVconfId(vconfId);
-        if (detailVO == null) {
-            throw new CustomException(ErrorCode.VIDEO_CONF_NOT_FOUND);
-        }
-
-        if (!detailVO.getCrtrId().equals(empId)) {
-            throw new CustomException(ErrorCode.VIDEO_ACCESS_DENIED);
-        }
-
-        VideoRcrdgVO rcrdgVO = VideoRcrdgVO.builder()
-                .vconfId(vconfId)
-                .rcrdgAtchFileId(atchFileId)
-                .build();
-        videoConfMapper.insertRcrdg(rcrdgVO);
-    }
 }

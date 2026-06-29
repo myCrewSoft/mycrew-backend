@@ -1,18 +1,12 @@
 package com.mycrewsoft.domain.video.service;
 
-import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
-
-import com.mycrewsoft.domain.file.vo.FileDtlVo;
 
 public interface VideoRcrdgFileService {
 
-    // 녹취록 파일 업로드 후 ATCH_FILE_ID 반환
-    Long upload(MultipartFile file);
+    // 회의 생성자 권한을 확인하고 녹취 파일과 회의 연결 정보를 함께 저장
+    Long upload(Long vconfId, MultipartFile file);
 
-    // Resource 반환
-    Resource getResource(Long atchFileId);       
-    
-    // 원본 파일명 반환
-    String getOriginalFileName(Long atchFileId); 
+    // 회의 참여 권한과 파일 연결 관계를 확인한 후 파일 응답 정보 반환
+    VideoRcrdgFileResource getFile(Long vconfId, Long atchFileDtlId);
 }
