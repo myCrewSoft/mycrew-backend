@@ -120,7 +120,7 @@ public class VideoRcrdgFileServiceImpl implements VideoRcrdgFileService {
         }
 
         FileDtlVo dtlVO = fileMapper.selectDtlById(atchFileDtlId);
-        if (dtlVO == null || "Y".equals(dtlVO.getDelYn()) || !"03".equals(dtlVO.getAtchFileTyCd())) {
+        if (dtlVO == null || "Y".equals(dtlVO.getDelYn()) || !FileConstants.VOICE.equals(dtlVO.getAtchFileTyCd())) {
             throw new CustomException(ErrorCode.FILE_NOT_FOUND);
         }
 
