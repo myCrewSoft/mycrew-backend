@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
+import com.mycrewsoft.domain.file.constant.FileConstants;
 
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
@@ -94,7 +95,7 @@ public class VideoRcrdgFileServiceImpl implements VideoRcrdgFileService {
         FileDtlVo dtlVO = new FileDtlVo();
         dtlVO.setAtchFileId(clsfVO.getAtchFileId());
         dtlVO.setOrgnlFileNm(originalFileName);
-        dtlVO.setAtchFileTyCd("03");
+        dtlVO.setAtchFileTyCd(FileConstants.VOICE);
         dtlVO.setSavePathNm(uploadDirectory.toString());
         dtlVO.setSaveFileNm(saveFileNm);
         dtlVO.setFileExtsn(extension);
