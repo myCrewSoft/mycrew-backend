@@ -171,7 +171,10 @@ public class MtngMomServiceImpl implements MtngMomService {
 	@Override
 	@Transactional
 	public void regenerateAiDraft(Long mtngId) {
-		mtngMomAiService.regenerateAiDraft(mtngId);
+		
+		Long empId = SecurityUtil.getCurrentEmpId();
+		
+		mtngMomAiService.regenerateAiDraft(mtngId, empId);
 	}
 
 	// 회의 참여자인지 검증 (회의록 조회/작성/수정 공통)
