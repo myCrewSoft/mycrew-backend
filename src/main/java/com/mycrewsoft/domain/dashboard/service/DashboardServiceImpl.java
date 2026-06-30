@@ -67,12 +67,20 @@ public class DashboardServiceImpl implements DashboardService {
         return """
                 {
                   "widgets": [
-                    { "key": "attendance",      "x": 0, "y": 0, "w": 4, "h": 3 },
-                    { "key": "approval",        "x": 4, "y": 0, "w": 4, "h": 3 },
-                    { "key": "projectProgress", "x": 8, "y": 0, "w": 4, "h": 3 },
-                    { "key": "todaySchedule",   "x": 0, "y": 3, "w": 4, "h": 3 },
-                    { "key": "task",            "x": 4, "y": 3, "w": 4, "h": 3 },
-                    { "key": "board",          "x": 8, "y": 3, "w": 4, "h": 3 }
+                    { "key": "attendance",      "x": 0,  "y": 0, "w": 4, "h": 3 },
+                    { "key": "todaySchedule",   "x": 0,  "y": 3, "w": 4, "h": 4 },
+                    { "key": "meeting",         "x": 0,  "y": 7, "w": 4, "h": 4 },
+    
+                    { "key": "approval",        "x": 4,  "y": 0, "w": 6, "h": 4 },
+                    { "key": "reservation",     "x": 4,  "y": 4, "w": 6, "h": 4 },
+                    { "key": "notification",    "x": 4,  "y": 8, "w": 6, "h": 4 },
+    
+                    { "key": "task",            "x": 10, "y": 0, "w": 6, "h": 4 },
+                    { "key": "board",           "x": 10, "y": 4, "w": 4, "h": 4 },
+                    { "key": "mail",            "x": 10, "y": 8, "w": 6, "h": 5 },
+    
+                    { "key": "messenger",       "x": 16, "y": 0, "w": 4, "h": 4 },
+                    { "key": "projectProgress", "x": 14, "y": 4, "w": 6, "h": 4 }
                   ]
                 }
                 """;
