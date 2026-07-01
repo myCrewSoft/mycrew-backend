@@ -15,7 +15,7 @@ public class AdminMtngListResponse {
     @Schema(description = "회의명")
     private String mtngNm;
 
-    @Schema(description = "회의 진행방식 코드 (MT001: 온라인 / MT002: 오프라인 / MT003: 복합)")
+    @Schema(description = "회의 진행방식 코드 (01: 온라인 / 02: 오프라인 / 03: 복합)")
     private String mtngTypeCd;
 
     @Schema(description = "시작일시")

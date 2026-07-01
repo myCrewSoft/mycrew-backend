@@ -1,4 +1,4 @@
-package com.mycrewsoft.domain.schedule.service;
+	package com.mycrewsoft.domain.schedule.service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -235,6 +235,7 @@ public class ScheduleServiceImpl implements ScheduleService{
 		ResourceContext resource = ResourceContext.builder()
 				.resourceType(ResourceType.SCHEDULE)
 				.build();
+		
 		authorizationService.assertCurrentUserPermission(
 				PermissionCode.SCHEDULE_READ,
 				resource);

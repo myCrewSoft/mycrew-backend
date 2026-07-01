@@ -17,7 +17,7 @@ public class MtngCreateRequest {
     @Schema(description = "회의명")
     private String mtngNm;
 
-    @Schema(description = "회의 진행방식 코드 (MT01:온라인, MT02:오프라인, MT03:혼합)")
+    @Schema(description = "회의 진행방식 코드 (01:온라인, 02:오프라인, 03:혼합)")
     private String mtngTypeCd;
 
     @Schema(description = "시작일시")

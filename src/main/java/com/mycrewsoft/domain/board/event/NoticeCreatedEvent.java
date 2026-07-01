@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public class NoticeCreatedEvent {
+	private final Long boardId;
     private final String postTitle;
     private final List<Long> allEmpIds;  
 }
