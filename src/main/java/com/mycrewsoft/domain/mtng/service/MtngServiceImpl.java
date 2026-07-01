@@ -1,5 +1,12 @@
 package com.mycrewsoft.domain.mtng.service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DateUtil;
@@ -26,14 +33,6 @@ import com.mycrewsoft.security.util.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 @Service
 @RequiredArgsConstructor
 public class MtngServiceImpl implements MtngService {
@@ -56,6 +55,12 @@ public class MtngServiceImpl implements MtngService {
 
         AbstractMtngCreator creator = mtngCreatorFactory.getCreator(typeCode);
 
+        // 본인을 참석자 명단에 추가
+        List<Long> ptcptEmpIds = new ArrayList<>(request.getPtcptEmpIds());
+        if (!ptcptEmpIds.contains(empId)) {
+            ptcptEmpIds.add(empId);
+        }
+        
         MtngCreateContext context = MtngCreateContext.builder()
                 .mtngNm(request.getMtngNm())
                 .mtngTypeCd(typeCode)
@@ -64,7 +69,7 @@ public class MtngServiceImpl implements MtngService {
                 .endDt(request.getEndDt())
                 .confRmId(request.getConfRmId())
                 .rsrvPurps(request.getMtngNm())
-                .ptcptEmpIds(request.getPtcptEmpIds())
+                .ptcptEmpIds(ptcptEmpIds)
                 .build();
 
         return creator.create(context);

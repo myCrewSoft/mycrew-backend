@@ -43,15 +43,15 @@
 
     <!-- 참여자 조회 공통 컬럼 -->
     <sql id="ptcptColumns">
-        TP.TASK_PTCPT_ID,
+	    TP.TASK_PTCPT_ID,
 	    TP.EMP_ID,
-	    ME.EMP_NM,
-	    ME.PRFL_IMG_FILE_ID,
-	    D.DEPT_NM,
-	    JP.JOB_PSTN_NM,
-	    JG.JOB_GRD_NM,
+	    ME.EMP_NM          AS PTCPT_EMP_NM,
+	    ME.PRFL_IMG_FILE_ID AS PTCPT_PRFL_IMG_FILE_ID,
+	    D.DEPT_NM          AS PTCPT_DEPT_NM,
+	    JP.JOB_PSTN_NM     AS PTCPT_JOB_PSTN_NM,
+	    JG.JOB_GRD_NM      AS PTCPT_JOB_GRD_NM,
 	    TP.JOIN_DT
-    </sql>
+	</sql>
 
     <!-- TB_TASK + 담당자 공통 JOIN -->
     <sql id="taskBaseJoin">
@@ -62,7 +62,10 @@
     <!-- 업무 상세 조회용 resultMap (참여자 목록 collection 포함) -->
     <resultMap id="TaskDetailResultMap" type="TaskDetailVO" autoMapping="true">
 	    <id property="taskId" column="TASK_ID"/>
-	    <collection property="ptcptList" ofType="TaskPtcptDetailVO" autoMapping="true">
+	    <collection property="ptcptList"
+	                ofType="TaskPtcptDetailVO"
+	                autoMapping="true"
+	                columnPrefix="PTCPT_">
 	        <id property="taskPtcptId" column="TASK_PTCPT_ID"/>
 	    </collection>
 	</resultMap>
