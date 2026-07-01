@@ -2,6 +2,7 @@
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -12,6 +13,8 @@ import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DateUtil;
 import com.mycrewsoft.domain.employee.mapper.EmployeeMapper;
+import com.mycrewsoft.domain.holiday.mapper.HolidayMapper;
+import com.mycrewsoft.domain.holiday.vo.HolidayVO;
 import com.mycrewsoft.domain.schedule.dto.command.MeetingScheduleCreateCommand;
 import com.mycrewsoft.domain.schedule.dto.command.ProjectScheduleCreateCommand;
 import com.mycrewsoft.domain.schedule.dto.command.TaskScheduleCreateCommand;
@@ -41,6 +44,7 @@ public class ScheduleServiceImpl implements ScheduleService{
 	private final SchdTargetMapper schdTargetMapper;
 	private final ScheduleDtoMapper scheduleMapper;
 	private final EmployeeMapper employeeMapper;
+	private final HolidayMapper holidayMapper;
 	private final AuthorizationService authorizationService;
 	
 	private static final int WIDGET_SCHD_LIMIT = 3;
@@ -230,36 +234,61 @@ public class ScheduleServiceImpl implements ScheduleService{
 	@Override
 	@Transactional(readOnly = true)
 	public List<ScheduleResponseDto> readSchdList(LocalDateTime beginDt, LocalDateTime endDt) {
-		
-		// 권한 체크
-		ResourceContext resource = ResourceContext.builder()
-				.resourceType(ResourceType.SCHEDULE)
-				.build();
-		
-		authorizationService.assertCurrentUserPermission(
-				PermissionCode.SCHEDULE_READ,
-				resource);
-		
-		//  사용자의 정보 조회
-		Long empId = SecurityUtil.getCurrentEmpId();
-		Boolean exec = SecurityUtil.isCurrentExec();
-		String deptCd = employeeMapper.selectEmpDeptCodeByEmpId(empId);
-		
-		// 조회 조건 객체 생성
-		SchdSearchVO searchVO = SchdSearchVO.builder()
-				.empId(empId)
-				.deptCd(deptCd)
-				.execYn(exec)
-				.projIds(null)
-				.taskIds(null)
-				.beginDt(beginDt)
-				.endDt(endDt)
-				.build();
-		
-		// 일정 조회
-		List<IntgSchdVO> schdList = intgSchdMapper.selectIntgSchdList(searchVO);
-		
-		return scheduleMapper.toDtoList(schdList);
+
+	    // 권한 체크
+	    ResourceContext resource = ResourceContext.builder()
+	            .resourceType(ResourceType.SCHEDULE)
+	            .build();
+	    authorizationService.assertCurrentUserPermission(PermissionCode.SCHEDULE_READ, resource);
+
+	    // 사용자 정보 조회
+	    Long empId = SecurityUtil.getCurrentEmpId();
+	    Boolean exec = SecurityUtil.isCurrentExec();
+	    String deptCd = employeeMapper.selectEmpDeptCodeByEmpId(empId);
+
+	    // 조회 조건 객체 생성
+	    SchdSearchVO searchVO = SchdSearchVO.builder()
+	            .empId(empId)
+	            .deptCd(deptCd)
+	            .execYn(exec)
+	            .projIds(null)
+	            .taskIds(null)
+	            .beginDt(beginDt)
+	            .endDt(endDt)
+	            .build();
+
+	    // 일정 조회
+	    List<ScheduleResponseDto> schdDtoList = new ArrayList<>(
+	            scheduleMapper.toDtoList(intgSchdMapper.selectIntgSchdList(searchVO))
+	    );
+
+	    // 공휴일 조회 후 변환 및 합치기
+	    int beginYear = beginDt.getYear();
+	    int endYear = endDt.getYear();
+
+	    for (int year = beginYear; year <= endYear; year++) {
+	        List<HolidayVO> holidays = holidayMapper.selectHolidayList(year);
+	        holidays.stream()
+	                .filter(h -> {
+	                    LocalDateTime holidayDt = h.getHolidayDt().atStartOfDay();
+	                    return !holidayDt.isBefore(beginDt) && !holidayDt.isAfter(endDt);
+	                })
+	                .map(h -> ScheduleResponseDto.builder()
+	                        .scheduleTypeCode("Y".equals(h.getIsHolidayYn()) ? "PUBLIC_HOLIDAY" : "ANNIVERSARY")
+	                        .title(h.getHolidayNm())
+	                        .start(h.getHolidayDt().atStartOfDay())
+	                        .end(h.getHolidayDt().atTime(23, 59, 59))
+	                        .allDay(true)
+	                        .repeat(false)
+	                        .build())
+	                .forEach(schdDtoList::add);
+	    }
+
+	    // 시작일 기준 정렬
+	    schdDtoList.sort(Comparator.comparing(ScheduleResponseDto::getStart,
+	            Comparator.nullsLast(Comparator.naturalOrder())));
+
+	    return schdDtoList;
 	}
 	
 	@Override
