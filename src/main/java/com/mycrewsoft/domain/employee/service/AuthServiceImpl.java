@@ -72,13 +72,6 @@ public class AuthServiceImpl implements AuthService {
 		}
 
 		boolean firstLoginRequired = EmpStatCode.EMP_INITIAL.getCode().equals(empStat);
-		if (!firstLoginRequired) {
-			adminEmployeeMapper.updateEmployeeStatus(
-					userDetails.getEmpId(),
-					EmpStatCode.EMP_LOGIN.getCode());
-		}
-		
-		
 		String sessionId = UUID.randomUUID().toString();
 		Integer authVersion = userDetails.getAuthVersion();
 
@@ -195,7 +188,7 @@ public class AuthServiceImpl implements AuthService {
 		adminEmployeeMapper.updateFirstLoginInfo(
 				empId,
 				encodedPassword,
-				EmpStatCode.EMP_LOGIN.getCode());
+				EmpStatCode.EMP_ACTIVE.getCode());
 		
 		// 첫로그인시 입사 알림
 		eventPublisher.publishEvent(
@@ -212,10 +205,6 @@ public class AuthServiceImpl implements AuthService {
 		if (!StringUtils.hasText(sessionId)) {
 			throw new CustomException(ErrorCode.INVALID_TOKEN);
 		}
-
-		adminEmployeeMapper.updateEmployeeStatusIfNotInitial(
-				currentUser.getEmpId(),
-				EmpStatCode.EMP_LOGOUT.getCode());
 
 		refreshTokenService.deleteSession(sessionId);
 	}

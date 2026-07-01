@@ -14,6 +14,7 @@ import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.context.ApplicationEventPublisher;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -25,9 +26,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.mycrewsoft.domain.employee.dto.request.FirstLoginRequestDTO;
 import com.mycrewsoft.domain.employee.dto.request.LoginRequestDTO;
 import com.mycrewsoft.domain.employee.dto.response.LoginResponseDTO;
+import com.mycrewsoft.domain.employee.event.FirstLoginEvent;
 import com.mycrewsoft.domain.employee.mapper.AdminEmployeeMapper;
 import com.mycrewsoft.domain.employee.vo.EmployeeVO;
 import com.mycrewsoft.domain.empstat.code.EmpStatCode;
+import com.mycrewsoft.domain.mail.mapper.MailAccountMapper;
 import com.mycrewsoft.security.jwt.JwtTokenProvider;
 import com.mycrewsoft.security.rbac.AuthSessionFactory;
 import com.mycrewsoft.security.rbac.RbacSessionRefreshService;
@@ -60,6 +63,12 @@ class AuthServiceImplTest {
     @Mock
     private AdminEmployeeMapper adminEmployeeMapper;
 
+    @Mock
+    private MailAccountMapper mailAccountMapper;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private AuthServiceImpl authService;
 
@@ -84,9 +93,9 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void loginChangesEmployeeStatusToLoginWhenFirstLoginIsNotRequired() {
+    void loginKeepsEmployeeLifecycleStatusWhenFirstLoginIsNotRequired() {
         LoginRequestDTO request = loginRequest();
-        AuthorizationUserDetails userDetails = userDetails(EmpStatCode.EMP_LOGOUT.getCode());
+        AuthorizationUserDetails userDetails = userDetails(EmpStatCode.EMP_ACTIVE.getCode());
         AuthSession session = authSession(request.getEmpId());
 
         stubSuccessfulLogin(request, userDetails, session);
@@ -94,14 +103,12 @@ class AuthServiceImplTest {
         LoginResponseDTO response = authService.login(request);
 
         assertThat(response.isFirstLoginRequired()).isFalse();
-        verify(adminEmployeeMapper).updateEmployeeStatus(
-                request.getEmpId(),
-                EmpStatCode.EMP_LOGIN.getCode());
+        verify(adminEmployeeMapper, never()).updateEmployeeStatus(any(), any());
         verify(refreshTokenService).saveSession(session, "refresh-token");
     }
 
     @Test
-    void firstLoginChangesPasswordAndEmployeeStatusToLogin() {
+    void firstLoginChangesPasswordAndEmployeeStatusToActive() {
         Long empId = 20260001L;
         FirstLoginRequestDTO request = new FirstLoginRequestDTO();
         request.setEmailAddr("employee@example.com");
@@ -113,6 +120,7 @@ class AuthServiceImplTest {
 
         setCurrentUser(empId, "session-first-login");
         when(adminEmployeeMapper.selectEmployeeById(empId)).thenReturn(employee);
+        when(mailAccountMapper.existsActiveGoogleMailAccountByEmail(empId, request.getEmailAddr())).thenReturn(1);
         when(passwordEncoder.encode(request.getNewPassword())).thenReturn("{bcrypt}encoded");
 
         authService.handleFirstLogin(request);
@@ -120,19 +128,18 @@ class AuthServiceImplTest {
         verify(adminEmployeeMapper).updateFirstLoginInfo(
                 empId,
                 "{bcrypt}encoded",
-                EmpStatCode.EMP_LOGIN.getCode());
+                EmpStatCode.EMP_ACTIVE.getCode());
+        verify(eventPublisher).publishEvent(any(FirstLoginEvent.class));
     }
 
     @Test
-    void logoutChangesEmployeeStatusToLogoutAndDeletesRedisSession() {
+    void logoutDeletesRedisSessionWithoutChangingEmployeeLifecycleStatus() {
         Long empId = 20260001L;
         setCurrentUser(empId, "session-logout");
 
         authService.logout();
 
-        verify(adminEmployeeMapper).updateEmployeeStatusIfNotInitial(
-                empId,
-                EmpStatCode.EMP_LOGOUT.getCode());
+        verify(adminEmployeeMapper, never()).updateEmployeeStatusIfNotInitial(any(), any());
         verify(refreshTokenService).deleteSession("session-logout");
     }
 
@@ -198,7 +205,7 @@ class AuthServiceImplTest {
                 String.valueOf(empId),
                 null,
                 true,
-                EmpStatCode.EMP_LOGIN.getCode(),
+                EmpStatCode.EMP_ACTIVE.getCode(),
                 7,
                 false,
                 List.of(new SimpleGrantedAuthority("ROLE_USER")),

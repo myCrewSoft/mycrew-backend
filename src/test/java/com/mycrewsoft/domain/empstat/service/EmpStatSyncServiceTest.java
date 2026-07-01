@@ -22,19 +22,19 @@ class EmpStatSyncServiceTest {
     private EmpStatMapper empStatMapper;
 
     @Test
-    void syncEmpStatCodesMergesAllEmpStatCodeValues() {
+    void syncEmpStatCodesMergesOnlyEmployeeLifecycleStatusCodes() {
         EmpStatSyncService empStatSyncService = new EmpStatSyncService(empStatMapper);
 
-        when(empStatMapper.mergeEmpStats(argThat(this::containsLoginAndLogoutCodes)))
-                .thenReturn(2);
+        when(empStatMapper.mergeEmpStats(argThat(this::containsOnlyLifecycleCodes)))
+                .thenReturn(5);
 
         int insertedCount = empStatSyncService.syncEmpStatCodes();
 
-        assertThat(insertedCount).isEqualTo(2);
-        verify(empStatMapper).mergeEmpStats(argThat(this::containsLoginAndLogoutCodes));
+        assertThat(insertedCount).isEqualTo(5);
+        verify(empStatMapper).mergeEmpStats(argThat(this::containsOnlyLifecycleCodes));
     }
 
-    private boolean containsLoginAndLogoutCodes(List<EmpStatSeed> empStats) {
+    private boolean containsOnlyLifecycleCodes(List<EmpStatSeed> empStats) {
         if (empStats == null) {
             return false;
         }
@@ -43,7 +43,13 @@ class EmpStatSyncServiceTest {
                 .map(EmpStatSeed::code)
                 .toList();
 
-        return codes.contains(EmpStatCode.EMP_LOGIN.getCode())
-                && codes.contains(EmpStatCode.EMP_LOGOUT.getCode());
+        return codes.size() == 5
+                && codes.contains(EmpStatCode.EMP_INITIAL.getCode())
+                && codes.contains(EmpStatCode.EMP_ACTIVE.getCode())
+                && codes.contains(EmpStatCode.EMP_INACTIVE.getCode())
+                && codes.contains(EmpStatCode.EMP_RETIRED.getCode())
+                && codes.contains(EmpStatCode.EMP_VACATION.getCode())
+                && !codes.contains("EMP_LOGIN")
+                && !codes.contains("EMP_LOGOUT");
     }
 }

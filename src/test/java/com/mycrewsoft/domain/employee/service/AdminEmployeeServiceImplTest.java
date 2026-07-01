@@ -217,6 +217,24 @@ class AdminEmployeeServiceImplTest {
         verify(employeeMapper, never()).updateEmployeeStatus(any(), any());
     }
 
+    @Test
+    void updateEmployeeStatusRejectsLoginPresenceStatusCode() {
+        Long empId = 20260001L;
+        EmployeeStatusUpdateRequestDTO request = new EmployeeStatusUpdateRequestDTO();
+        request.setEmpStatCd("EMP_LOGIN");
+
+        EmployeeVO employee = new EmployeeVO();
+        employee.setEmpId(empId);
+        when(employeeMapper.selectEmployeeById(empId)).thenReturn(employee);
+
+        assertThatThrownBy(() -> adminEmployeeService.updateEmployeeStatus(empId, request))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+
+        verify(employeeMapper, never()).updateEmployeeStatus(any(), any());
+    }
+
     private EmployeeRegisterRequestDTO registerRequest() {
         EmployeeRegisterRequestDTO request = new EmployeeRegisterRequestDTO();
         request.setEmpId(20260001L);
