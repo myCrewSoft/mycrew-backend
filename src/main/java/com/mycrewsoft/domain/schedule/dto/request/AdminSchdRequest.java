@@ -36,6 +36,9 @@ public class AdminSchdRequest {
     @Schema(description = "종료 일시", example = "2026-06-21T18:00:00")
     @NotNull(message = "종료일시는 필수입니다.")
     private LocalDateTime endDt;
+    
+    @Schema(description = "부서 코드 (부서 일정일 때 필수)", example = "D001")
+    private String deptCd;
 
     @Schema(description = "종일 여부", example = "N")
     @NotBlank(message = "종일 여부는 필수입니다.")

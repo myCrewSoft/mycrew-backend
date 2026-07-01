@@ -1,5 +1,6 @@
 package com.mycrewsoft.domain.schedule.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -78,7 +79,7 @@ public class AdminScheduleServiceImpl implements AdminScheduleService {
         IntgSchdVO vo = adminSchdDtoMapper.toVO(dto, empId);
         adminSchdMapper.insertAdminSchd(vo);
 
-        List<SchdTargetVO> targets = buildTargetList(dto, vo.getSchdId());
+        List<SchdTargetVO> targets = buildAdminTargetList(dto, vo.getSchdId());
         if (!targets.isEmpty()) {
             schdTargetMapper.insertSchdTargetList(targets);
         }
@@ -103,7 +104,7 @@ public class AdminScheduleServiceImpl implements AdminScheduleService {
         adminSchdMapper.updateAdminSchd(updateVO);
 
         schdTargetMapper.deleteSchdTarget(schdId);
-        List<SchdTargetVO> targets = buildTargetList(dto, schdId);
+        List<SchdTargetVO> targets = buildAdminTargetList(dto, schdId);
         if (!targets.isEmpty()) {
             schdTargetMapper.insertSchdTargetList(targets);
         }
@@ -127,17 +128,26 @@ public class AdminScheduleServiceImpl implements AdminScheduleService {
             .build();
         authorizationService.assertCurrentUserPermission(PermissionCode.SCHEDULE_MANAGE, resource);
     }
+    
+    private List<SchdTargetVO> buildAdminTargetList(AdminSchdRequest dto, Long schdId) {
+        List<SchdTargetVO> targets = new ArrayList<>();
 
-    private List<SchdTargetVO> buildTargetList(AdminSchdRequest dto, Long schdId) {
-        if (dto.getTargets() == null || dto.getTargets().isEmpty()) {
-            return List.of();
+        if ("C001".equals(dto.getSchdClsfCd())) {
+            // 전사 일정
+            targets.add(SchdTargetVO.builder()
+                    .schdId(schdId).targetTypeCd("01").targetId("0").build());
+
+        } else if ("C003".equals(dto.getSchdClsfCd())) {
+            // 간부 일정
+            targets.add(SchdTargetVO.builder()
+                    .schdId(schdId).targetTypeCd("03").targetId("0").build());
+
+        } else if ("C004".equals(dto.getSchdClsfCd())) {
+            // 부서 일정
+            targets.add(SchdTargetVO.builder()
+                    .schdId(schdId).targetTypeCd("04").targetId(dto.getDeptCd()).build());
         }
-        return dto.getTargets().stream()
-            .map(t -> SchdTargetVO.builder()
-                .schdId(schdId)
-                .targetTypeCd(t.getTargetTypeCd())
-                .targetId(t.getTargetId())
-                .build())
-            .toList();
+
+        return targets;
     }
 }
