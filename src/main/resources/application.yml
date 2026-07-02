@@ -106,12 +106,12 @@ google:
   oauth:
     client-id: ${GOOGLE_OAUTH_CLIENT_ID:727057848148-08dmtdfppmnoqblbukb3aegv1avmq6c9.apps.googleusercontent.com}
     client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET:}
-		redirect-uri: https://0a1c-1-245-228-197.ngrok-free.app/api/mail/oauth/google/callback
-		frontend-success-uri: http://192.168.35.113:5173/first-login?mailConnected=Y
-		frontend-failure-uri: http://192.168.35.113:5173/first-login?mailConnected=N
-		frontend-mail-success-uri: http://192.168.35.113:5173/mail
-		frontend-my-page-success-uri: http://192.168.35.113:5173/mypage?mailConnected=Y
-		frontend-my-page-failure-uri: http://192.168.35.113:5173/mypage?mailConnected=N
+    redirect-uri: https://0a1c-1-245-228-197.ngrok-free.app/api/mail/oauth/google/callback
+    frontend-success-uri: http://192.168.35.113:5173/first-login?mailConnected=Y
+    frontend-failure-uri: http://192.168.35.113:5173/first-login?mailConnected=N
+    frontend-mail-success-uri: http://192.168.35.113:5173/mail
+    frontend-my-page-success-uri: http://192.168.35.113:5173/mypage?mailConnected=Y
+    frontend-my-page-failure-uri: http://192.168.35.113:5173/mypage?mailConnected=N
     scopes:
       - openid
       - email
