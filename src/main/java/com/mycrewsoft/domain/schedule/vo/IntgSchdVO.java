@@ -36,6 +36,16 @@ public class IntgSchdVO {
 	private String reptTypeCd;		// 반복 타입
 	private LocalDateTime reptEndDt;		// 반복 종료일
 	
+	private String schdWrtrNm;
+	private String schdWrtrDeptNm;
+	private String schdWrtrJobGrdNm;
+	private Long schdWrtrPrflImgFileId;
+	private Long projId;
+	private Long taskId;
+	private Long mtngId;
+	private Long rsrvId;
+	private String schdDeptNm;
+	
 	private List<SchdTargetVO> targets;	// 일정 해당자
 	
 }

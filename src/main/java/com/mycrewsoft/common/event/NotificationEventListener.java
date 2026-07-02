@@ -24,13 +24,13 @@ import com.mycrewsoft.domain.employee.event.FirstLoginEvent;
 import com.mycrewsoft.domain.employee.event.PasswordChangedEvent;
 import com.mycrewsoft.domain.employee.event.PermissionChangedEvent;
 import com.mycrewsoft.domain.employee.event.ProfileChangedEvent;
+import com.mycrewsoft.domain.mail.event.MailReceivedEvent;
 import com.mycrewsoft.domain.mtng.event.MeetingChangedEvent;
 import com.mycrewsoft.domain.mtng.event.MeetingEndedEvent;
 import com.mycrewsoft.domain.mtng.event.MeetingInvitedEvent;
-import com.mycrewsoft.domain.mail.event.MailReceivedEvent;
 import com.mycrewsoft.domain.mtng.event.MeetingReminderEvent;
-import com.mycrewsoft.domain.notification.service.NotificationService;
 import com.mycrewsoft.domain.notification.enums.NotificationTargetType;
+import com.mycrewsoft.domain.notification.service.NotificationService;
 import com.mycrewsoft.domain.project.event.ProjectClosedEvent;
 import com.mycrewsoft.domain.project.event.ProjectCompletedEvent;
 import com.mycrewsoft.domain.project.event.ProjectCreatedEvent;
@@ -68,9 +68,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleFirstLogin(FirstLoginEvent event) {
         notificationService.sendAlrm(
-            "입사를 축하드립니다. 그룹웨어 이용을 시작해 주세요.",
+            "입사 환영",
             "01",
-            null,
+            "입사를 축하드립니다! 그룹웨어 이용을 시작해 주세요.",
             List.of(event.getEmpId())
         );
     }
@@ -81,9 +81,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleApprovalApproved(ApprovalApprovedEvent event) {
         notificationService.sendAlrm(
-            "신청하신 [" + event.getApprovalNm() + "] 결재가 승인되었습니다.",
+            "결재 승인",
             "02",
-            null,
+            "신청하신 [" + event.getApprovalNm() + "] 결재가 승인되었습니다.",
             List.of(event.getRcvrEmpId()),
             NotificationTargetType.APPROVAL,
             event.getDrftDocSn(),
@@ -95,9 +95,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleApprovalRejected(ApprovalRejectedEvent event) {
         notificationService.sendAlrm(
-            "신청하신 [" + event.getApprovalNm() + "] 결재가 반려되었습니다.",
+            "결재 반려",
             "02",
-            null,
+            "신청하신 [" + event.getApprovalNm() + "] 결재가 반려되었습니다.",
             List.of(event.getRcvrEmpId()),
             NotificationTargetType.APPROVAL,
             event.getDrftDocSn(),
@@ -109,9 +109,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleApprovalRequested(ApprovalRequestedEvent event) {
         notificationService.sendAlrm(
-            event.getApplicantNm() + " 님이 [" + event.getApprovalNm() + "] 결재를 요청했습니다.",
+            "결재 요청",
             "02",
-            null,
+            event.getApplicantNm() + " 님이 [" + event.getApprovalNm() + "] 결재를 요청했습니다.",
             event.getApproverIds(),
             NotificationTargetType.APPROVAL,
             event.getDrftDocSn(),
@@ -123,9 +123,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleApprovalDeadline(ApprovalDeadlineEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getApprovalNm() + "] 결재의 처리 기한이 임박했습니다.(3일 전)",
+            "결재 기한 임박",
             "02",
-            null,
+            "[" + event.getApprovalNm() + "] 결재 처리 기한이 3일 남았습니다.",
             List.of(event.getApproverId()),
             NotificationTargetType.APPROVAL,
             event.getDrftDocSn(),
@@ -137,9 +137,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleApprovalCancelled(ApprovalCancelledEvent event) {
         notificationService.sendAlrm(
-            event.getApplicantNm() + " 님이 [" + event.getApprovalNm() + "] 결재 요청을 취소했습니다.",
+            "결재 요청 취소",
             "02",
-            null,
+            event.getApplicantNm() + " 님이 [" + event.getApprovalNm() + "] 결재 요청을 취소했습니다.",
             event.getApproverIds(),
             NotificationTargetType.APPROVAL,
             event.getDrftDocSn(),
@@ -153,50 +153,51 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleProjectCreated(ProjectCreatedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getProjNm() + "] 프로젝트에 등록되었습니다.",
+            "프로젝트 등록",
             "04",
-            null,
+            "[" + event.getProjNm() + "] 프로젝트에 등록되었습니다.",
             event.getEmpIds(),
             NotificationTargetType.PROJECT,
             event.getProjId(),
             null
         );
     }
+
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleProjectMembersAdded(ProjectMembersAddedEvent event) {
-    	notificationService.sendAlrm(
-    			"[" + event.getProjNm() + "] 프로젝트에 등록되었습니다.",
-    			"04",
-    			null,
-				event.getEmpIds(),
-				NotificationTargetType.PROJECT,
-				event.getProjId(),
-				null
-    			);
+        notificationService.sendAlrm(
+            "프로젝트 참여",
+            "04",
+            "[" + event.getProjNm() + "] 프로젝트에 참여하게 되었습니다.",
+            event.getEmpIds(),
+            NotificationTargetType.PROJECT,
+            event.getProjId(),
+            null
+        );
     }
-    
+
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleProjectMemberRemoved(ProjectMemberRemovedEvent event) {
-    	notificationService.sendAlrm(
-    			"[" + event.getProjNm() + "] 프로젝트에서 제외되었습니다.",
-    			"04",
-    			null,
-				List.of(event.getEmpId()),
-				NotificationTargetType.PROJECT,
-				event.getProjId(),
-				null
-    			);
+        notificationService.sendAlrm(
+            "프로젝트 제외",
+            "04",
+            "[" + event.getProjNm() + "] 프로젝트에서 제외되었습니다.",
+            List.of(event.getEmpId()),
+            NotificationTargetType.PROJECT,
+            event.getProjId(),
+            null
+        );
     }
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleProjectDeadline(ProjectDeadlineEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getProjNm() + "] 프로젝트의 마감일이 하루 남았습니다.",
+            "프로젝트 마감 임박",
             "04",
-            null,
+            "[" + event.getProjNm() + "] 프로젝트 마감일이 하루 남았습니다.",
             event.getEmpIds(),
             NotificationTargetType.PROJECT,
             event.getProjId(),
@@ -208,9 +209,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleProjectClosed(ProjectClosedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getProjNm() + "] 프로젝트가 마감되었습니다.",
+            "프로젝트 마감",
             "04",
-            null,
+            "[" + event.getProjNm() + "] 프로젝트가 마감되었습니다.",
             event.getEmpIds(),
             NotificationTargetType.PROJECT,
             event.getProjId(),
@@ -222,9 +223,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleProjectCancelled(ProjectStoppedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getProjNm() + "] 프로젝트가 중지되었습니다.",
+            "프로젝트 중지",
             "04",
-            null,
+            "[" + event.getProjNm() + "] 프로젝트가 중지되었습니다.",
             event.getEmpIds(),
             NotificationTargetType.PROJECT,
             event.getProjId(),
@@ -236,9 +237,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleProjectManagerChanged(ProjectManagerChangedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getProjNm() + "] 프로젝트의 담당자가 [" + event.getManagerNm() + "] 으로 변경되었습니다.",
+            "프로젝트 담당자 변경",
             "04",
-            null,
+            "[" + event.getProjNm() + "] 프로젝트 담당자가 " + event.getManagerNm() + " 님으로 변경되었습니다.",
             event.getEmpIds(),
             NotificationTargetType.PROJECT,
             event.getProjId(),
@@ -250,9 +251,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleProjectCompleted(ProjectCompletedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getProjNm() + "] 프로젝트가 완료 처리되었습니다.",
+            "프로젝트 완료",
             "04",
-            null,
+            "[" + event.getProjNm() + "] 프로젝트가 완료되었습니다.",
             event.getEmpIds(),
             NotificationTargetType.PROJECT,
             event.getProjId(),
@@ -266,9 +267,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTaskAssigned(TaskAssignedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getTaskNm() + "] 업무가 배정되었습니다.",
+            "업무 배정",
             "05",
-            null,
+            "[" + event.getTaskNm() + "] 업무가 배정되었습니다.",
             event.getRcvrEmpIds(),
             NotificationTargetType.TASK,
             event.getTaskId(),
@@ -280,9 +281,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTaskMemberRemoved(TaskMemberRemovedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getTaskNm() + "] 업무에서 제외되었습니다.",
+            "업무 제외",
             "05",
-            null,
+            "[" + event.getTaskNm() + "] 업무에서 제외되었습니다.",
             event.getRcvrEmpIds(),
             NotificationTargetType.TASK,
             event.getTaskId(),
@@ -294,9 +295,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTaskDeadline(TaskDeadlineEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getTaskNm() + "] 업무의 마감일이 하루 남았습니다.",
+            "업무 마감 임박",
             "05",
-            null,
+            "[" + event.getTaskNm() + "] 업무 마감일이 하루 남았습니다.",
             event.getRcvrEmpIds(),
             NotificationTargetType.TASK,
             event.getTaskId(),
@@ -308,9 +309,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTaskCancelled(TaskCancelledEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getTaskNm() + "] 업무가 취소되었습니다.",
+            "업무 취소",
             "05",
-            null,
+            "[" + event.getTaskNm() + "] 업무가 취소되었습니다.",
             event.getRcvrEmpIds(),
             NotificationTargetType.TASK,
             event.getTaskId(),
@@ -322,9 +323,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTaskStatusChanged(TaskStatusChangedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getTaskNm() + "] 업무 상태가 변경되었습니다.",
+            "업무 상태 변경",
             "05",
-            null,
+            "[" + event.getTaskNm() + "] 업무 상태가 변경되었습니다.",
             event.getRcvrEmpIds(),
             NotificationTargetType.TASK,
             event.getTaskId(),
@@ -336,9 +337,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleProjectManagerChanged(TaskManagerChangedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getTaskNm() + "] 업무의 담당자가 [" + event.getManagerNm() + "] 으로 변경되었습니다.",
+            "업무 담당자 변경",
             "05",
-            null,
+            "[" + event.getTaskNm() + "] 업무 담당자가 " + event.getManagerNm() + " 님으로 변경되었습니다.",
             event.getRcvrEmpIds(),
             NotificationTargetType.TASK,
             event.getTaskId(),
@@ -350,9 +351,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTaskCompleted(TaskCompletedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getTaskNm() + "] 업무가 완료 처리되었습니다.",
+            "업무 완료",
             "05",
-            null,
+            "[" + event.getTaskNm() + "] 업무가 완료되었습니다.",
             event.getRcvrEmpIds(),
             NotificationTargetType.TASK,
             event.getTaskId(),
@@ -364,9 +365,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTaskDeadlineChanged(TaskDeadlineChangedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getTaskNm() + "] 업무의 마감일이 변경되었습니다.",
+            "업무 마감일 변경",
             "05",
-            null,
+            "[" + event.getTaskNm() + "] 업무 마감일이 변경되었습니다.",
             event.getRcvrEmpIds(),
             NotificationTargetType.TASK,
             event.getTaskId(),
@@ -380,9 +381,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleMeetingInvited(MeetingInvitedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getMeetingNm() + "] 회의에 초대되었습니다.",
+            "회의 초대",
             "06",
-            null,
+            "[" + event.getMeetingNm() + "] 회의에 초대되었습니다.",
             event.getEmpIds(),
             NotificationTargetType.MEETING,
             event.getMeetingId(),
@@ -392,11 +393,11 @@ public class NotificationEventListener {
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleMeetingCancelled(MeetingEndedEvent event) {
+    public void handleMeetingEnded(MeetingEndedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getMeetingNm() + "] 회의가 종료되었습니다.",
+            "회의 종료",
             "06",
-            null,
+            "[" + event.getMeetingNm() + "] 회의가 종료되었습니다.",
             event.getEmpIds(),
             NotificationTargetType.MEETING,
             event.getMtngId(),
@@ -408,9 +409,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleMeetingReminder(MeetingReminderEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getMeetingNm() + "] 회의 시작까지 10분 남았습니다.",
+            "회의 시작 임박",
             "06",
-            null,
+            "[" + event.getMeetingNm() + "] 회의가 10분 후 시작됩니다.",
             event.getEmpIds(),
             NotificationTargetType.MEETING,
             event.getMeetingId(),
@@ -422,9 +423,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleMeetingChanged(MeetingChangedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getMeetingNm() + "] 회의 일정이 [" + event.getMeetingDt() + "] 로 변경되었습니다.",
+            "회의 일정 변경",
             "06",
-            null,
+            "[" + event.getMeetingNm() + "] 회의 일정이 " + event.getMeetingDt() + " 으로 변경되었습니다.",
             event.getEmpIds(),
             NotificationTargetType.MEETING,
             event.getMeetingId(),
@@ -438,9 +439,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleScheduleCreated(ScheduleCreatedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getSchdNm() + "] 일정이 등록되었습니다.",
+            "일정 등록",
             "03",
-            null,
+            "[" + event.getSchdNm() + "] 일정이 등록되었습니다.",
             event.getEmpIds(),
             NotificationTargetType.SCHEDULE,
             event.getSchdId(),
@@ -452,9 +453,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleScheduleCancelled(ScheduleCancelledEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getSchdNm() + "] 일정이 취소되었습니다.",
+            "일정 취소",
             "03",
-            null,
+            "[" + event.getSchdNm() + "] 일정이 취소되었습니다.",
             event.getEmpIds(),
             NotificationTargetType.SCHEDULE,
             event.getSchdId(),
@@ -466,9 +467,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleScheduleChanged(ScheduleChangedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getSchdNm() + "] 일정이 변경되었습니다.",
+            "일정 변경",
             "03",
-            null,
+            "[" + event.getSchdNm() + "] 일정이 변경되었습니다.",
             event.getEmpIds(),
             NotificationTargetType.SCHEDULE,
             event.getSchdId(),
@@ -480,9 +481,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleScheduleReminder(ScheduleReminderEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getSchdNm() + "] 일정 시작 시간이 다가오고 있습니다.",
+            "일정 시작 임박",
             "03",
-            null,
+            "[" + event.getSchdNm() + "] 일정이 곧 시작됩니다.",
             event.getEmpIds(),
             NotificationTargetType.SCHEDULE,
             event.getSchdId(),
@@ -496,9 +497,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleEducationEnrolled(EducationEnrolledEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getEduNm() + "] 교육 대상자로 등록되었습니다.",
+            "교육 등록",
             "08",
-            null,
+            "[" + event.getEduNm() + "] 교육 대상자로 등록되었습니다.",
             event.getRcvrEmpIds()
         );
     }
@@ -507,9 +508,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleEducationCancelled(EducationCancelledEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getEduNm() + "] 교육이 취소되었습니다.",
+            "교육 취소",
             "08",
-            null,
+            "[" + event.getEduNm() + "] 교육이 취소되었습니다.",
             event.getRcvrEmpIds()
         );
     }
@@ -518,9 +519,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleEducationCompleted(EducationCompletedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getEduNm() + "] 교육을 수료했습니다.",
+            "교육 수료",
             "08",
-            null,
+            "[" + event.getEduNm() + "] 교육을 수료했습니다. 수고하셨습니다!",
             List.of(event.getRcvrEmpId())
         );
     }
@@ -529,9 +530,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleEducationDeadline(EducationDeadlineEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getEduNm() + "] 교육 수강 기한이 임박했습니다.(미수료자)",
+            "교육 수강 기한 임박",
             "08",
-            null,
+            "[" + event.getEduNm() + "] 교육 수강 기한이 임박했습니다. 아직 미수료 상태입니다.",
             event.getRcvrEmpIds()
         );
     }
@@ -540,9 +541,9 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleEducationStarted(EducationStartedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getEduNm() + "] 교육이 시작되었습니다.",
+            "교육 시작",
             "08",
-            null,
+            "[" + event.getEduNm() + "] 교육이 시작되었습니다.",
             event.getRcvrEmpIds()
         );
     }
@@ -553,10 +554,13 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleCommentCreated(CommentCreatedEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getPostTitle() + "] 게시글에 댓글이 등록되었습니다.",
+            "댓글 등록",
             "07",
-            null,
-            List.of(event.getRcvrEmpId())
+            "내 게시글 [" + event.getPostTitle() + "] 에 댓글이 등록되었습니다.",
+            List.of(event.getRcvrEmpId()),
+            NotificationTargetType.BOARD,
+            event.getBoardId(),
+            null
         );
     }
 
@@ -564,10 +568,13 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handlePostDeletedByAdmin(PostDeletedByAdminEvent event) {
         notificationService.sendAlrm(
-            "[" + event.getPostTitle() + "] 게시글이 관리자에 의해 삭제되었습니다.",
+            "게시글 삭제",
             "07",
+            "[" + event.getPostTitle() + "] 게시글이 관리자에 의해 삭제되었습니다.",
+            List.of(event.getRcvrEmpId()),
+            NotificationTargetType.BOARD,
             null,
-            List.of(event.getRcvrEmpId())
+            null
         );
     }
 
@@ -575,10 +582,13 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleNoticeCreated(NoticeCreatedEvent event) {
         notificationService.sendAlrm(
-            "새로운 공지사항이 등록되었습니다.",
+            "공지사항",
             "01",
-            null,
-            event.getAllEmpIds()
+            "[" + event.getPostTitle() + "] 새로운 공지사항이 등록되었습니다.",
+            event.getAllEmpIds(),
+            NotificationTargetType.BOARD,
+            event.getBoardId(),
+            null
         );
     }
 
@@ -590,10 +600,10 @@ public class NotificationEventListener {
         String subject = (event.getLatestSubject() == null || event.getLatestSubject().isBlank())
                 ? "(제목 없음)"
                 : event.getLatestSubject();
-        String message = event.getNewCount() > 1
-                ? "새 메일이 도착했습니다: " + subject + " 외 " + (event.getNewCount() - 1) + "건"
-                : "새 메일이 도착했습니다: " + subject;
-        notificationService.sendAlrm(message, "10", null, List.of(event.getEmpId()));
+        String content = event.getNewCount() > 1
+                ? "[" + subject + "] 외 " + (event.getNewCount() - 1) + "건의 새 메일이 도착했습니다."
+                : "[" + subject + "] 새 메일이 도착했습니다.";
+        notificationService.sendAlrm("새 메일", "10", content, List.of(event.getEmpId()));
     }
 
     // 기타
@@ -602,10 +612,13 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handlePasswordChanged(PasswordChangedEvent event) {
         notificationService.sendAlrm(
-            "비밀번호가 변경되었습니다.",
+            "비밀번호 변경",
             "09",
-            null,
-            List.of(event.getEmpId())
+            "비밀번호가 변경되었습니다. 본인이 변경한 것이 아니라면 관리자에게 문의하세요.",
+            List.of(event.getEmpId()),
+            NotificationTargetType.EMPLOYEE,
+            event.getEmpId(),
+            null
         );
     }
 
@@ -613,21 +626,28 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleProfileChanged(ProfileChangedEvent event) {
         notificationService.sendAlrm(
-            "개인정보가 변경되었습니다.",
+            "개인정보 변경",
             "09",
-            null,
-            List.of(event.getEmpId())
+            "개인정보가 변경되었습니다.",
+            List.of(event.getEmpId()),
+            NotificationTargetType.EMPLOYEE,
+            event.getEmpId(),
+            null
         );
     }
+
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handlePermissionChanged(PermissionChangedEvent event) {
         notificationService.sendAlrm(
-            "사용 권한이 변경되었습니다.",
+            "권한 변경",
             "09",
+            "사용 권한이 변경되었습니다.",
+            event.getEmpIds(),
+            NotificationTargetType.EMPLOYEE,
             null,
-            event.getEmpIds()
+            null
         );
     }
 }

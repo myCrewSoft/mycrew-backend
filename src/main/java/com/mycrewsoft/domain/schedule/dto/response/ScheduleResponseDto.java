@@ -27,17 +27,35 @@ public class ScheduleResponseDto {
     @Schema(description = "부서 일정일 때 해당 부서코드")
     private String deptCd;
 
+    @Schema(description = "부서 일정일 때 해당 부서명")
+    private String deptNm;
+    
     @Schema(description = "프로젝트 일정일 때 해당 프로젝트 ID")
     private Long projId;
 
     @Schema(description = "업무 일정일 때 해당 업무 ID")
     private Long taskId;
 
+    @Schema(description = "화상회의 일정일 때 해당 회의 ID")
+    private Long mtngId;
+
+    @Schema(description = "회의실 예약 일정일 때 해당 예약 ID")
+    private Long rsrvId;
+
     @Schema(description = "작성자 사원 ID")
     private Long writerId;
 
     @Schema(description = "작성자 사원 이름")
     private String writerName;
+
+    @Schema(description = "작성자 부서명")
+    private String writerDeptNm;
+
+    @Schema(description = "작성자 직급명")
+    private String writerJobGrdNm;
+
+    @Schema(description = "작성자 프로필 이미지 파일 ID")
+    private Long writerPrflImgFileId;
 
     @Schema(description = "일정 상세 내용", example = "회사가 창립된 날")
     private String detail;

@@ -29,5 +29,8 @@ public class TaskWidgetResponse {
 
         @Schema(description = "업무 상태")
         private String status;
+        
+        @Schema(description = "프로젝트 ID")
+        private Long projId;
     }
 }

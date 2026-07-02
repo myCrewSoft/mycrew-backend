@@ -18,8 +18,8 @@ public class ChatParticipantResponse {
     @Schema(description = "부서명", example = "개발팀")
     private String deptNm;
 
-    @Schema(description = "직책명", example = "대리")
-    private String jobPstnNm;
+    @Schema(description = "직급명", example = "대리")
+    private String jobGrdNm;
 
     @Schema(description = "프로필 이미지 첨부파일 ID", example = "10")
     private Long prflImgFileId;

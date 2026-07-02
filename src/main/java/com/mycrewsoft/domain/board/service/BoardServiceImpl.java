@@ -324,7 +324,7 @@ public class BoardServiceImpl implements BoardService {
       if("NOTICE".equals(boardVo.getBoardTypeCd())) {
         List<Long> allEmpIds = employeeLookupMapper.selectAllEmpIds();
         eventPublisher.publishEvent(
-          new NoticeCreatedEvent(boardVo.getBoardSj(), allEmpIds)
+          new NoticeCreatedEvent(boardVo.getBoardId(), boardVo.getBoardSj(), allEmpIds)
         );
 
       }
@@ -447,7 +447,7 @@ public class BoardServiceImpl implements BoardService {
 		String boardSj = boardVo.getBoardSj();
 		Long boardWriter = boardVo.getFrstRgtrId();
 		eventPublisher.publishEvent(
-			new CommentCreatedEvent(boardSj, boardWriter)
+			new CommentCreatedEvent(boardCommentVO.getBoardId(), boardSj, boardWriter)
 		);
 		
 		return boardCommentVO.getCommentId();

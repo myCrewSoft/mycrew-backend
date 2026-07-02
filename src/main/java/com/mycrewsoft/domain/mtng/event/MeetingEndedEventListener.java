@@ -1,5 +1,6 @@
 package com.mycrewsoft.domain.mtng.event;
 
+import com.mycrewsoft.domain.mtng.service.MtngMomAiService;
 import com.mycrewsoft.domain.mtng.service.MtngMomService;
 import com.mycrewsoft.domain.mtng.vo.MtngDetailVO;
 import com.mycrewsoft.domain.mtng.vo.MtngPtcptDetailVO;
@@ -25,13 +26,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class MeetingEndedEventListener {
 
     private final MtngMomService mtngMomService;
-    private final MtngMapper mtngMapper;
-    private final VideoConfMapper videoConfMapper;
-    private final ChatClient chatClient;
-
-    @Autowired
-    @Qualifier("promptMeetingService")
-    private PromptService promptMeetingService;
+    private final MtngMomAiService mtngMomAiService;
 
     // endConf 트랜잭션 커밋 후 별도 스레드에서 AI 회의록 생성
     // 메인 트랜잭션과 분리되어 타임아웃/실패가 회의 종료에 영향 없음
@@ -42,23 +37,11 @@ public class MeetingEndedEventListener {
         Long mtngId = event.getMtngId();
 
         try {
-            MtngDetailVO detailVO = mtngMapper.selectMtngDetailByVconfId(vconfId);
-            List<MtngPtcptDetailVO> ptcptList =
-                    mtngMapper.selectMtngPtcptDetailList(mtngId);
-
-            String reference = buildReference(vconfId, detailVO, ptcptList);
-            String question = "위 대화 로그를 기반으로 회의록 HTML을 작성하십시오.";
-
-            String draftCn = chatClient.prompt()
-                    .user(promptMeetingService.build(question, reference))
-                    .call()
-                    .content();
-
+            String draftCn = mtngMomAiService.generateDraft(vconfId, mtngId);
             mtngMomService.createAiDraftMom(mtngId, draftCn);
             log.info("[회의록 AI 생성 완료] mtngId: {}", mtngId);
 
         } catch (Exception e) {
-            // AI 실패해도 로그만 남기고 빈 초안 저장
             log.error("[회의록 AI 생성 실패] vconfId: {}, mtngId: {}", vconfId, mtngId, e);
             try {
                 mtngMomService.createAiDraftMom(mtngId, "");
@@ -66,56 +49,6 @@ public class MeetingEndedEventListener {
                 log.error("[회의록 빈 초안 저장 실패] mtngId: {}", mtngId, ex);
             }
         }
-    }
-
-    private String buildReference(Long vconfId, MtngDetailVO detailVO, List<MtngPtcptDetailVO> ptcptList) {
-        List<VideoChatLogVO> chatLogs = videoConfMapper.selectChatLogsByVconfId(vconfId);
-
-        String ptcptNames = ptcptList.stream()
-                .map(MtngPtcptDetailVO::getEmpNm)
-                .collect(Collectors.joining(", "));
-
-        // 1단계: 대화 로그를 30줄씩 청크로 분할
-        List<String> logLines = chatLogs.stream()
-                .map(log -> "[" + log.getMbrId() + "] " + log.getSpkngCn())
-                .collect(Collectors.toList());
-
-        int chunkSize = 30;
-        StringBuilder summaries = new StringBuilder();
-
-        // 2단계: 청크별 LLM 요약 호출
-        for (int i = 0; i < logLines.size(); i += chunkSize) {
-            List<String> chunk = logLines.subList(i, Math.min(i + chunkSize, logLines.size()));
-            String chunkText = String.join("\n", chunk);
-
-            String summary = chatClient.prompt()
-                    .user(promptMeetingService.buildChunkSummary(chunkText))
-                    .call()
-                    .content();
-
-            summaries.append("[요약 ").append(i / chunkSize + 1).append("]\n");
-            summaries.append(summary).append("\n\n");
-        }
-
-        // 3단계: 요약 결과로 reference 구성
-        return """
-                회의명: %s
-                일시: %s ~ %s
-                장소: %s
-                주재자: %s
-                참석자: %s
-
-                [대화 로그 요약]
-                %s
-                """.formatted(
-                detailVO.getMtngNm(),
-                detailVO.getBeginDt(),
-                detailVO.getEndDt(),
-                detailVO.getConfRmNm() != null ? detailVO.getConfRmNm() : "온라인",
-                detailVO.getCrtrNm(),
-                ptcptNames,
-                summaries.toString()
-        );
     }
 
 }

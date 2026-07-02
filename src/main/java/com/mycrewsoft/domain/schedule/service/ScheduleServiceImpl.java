@@ -1,7 +1,8 @@
-package com.mycrewsoft.domain.schedule.service;
+	package com.mycrewsoft.domain.schedule.service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -12,6 +13,8 @@ import com.mycrewsoft.common.exception.CustomException;
 import com.mycrewsoft.common.exception.ErrorCode;
 import com.mycrewsoft.common.util.DateUtil;
 import com.mycrewsoft.domain.employee.mapper.EmployeeMapper;
+import com.mycrewsoft.domain.holiday.mapper.HolidayMapper;
+import com.mycrewsoft.domain.holiday.vo.HolidayVO;
 import com.mycrewsoft.domain.schedule.dto.command.MeetingScheduleCreateCommand;
 import com.mycrewsoft.domain.schedule.dto.command.ProjectScheduleCreateCommand;
 import com.mycrewsoft.domain.schedule.dto.command.TaskScheduleCreateCommand;
@@ -41,6 +44,7 @@ public class ScheduleServiceImpl implements ScheduleService{
 	private final SchdTargetMapper schdTargetMapper;
 	private final ScheduleDtoMapper scheduleMapper;
 	private final EmployeeMapper employeeMapper;
+	private final HolidayMapper holidayMapper;
 	private final AuthorizationService authorizationService;
 	
 	private static final int WIDGET_SCHD_LIMIT = 3;
@@ -202,63 +206,89 @@ public class ScheduleServiceImpl implements ScheduleService{
 	@Override
 	@Transactional
 	public ScheduleResponseDto readSchd(Long schdId) {
-		// 권한 체크
-		ResourceContext resource = ResourceContext.builder()
-				.resourceType(ResourceType.SCHEDULE)
-				.build();
-		authorizationService.assertCurrentUserPermission(
-				PermissionCode.SCHEDULE_READ,
-				resource);
-		
-		// 일정 조회
-		IntgSchdVO schdVO = intgSchdMapper.selectIntgSchd(schdId);
-		if (schdVO == null) throw new CustomException(ErrorCode.SCHEDULE_NOT_FOUND);
-		
-		// 본인 체크
-		Long currentEmpId = SecurityUtil.getCurrentEmpId();
-		if(currentEmpId == null || !currentEmpId.equals(schdVO.getSchdWrtrId())) {
-			throw new CustomException(ErrorCode.NOT_SCHEDULE_OWNER);
-		}
-		
-		// 공유 대상 상세 조회
+	    // 권한 체크
+	    ResourceContext resource = ResourceContext.builder()
+	            .resourceType(ResourceType.SCHEDULE)
+	            .build();
+	    authorizationService.assertCurrentUserPermission(PermissionCode.SCHEDULE_READ, resource);
+
+	    // 일정 조회
+	    IntgSchdVO schdVO = intgSchdMapper.selectIntgSchd(schdId);
+	    if (schdVO == null) throw new CustomException(ErrorCode.SCHEDULE_NOT_FOUND);
+
+	    // 열람 권한 체크 (작성자이거나 공유 대상에 포함되는지)
+	    Long currentEmpId = SecurityUtil.getCurrentEmpId();
+	    Boolean exec = SecurityUtil.isCurrentExec();
+	    String deptCd = employeeMapper.selectEmpDeptCodeByEmpId(currentEmpId);
+
+	    if (!canViewSchd(schdVO, currentEmpId, exec, deptCd)) {
+	        throw new CustomException(ErrorCode.ACCESS_DENIED);
+	    }
+
+	    // 공유 대상 상세 조회
 	    List<SchdTargetDetailVO> targets = schdTargetMapper.selectSchdTargetDetail(schdId);
 
-		// vo -> dto		
-		return scheduleMapper.toResponseDto(schdVO, targets);
+	    return scheduleMapper.toResponseDto(schdVO, targets);
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public List<ScheduleResponseDto> readSchdList(LocalDateTime beginDt, LocalDateTime endDt) {
-		
-		// 권한 체크
-		ResourceContext resource = ResourceContext.builder()
-				.resourceType(ResourceType.SCHEDULE)
-				.build();
-		authorizationService.assertCurrentUserPermission(
-				PermissionCode.SCHEDULE_READ,
-				resource);
-		
-		//  사용자의 정보 조회
-		Long empId = SecurityUtil.getCurrentEmpId();
-		Boolean exec = SecurityUtil.isCurrentExec();
-		String deptCd = employeeMapper.selectEmpDeptCodeByEmpId(empId);
-		
-		// 조회 조건 객체 생성
-		SchdSearchVO searchVO = SchdSearchVO.builder()
-				.empId(empId)
-				.deptCd(deptCd)
-				.execYn(exec)
-				.projIds(null)
-				.taskIds(null)
-				.beginDt(beginDt)
-				.endDt(endDt)
-				.build();
-		
-		// 일정 조회
-		List<IntgSchdVO> schdList = intgSchdMapper.selectIntgSchdList(searchVO);
-		
-		return scheduleMapper.toDtoList(schdList);
+
+	    // 권한 체크
+	    ResourceContext resource = ResourceContext.builder()
+	            .resourceType(ResourceType.SCHEDULE)
+	            .build();
+	    authorizationService.assertCurrentUserPermission(PermissionCode.SCHEDULE_READ, resource);
+
+	    // 사용자 정보 조회
+	    Long empId = SecurityUtil.getCurrentEmpId();
+	    Boolean exec = SecurityUtil.isCurrentExec();
+	    String deptCd = employeeMapper.selectEmpDeptCodeByEmpId(empId);
+
+	    // 조회 조건 객체 생성
+	    SchdSearchVO searchVO = SchdSearchVO.builder()
+	            .empId(empId)
+	            .deptCd(deptCd)
+	            .execYn(exec)
+	            .projIds(null)
+	            .taskIds(null)
+	            .beginDt(beginDt)
+	            .endDt(endDt)
+	            .build();
+
+	    // 일정 조회
+	    List<ScheduleResponseDto> schdDtoList = new ArrayList<>(
+	            scheduleMapper.toDtoList(intgSchdMapper.selectIntgSchdList(searchVO))
+	    );
+
+	    // 공휴일 조회 후 변환 및 합치기
+	    int beginYear = beginDt.getYear();
+	    int endYear = endDt.getYear();
+
+	    for (int year = beginYear; year <= endYear; year++) {
+	        List<HolidayVO> holidays = holidayMapper.selectHolidayList(year);
+	        holidays.stream()
+	                .filter(h -> {
+	                    LocalDateTime holidayDt = h.getHolidayDt().atStartOfDay();
+	                    return !holidayDt.isBefore(beginDt) && !holidayDt.isAfter(endDt);
+	                })
+	                .map(h -> ScheduleResponseDto.builder()
+	                        .scheduleTypeCode("Y".equals(h.getIsHolidayYn()) ? "PUBLIC_HOLIDAY" : "ANNIVERSARY")
+	                        .title(h.getHolidayNm())
+	                        .start(h.getHolidayDt().atStartOfDay())
+	                        .end(h.getHolidayDt().atTime(23, 59, 59))
+	                        .allDay(true)
+	                        .repeat(false)
+	                        .build())
+	                .forEach(schdDtoList::add);
+	    }
+
+	    // 시작일 기준 정렬
+	    schdDtoList.sort(Comparator.comparing(ScheduleResponseDto::getStart,
+	            Comparator.nullsLast(Comparator.naturalOrder())));
+
+	    return schdDtoList;
 	}
 	
 	@Override
@@ -419,6 +449,26 @@ public class ScheduleServiceImpl implements ScheduleService{
 	            || "C008".equals(schdClsfCd)) {
 	        throw new CustomException(ErrorCode.ACCESS_DENIED);
 	    }
+	}
+	
+	// 읽기 권한 체크
+	private boolean canViewSchd(IntgSchdVO schdVO, Long empId, Boolean exec, String deptCd) {
+	    // 1. 작성자 본인
+	    if (empId.equals(schdVO.getSchdWrtrId())) return true;
+
+	    // 2. 공유 대상에 포함되는지 확인
+	    List<SchdTargetVO> targets = schdVO.getTargets();
+	    if (targets == null) return false;
+
+	    for (SchdTargetVO target : targets) {
+	        switch (target.getTargetTypeCd()) {
+	            case "01" -> { return true; }  // 전사
+	            case "02" -> { if (target.getTargetId().equals(String.valueOf(empId))) return true; }  // 개인
+	            case "03" -> { if (Boolean.TRUE.equals(exec)) return true; }  // 간부
+	            case "04" -> { if (target.getTargetId().equals(deptCd)) return true; }  // 부서
+	        }
+	    }
+	    return false;
 	}
 	
 }

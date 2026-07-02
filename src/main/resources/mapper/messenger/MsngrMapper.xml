@@ -25,17 +25,18 @@
 	    SELECT
 	        C.CHTRM_ID,
 	        CASE
-	            WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
-	                SELECT E.EMP_NM
-	                FROM TB_MSNGR_CHTRM_PTCPT OP
-	                JOIN TB_EMPLOYEE E ON E.EMP_ID = OP.EMP_ID
-	                WHERE OP.CHTRM_ID = C.CHTRM_ID
-	                AND OP.EMP_ID != #{empId}
-	                AND OP.LEAV_DT IS NULL
-	                AND ROWNUM = 1
-	            )
-	            ELSE C.CHTRM_NM
-	        END AS CHTRM_NM,
+			    WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
+			        SELECT JG.JOB_GRD_NM
+			        FROM TB_MSNGR_CHTRM_PTCPT OP
+			        JOIN TB_EMPLOYEE E ON E.EMP_ID = OP.EMP_ID
+			        LEFT JOIN TB_JOB_GRADE JG ON JG.JOB_GRD_CD = E.JOB_GRD_CD
+			        WHERE OP.CHTRM_ID = C.CHTRM_ID
+			        AND OP.EMP_ID != #{empId}
+			        AND OP.LEAV_DT IS NULL
+			        AND ROWNUM = 1
+			    )
+			END AS JOB_TITLE,
+			C.CHTRM_NM,
 	        C.CHTRM_EXPLN,
 	        C.CHTRM_TYPE_CD,
 	        C.ESTBLSH_ID,
@@ -60,18 +61,6 @@
 	                AND ROWNUM = 1
 	            )
 	        END AS STATUS,
-	        CASE
-	            WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
-	                SELECT JP.JOB_PSTN_NM
-	                FROM TB_MSNGR_CHTRM_PTCPT OP
-	                JOIN TB_EMPLOYEE E ON E.EMP_ID = OP.EMP_ID
-	                LEFT JOIN TB_JOB_POSITION JP ON JP.JOB_PSTN_CD = E.JOB_PSTN_CD
-	                WHERE OP.CHTRM_ID = C.CHTRM_ID
-	                AND OP.EMP_ID != #{empId}
-	                AND OP.LEAV_DT IS NULL
-	                AND ROWNUM = 1
-	            )
-	        END AS JOB_TITLE,
 	        CASE
 	            WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
 	                SELECT D.DEPT_NM
@@ -99,10 +88,10 @@
 	            SELECT COUNT(*)
 	            FROM TB_MSNGR_MSG UM
 	            WHERE UM.CHTRM_ID = C.CHTRM_ID
-	            AND UM.CREAT_DT != P.JOIN_DT
+	            AND UM.CREAT_DT <![CDATA[ >= ]]> P.JOIN_DT
 	            AND (
 	                P.LAST_CFMTN_MSG_ID IS NULL
-	                OR UM.MSG_ID != P.LAST_CFMTN_MSG_ID
+	                OR UM.MSG_ID  <![CDATA[ > ]]> P.LAST_CFMTN_MSG_ID
 	            )
 	        ) AS UNREAD_COUNT,
 	        P.CHTRM_ID AS PTCPT_CHTRM_ID,
@@ -389,7 +378,7 @@
 	    SET LEAV_DT = SYSDATE
 	    WHERE CHTRM_ID = #{chtrmId}
 	      AND EMP_ID = #{empId}
-	      AND LEAVE_DT IS NULL
+	      AND LEAV_DT IS NULL
 	</update>
 	
 	<select id="selectUnreadChtrmListByEmpId" resultMap="chtrmListResultMap">
@@ -398,17 +387,18 @@
 	        SELECT
 	            C.CHTRM_ID,
 	            CASE
-	                WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
-	                    SELECT E.EMP_NM
-	                    FROM TB_MSNGR_CHTRM_PTCPT OP
-	                    JOIN TB_EMPLOYEE E ON E.EMP_ID = OP.EMP_ID
-	                    WHERE OP.CHTRM_ID = C.CHTRM_ID
-	                    AND OP.EMP_ID != #{empId}
-	                    AND OP.LEAV_DT IS NULL
-	                    AND ROWNUM = 1
-	                )
-	                ELSE C.CHTRM_NM
-	            END AS CHTRM_NM,
+				    WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
+				        SELECT JG.JOB_GRD_NM
+				        FROM TB_MSNGR_CHTRM_PTCPT OP
+				        JOIN TB_EMPLOYEE E ON E.EMP_ID = OP.EMP_ID
+				        LEFT JOIN TB_JOB_GRADE JG ON JG.JOB_GRD_CD = E.JOB_GRD_CD
+				        WHERE OP.CHTRM_ID = C.CHTRM_ID
+				        AND OP.EMP_ID != #{empId}
+				        AND OP.LEAV_DT IS NULL
+				        AND ROWNUM = 1
+				    )
+				END AS JOB_TITLE,
+				C.CHTRM_NM,
 	            C.CHTRM_EXPLN,
 	            C.CHTRM_TYPE_CD,
 	            C.ESTBLSH_ID,
@@ -433,18 +423,6 @@
 	                    AND ROWNUM = 1
 	                )
 	            END AS STATUS,
-	            CASE
-	                WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
-	                    SELECT JP.JOB_PSTN_NM
-	                    FROM TB_MSNGR_CHTRM_PTCPT OP
-	                    JOIN TB_EMPLOYEE E ON E.EMP_ID = OP.EMP_ID
-	                    LEFT JOIN TB_JOB_POSITION JP ON JP.JOB_PSTN_CD = E.JOB_PSTN_CD
-	                    WHERE OP.CHTRM_ID = C.CHTRM_ID
-	                    AND OP.EMP_ID != #{empId}
-	                    AND OP.LEAV_DT IS NULL
-	                    AND ROWNUM = 1
-	                )
-	            END AS JOB_TITLE,
 	            CASE
 	                WHEN C.CHTRM_TYPE_CD = 'M1' THEN (
 	                    SELECT D.DEPT_NM

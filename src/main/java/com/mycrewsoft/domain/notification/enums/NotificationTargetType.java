@@ -5,5 +5,8 @@ public enum NotificationTargetType {
     SCHEDULE,
     MEETING,
     PROJECT,
-    TASK
+    TASK,
+    BOARD,
+    EDUCATION,
+    EMPLOYEE	
 }
