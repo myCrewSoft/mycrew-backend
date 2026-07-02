@@ -10,23 +10,68 @@
 	</resultMap>
 	
 	<sql id="schdColumns">
-        S.SCHD_ID,
-        S.SCHD_CLSF_CD,
-        S.SCHD_NM,
-        S.SCHD_DETAIL_CN,
-        S.BEGIN_DT,
-        S.END_DT,
-        S.SCHD_WRTR_ID,
-        S.SCHD_REGST_DT,
-        S.SCHD_CHGR_ID,
-        S.SCHD_CHG_DT,
-        S.ALL_DAY_YN,
-        S.DEL_YN,
-        S.DEL_DT,
-        S.REPT_YN,
-        S.REPT_TYPE_CD,
-        S.REPT_END_DT
-    </sql>
+	    S.SCHD_ID,
+	    S.SCHD_CLSF_CD,
+	    S.SCHD_NM,
+	    S.SCHD_DETAIL_CN,
+	    S.BEGIN_DT,
+	    S.END_DT,
+	    S.SCHD_WRTR_ID,
+	    S.SCHD_REGST_DT,
+	    S.SCHD_CHGR_ID,
+	    S.SCHD_CHG_DT,
+	    S.ALL_DAY_YN,
+	    S.DEL_YN,
+	    S.DEL_DT,
+	    S.REPT_YN,
+	    S.REPT_TYPE_CD,
+	    S.REPT_END_DT,
+	    WE.EMP_NM           AS SCHD_WRTR_NM,
+	    WD.DEPT_NM          AS SCHD_WRTR_DEPT_NM,
+	    WJG.JOB_GRD_NM      AS SCHD_WRTR_JOB_GRD_NM,
+	    WE.PRFL_IMG_FILE_ID AS SCHD_WRTR_PRFL_IMG_FILE_ID,
+	    (SELECT TO_NUMBER(ST.TARGET_ID) FROM TB_SCHD_TARGET ST
+	     WHERE ST.SCHD_ID = S.SCHD_ID
+	       AND ST.TARGET_TYPE_CD = '06'
+	       AND ROWNUM = 1) AS TASK_ID,
+	    (SELECT CASE
+	         WHEN EXISTS (
+	             SELECT 1 FROM TB_SCHD_TARGET ST
+	             WHERE ST.SCHD_ID = S.SCHD_ID AND ST.TARGET_TYPE_CD = '05'
+	         )
+	         THEN (
+	             SELECT TO_NUMBER(ST.TARGET_ID) FROM TB_SCHD_TARGET ST
+	             WHERE ST.SCHD_ID = S.SCHD_ID AND ST.TARGET_TYPE_CD = '05'
+	             AND ROWNUM = 1
+	         )
+	         WHEN EXISTS (
+	             SELECT 1 FROM TB_SCHD_TARGET ST
+	             WHERE ST.SCHD_ID = S.SCHD_ID AND ST.TARGET_TYPE_CD = '06'
+	         )
+	         THEN (
+	             SELECT T.PROJ_ID FROM TB_TASK T
+	             INNER JOIN TB_SCHD_TARGET ST ON TO_CHAR(T.TASK_ID) = ST.TARGET_ID
+	             WHERE ST.SCHD_ID = S.SCHD_ID AND ST.TARGET_TYPE_CD = '06'
+	             AND ROWNUM = 1
+	         )
+	         ELSE NULL
+	     END FROM DUAL) AS PROJ_ID,
+	    (SELECT TO_NUMBER(ST.TARGET_ID) FROM TB_SCHD_TARGET ST
+	     WHERE ST.SCHD_ID = S.SCHD_ID
+	       AND ST.TARGET_TYPE_CD = '07'
+	       AND ROWNUM = 1) AS MTNG_ID,
+	    (SELECT TO_NUMBER(ST.TARGET_ID) FROM TB_SCHD_TARGET ST
+	     WHERE ST.SCHD_ID = S.SCHD_ID
+	       AND ST.TARGET_TYPE_CD = '08'
+	       AND ROWNUM = 1) AS RSRV_ID,
+	    (SELECT D.DEPT_NM FROM TB_DEPARTMENT D
+	     WHERE D.DEPT_CD = (
+	         SELECT ST.TARGET_ID FROM TB_SCHD_TARGET ST
+	         WHERE ST.SCHD_ID = S.SCHD_ID
+	           AND ST.TARGET_TYPE_CD = '04'
+	           AND ROWNUM = 1
+	     )) AS SCHD_DEPT_NM
+	</sql>
     
     <sql id="whereNotDeleted">
         S.DEL_YN = 'N'
@@ -40,6 +85,9 @@
 			, T.TARGET_ID
 		FROM TB_INTG_SCHD S
 		LEFT JOIN TB_SCHD_TARGET T ON S.SCHD_ID = T.SCHD_ID
+		LEFT JOIN TB_EMPLOYEE WE   ON WE.EMP_ID    = S.SCHD_WRTR_ID
+		LEFT JOIN TB_DEPARTMENT WD  ON WD.DEPT_CD   = WE.DEPT_CD
+		LEFT JOIN TB_JOB_GRADE WJG  ON WJG.JOB_GRD_CD = WE.JOB_GRD_CD
 		WHERE <include refid="whereNotDeleted"/>
 		  AND S.SCHD_ID = #{schdId}
 	</select>
@@ -50,6 +98,9 @@
 	        SELECT DISTINCT
 	            <include refid="schdColumns"/>
 	          FROM TB_INTG_SCHD S
+          LEFT JOIN TB_EMPLOYEE WE   ON WE.EMP_ID    = S.SCHD_WRTR_ID
+		  LEFT JOIN TB_DEPARTMENT WD  ON WD.DEPT_CD   = WE.DEPT_CD
+	      LEFT JOIN TB_JOB_GRADE WJG  ON WJG.JOB_GRD_CD = WE.JOB_GRD_CD
 	         WHERE <include refid="whereNotDeleted"/>
 	           AND S.BEGIN_DT &lt;= #{endDt}
 	           AND S.END_DT   &gt;= #{beginDt}
