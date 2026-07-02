@@ -512,7 +512,7 @@ public class MsngrServiceImpl implements MsngrService {
                 .empId(ptcpt.getEmpId())
                 .empNm(profile != null ? profile.getEmpNm() : null)
                 .deptNm(getDeptNm(profile))
-                .jobPstnNm(getJobPstnNm(profile))
+                .jobGrdNm(getJobGrdNm(profile))
                 .prflImgFileId(profile != null ? profile.getPrflImgFileId() : null)
                 .ptcptSttusCd(ptcpt.getPtcptSttusCd())
                 .build();
@@ -525,11 +525,11 @@ public class MsngrServiceImpl implements MsngrService {
         return profile.getDepartment().getDeptNm();
     }
 
-    private String getJobPstnNm(EmployeeProfileDTO profile) {
-        if (profile == null || profile.getJobPosition() == null) {
+    private String getJobGrdNm(EmployeeProfileDTO profile) {
+        if (profile == null || profile.getJobGrade() == null) {
             return null;
         }
-        return profile.getJobPosition().getJobPstnNm();
+        return profile.getJobGrade().getJobGrdNm();
     }
 
     private ChatRoomResponse applyOneToOneSummary(ChatRoomResponse response, Long empId) {
@@ -545,14 +545,23 @@ public class MsngrServiceImpl implements MsngrService {
         if (other == null) {
             return response;
         }
-
-        return response.toBuilder()
-                .name(other.getEmpNm())
-                .prflImgFileId(other.getPrflImgFileId())
-                .status(other.getPtcptSttusCd())
-                .jobTitle(other.getJobPstnNm())
-                .department(other.getDeptNm())
-                .build();
+        
+        if(response.getName().isEmpty()) {
+        	return response.toBuilder()
+                    .name(other.getEmpNm())
+                    .prflImgFileId(other.getPrflImgFileId())
+                    .status(other.getPtcptSttusCd())
+                    .jobTitle(other.getJobGrdNm())
+                    .department(other.getDeptNm())
+                    .build();
+        } else {
+        	return response.toBuilder()
+                    .prflImgFileId(other.getPrflImgFileId())
+                    .status(other.getPtcptSttusCd())
+                    .jobTitle(other.getJobGrdNm())
+                    .department(other.getDeptNm())
+                    .build();
+        }
     }
 
     // 참여자 변경 웹소켓 송신
