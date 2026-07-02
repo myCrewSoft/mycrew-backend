@@ -180,6 +180,7 @@ public class DashboardWidgetServiceImpl implements DashboardWidgetService {
                                 ? dto.getTaskEndDt().toLocalDate().toString()
                                 : null)
                         .status(dto.getTaskStatCd())
+                        .projId(dto.getProjId())
                         .build())
                 .toList();
 
