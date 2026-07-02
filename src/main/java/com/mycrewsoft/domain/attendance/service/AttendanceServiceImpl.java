@@ -107,7 +107,7 @@ public class AttendanceServiceImpl implements AttendanceService {
 		LocalDateTime now = LocalDateTime.now();
 
 		int grossMin = (int) Duration.between(daily.getWrkStartDtm(), now).toMinutes();
-		int workMin = Math.max(0, grossMin - nz(policy.getBreakMin()));
+		int workMin = calculateWorkMin(grossMin, policy);
 		int stdDay = nz(policy.getStdWorkMinDay());
 		int normalWorkMin = Math.min(workMin, stdDay);
 		int otCandidate = Math.max(0, workMin - stdDay);
@@ -444,6 +444,15 @@ public class AttendanceServiceImpl implements AttendanceService {
 	private int minutesAfter(LocalDateTime from, LocalDateTime to) {
 		long min = Duration.between(from, to).toMinutes();
 		return min > 0 ? (int) min : 0;
+	}
+
+	private int calculateWorkMin(int grossMin, AtndPolicyVO policy) {
+		int safeGrossMin = Math.max(0, grossMin);
+		int breakMin = nz(policy.getBreakMin());
+		if (breakMin <= 0 || safeGrossMin <= breakMin) {
+			return safeGrossMin;
+		}
+		return safeGrossMin - breakMin;
 	}
 
 	private int nz(Integer v) {
