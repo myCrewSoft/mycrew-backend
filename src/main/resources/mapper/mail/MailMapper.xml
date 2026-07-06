@@ -1,0 +1,976 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.domain.mail.mapper.MailMapper">
+
+    <resultMap id="MailMessageRowMap" type="com.mycrewsoft.domain.mail.vo.MailMessageRow">
+        <id property="mailId" column="MAIL_ID"/>
+        <result property="empId" column="EMP_ID"/>
+        <result property="externalMessageId" column="EXTERNAL_MESSAGE_ID"/>
+        <result property="threadId" column="THREAD_ID"/>
+        <result property="messageIdHeader" column="MESSAGE_ID_HEADER"/>
+        <result property="subject" column="SUBJECT"/>
+        <result property="content" column="CONTENT"/>
+        <result property="snippet" column="SNIPPET"/>
+        <result property="fromEmail" column="FROM_EMAIL"/>
+        <result property="toSummary" column="TO_SUMMARY"/>
+        <result property="sentAt" column="SENT_AT"/>
+        <result property="internalDate" column="INTERNAL_DATE"/>
+        <result property="draftYn" column="DRAFT_YN"/>
+        <result property="bodySyncYn" column="BODY_SYNC_YN"/>
+        <result property="delYn" column="DEL_YN"/>
+    </resultMap>
+
+    <resultMap id="MailSummaryMap" type="com.mycrewsoft.domain.mail.dto.response.MailSummaryResponse">
+        <id property="mailId" column="MAIL_ID"/>
+        <result property="externalMessageId" column="EXTERNAL_MESSAGE_ID"/>
+        <result property="threadId" column="THREAD_ID"/>
+        <result property="subject" column="SUBJECT"/>
+        <result property="snippet" column="SNIPPET"/>
+        <result property="fromEmail" column="FROM_EMAIL"/>
+        <result property="toSummary" column="TO_SUMMARY"/>
+        <result property="sentAt" column="SENT_AT"/>
+        <result property="unread" column="UNREAD"/>
+        <result property="important" column="IMPORTANT"/>
+        <result property="hasAttachment" column="HAS_ATTACHMENT"/>
+    </resultMap>
+
+    <resultMap id="MailDetailMap" type="com.mycrewsoft.domain.mail.dto.response.MailDetailResponse">
+        <id property="mailId" column="MAIL_ID"/>
+        <result property="externalMessageId" column="EXTERNAL_MESSAGE_ID"/>
+        <result property="threadId" column="THREAD_ID"/>
+        <result property="subject" column="SUBJECT"/>
+        <result property="content" column="CONTENT"/>
+        <result property="snippet" column="SNIPPET"/>
+        <result property="fromEmail" column="FROM_EMAIL"/>
+        <result property="sentAt" column="SENT_AT"/>
+        <result property="unread" column="UNREAD"/>
+        <result property="important" column="IMPORTANT"/>
+    </resultMap>
+
+    <select id="selectActiveMailAccount" resultType="com.mycrewsoft.domain.mail.vo.MailAccountVO">
+        SELECT
+            EMP_ID AS empId,
+            PROVIDER_CD AS providerCd,
+            EMAIL_ADDR AS emailAddr,
+            GOOGLE_SUB_ID AS googleSubId,
+            ACCESS_TOKEN AS accessToken,
+            REFRESH_TOKEN AS refreshToken,
+            TOKEN_EXPR_DT AS tokenExprDt,
+            SCOPE_CN AS scopeCn,
+            GOOGLE_HISTORY_ID AS googleHistoryId,
+            SYNC_LAST_DT AS syncLastDt,
+            WATCH_EXPR_DT AS watchExprDt,
+            TOKEN_STATUS_CD AS tokenStatusCd,
+            USE_YN AS useYn,
+            CONNECTED_DT AS connectedDt,
+            REVOKED_DT AS revokedDt,
+            FRST_REG_DT AS frstRegDt,
+            LAST_MDFCN_DT AS lastMdfcnDt
+        FROM TB_MAIL_ACCOUNT
+        WHERE EMP_ID = #{empId}
+          AND PROVIDER_CD = 'GOOGLE'
+          AND USE_YN = 'Y'
+    </select>
+
+    <select id="selectActiveMailAccounts" resultType="com.mycrewsoft.domain.mail.vo.MailAccountVO">
+        SELECT
+            EMP_ID AS empId,
+            PROVIDER_CD AS providerCd,
+            EMAIL_ADDR AS emailAddr,
+            GOOGLE_SUB_ID AS googleSubId,
+            ACCESS_TOKEN AS accessToken,
+            REFRESH_TOKEN AS refreshToken,
+            TOKEN_EXPR_DT AS tokenExprDt,
+            SCOPE_CN AS scopeCn,
+            GOOGLE_HISTORY_ID AS googleHistoryId,
+            SYNC_LAST_DT AS syncLastDt,
+            WATCH_EXPR_DT AS watchExprDt,
+            TOKEN_STATUS_CD AS tokenStatusCd,
+            USE_YN AS useYn,
+            CONNECTED_DT AS connectedDt,
+            REVOKED_DT AS revokedDt,
+            FRST_REG_DT AS frstRegDt,
+            LAST_MDFCN_DT AS lastMdfcnDt
+        FROM TB_MAIL_ACCOUNT
+        WHERE PROVIDER_CD = 'GOOGLE'
+          AND USE_YN = 'Y'
+          AND TOKEN_STATUS_CD = 'ACTIVE'
+    </select>
+
+    <select id="selectNextMailMessageId" resultType="long">
+        SELECT NVL(MAX(MAIL_MSG_ID), 0) + 1 FROM TB_MAIL_MESSAGE
+    </select>
+
+    <select id="selectNextMailLabelId" resultType="long">
+        SELECT NVL(MAX(MAIL_LABEL_ID), 0) + 1 FROM TB_MAIL_LABEL
+    </select>
+
+    <select id="selectNextMailLabelMapId" resultType="long">
+        SELECT NVL(MAX(MAIL_LABEL_MAP_ID), 0) + 1 FROM TB_MAIL_LABEL_MAP
+    </select>
+
+    <select id="selectNextMailParticipantId" resultType="long">
+        SELECT NVL(MAX(MAIL_PARTICIPANT_ID), 0) + 1 FROM TB_MAIL_PARTICIPANT
+    </select>
+
+    <insert id="insertMailMessage" parameterType="com.mycrewsoft.domain.mail.vo.MailMessageRow">
+        INSERT INTO TB_MAIL_MESSAGE (
+            MAIL_MSG_ID,
+            EMP_ID,
+            EXTERNAL_MSG_ID,
+            EXTERNAL_THREAD_ID,
+            MESSAGE_ID_HEADER,
+            MAIL_SJ,
+            MAIL_CN,
+            SNIPPET,
+            FROM_EMAIL,
+            TO_SUMMARY,
+            MAIL_SNDNG_DT,
+            INTERNAL_DATE,
+            DRAFT_YN,
+            BODY_SYNC_YN,
+            DEL_YN,
+            FRST_REG_DT
+        ) VALUES (
+            #{mailId},
+            #{empId},
+            #{externalMessageId},
+            #{threadId},
+            #{messageIdHeader},
+            #{subject},
+            #{content},
+            #{snippet},
+            #{fromEmail},
+            #{toSummary},
+            #{sentAt},
+            #{internalDate},
+            #{draftYn},
+            #{bodySyncYn},
+            #{delYn},
+            SYSDATE
+        )
+    </insert>
+
+    <update id="updateMailBody">
+        UPDATE TB_MAIL_MESSAGE
+        SET MAIL_CN = #{content},
+            SNIPPET = COALESCE(#{snippet}, SNIPPET),
+            BODY_SYNC_YN = 'Y',
+            LAST_MDFCN_DT = SYSDATE
+        WHERE EMP_ID = #{empId}
+          AND MAIL_MSG_ID = #{mailId}
+          AND DEL_YN = 'N'
+    </update>
+
+    <update id="updateMailMessage" parameterType="com.mycrewsoft.domain.mail.vo.MailMessageRow">
+        UPDATE TB_MAIL_MESSAGE
+        SET EXTERNAL_THREAD_ID = #{threadId},
+            MESSAGE_ID_HEADER = #{messageIdHeader},
+            MAIL_SJ = #{subject},
+            MAIL_CN = #{content},
+            SNIPPET = #{snippet},
+            FROM_EMAIL = #{fromEmail},
+            TO_SUMMARY = #{toSummary},
+            MAIL_SNDNG_DT = #{sentAt},
+            INTERNAL_DATE = #{internalDate},
+            DRAFT_YN = #{draftYn},
+            BODY_SYNC_YN = #{bodySyncYn},
+            DEL_YN = #{delYn},
+            LAST_MDFCN_DT = SYSDATE
+        WHERE EMP_ID = #{empId}
+          AND MAIL_MSG_ID = #{mailId}
+    </update>
+
+    <select id="selectMailRow" resultMap="MailMessageRowMap">
+        SELECT
+            MAIL_MSG_ID AS MAIL_ID,
+            EMP_ID,
+            EXTERNAL_MSG_ID AS EXTERNAL_MESSAGE_ID,
+            EXTERNAL_THREAD_ID AS THREAD_ID,
+            MESSAGE_ID_HEADER,
+            MAIL_SJ AS SUBJECT,
+            MAIL_CN AS CONTENT,
+            SNIPPET,
+            FROM_EMAIL,
+            TO_SUMMARY,
+            MAIL_SNDNG_DT AS SENT_AT,
+            INTERNAL_DATE,
+            DRAFT_YN,
+            BODY_SYNC_YN,
+            DEL_YN
+        FROM TB_MAIL_MESSAGE
+        WHERE EMP_ID = #{empId}
+          AND MAIL_MSG_ID = #{mailId}
+          AND DEL_YN = 'N'
+    </select>
+
+    <select id="selectMailRows" resultMap="MailMessageRowMap">
+        SELECT
+            MAIL_MSG_ID AS MAIL_ID,
+            EMP_ID,
+            EXTERNAL_MSG_ID AS EXTERNAL_MESSAGE_ID,
+            EXTERNAL_THREAD_ID AS THREAD_ID,
+            MESSAGE_ID_HEADER,
+            MAIL_SJ AS SUBJECT,
+            MAIL_CN AS CONTENT,
+            SNIPPET,
+            FROM_EMAIL,
+            TO_SUMMARY,
+            MAIL_SNDNG_DT AS SENT_AT,
+            INTERNAL_DATE,
+            DRAFT_YN,
+            BODY_SYNC_YN,
+            DEL_YN
+        FROM TB_MAIL_MESSAGE
+        WHERE EMP_ID = #{empId}
+          AND DEL_YN = 'N'
+          AND MAIL_MSG_ID IN
+          <foreach collection="mailIds" item="mailId" open="(" separator="," close=")">
+              #{mailId}
+          </foreach>
+    </select>
+
+    <select id="selectMailRowsByExternalMessageIds" resultMap="MailMessageRowMap">
+        SELECT
+            MAIL_MSG_ID AS MAIL_ID,
+            EMP_ID,
+            EXTERNAL_MSG_ID AS EXTERNAL_MESSAGE_ID
+        FROM TB_MAIL_MESSAGE
+        WHERE EMP_ID = #{empId}
+          AND EXTERNAL_MSG_ID IN
+          <foreach collection="externalMessageIds" item="externalMessageId" open="(" separator="," close=")">
+              #{externalMessageId}
+          </foreach>
+    </select>
+
+    <select id="selectMailIdByExternalMessageId" resultType="long">
+        SELECT MAIL_MSG_ID
+        FROM TB_MAIL_MESSAGE
+        WHERE EMP_ID = #{empId}
+          AND EXTERNAL_MSG_ID = #{externalMessageId}
+    </select>
+
+    <sql id="mailFlags">
+        CASE WHEN EXISTS (
+            SELECT 1
+            FROM TB_MAIL_LABEL_MAP LM
+            JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+            WHERE LM.EMP_ID = M.EMP_ID
+              AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+              AND TRIM(L.LABEL_TYPE_CD) = 'UNREAD'
+        ) THEN 1 ELSE 0 END AS UNREAD,
+        CASE WHEN EXISTS (
+            SELECT 1
+            FROM TB_MAIL_LABEL_MAP LM
+            JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+            WHERE LM.EMP_ID = M.EMP_ID
+              AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+              AND TRIM(L.LABEL_TYPE_CD) = 'IMPORTANT'
+        ) THEN 1 ELSE 0 END AS IMPORTANT
+    </sql>
+
+    <sql id="notTrash">
+        NOT EXISTS (
+            SELECT 1
+            FROM TB_MAIL_LABEL_MAP NTL
+            JOIN TB_MAIL_LABEL NTLB ON NTLB.MAIL_LABEL_ID = NTL.MAIL_LABEL_ID
+            WHERE NTL.EMP_ID = M.EMP_ID
+              AND NTL.MAIL_MSG_ID = M.MAIL_MSG_ID
+              AND TRIM(NTLB.LABEL_TYPE_CD) = 'TRASH'
+        )
+    </sql>
+
+    <select id="countMails" resultType="long">
+        SELECT COUNT(1)
+        FROM TB_MAIL_MESSAGE M
+        WHERE M.EMP_ID = #{empId}
+          AND M.DEL_YN = 'N'
+        <if test="type != 'draft'">
+          AND M.DRAFT_YN = 'N'
+        </if>
+        <if test="type == 'draft'">
+          AND M.DRAFT_YN = 'Y'
+        </if>
+        <choose>
+            <when test="type == 'inbox'">
+                AND <include refid="notTrash"/>
+                AND EXISTS (
+                    SELECT 1
+                    FROM TB_MAIL_LABEL_MAP LM
+                    JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+                    WHERE LM.EMP_ID = M.EMP_ID
+                      AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                      AND TRIM(L.LABEL_TYPE_CD) = 'INBOX'
+                )
+            </when>
+            <when test="type == 'sent'">
+                AND <include refid="notTrash"/>
+                AND EXISTS (
+                    SELECT 1
+                    FROM TB_MAIL_LABEL_MAP LM
+                    JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+                    WHERE LM.EMP_ID = M.EMP_ID
+                      AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                      AND TRIM(L.LABEL_TYPE_CD) = 'SENT'
+                )
+            </when>
+            <when test="type == 'self'">
+                AND <include refid="notTrash"/>
+                AND LOWER(M.FROM_EMAIL) = LOWER(#{emailAddr})
+                AND EXISTS (
+                    SELECT 1 FROM TB_MAIL_PARTICIPANT P
+                    WHERE P.EMP_ID = M.EMP_ID
+                      AND P.MAIL_MSG_ID = M.MAIL_MSG_ID
+                      AND TRIM(P.PARTICIPANT_TYPE_CD) = 'TO'
+                      AND LOWER(P.EMAIL_ADDR) = LOWER(#{emailAddr})
+                )
+            </when>
+            <when test="type == 'tome'">
+                AND <include refid="notTrash"/>
+                AND EXISTS (
+                    SELECT 1 FROM TB_MAIL_PARTICIPANT P
+                    WHERE P.EMP_ID = M.EMP_ID
+                      AND P.MAIL_MSG_ID = M.MAIL_MSG_ID
+                      AND TRIM(P.PARTICIPANT_TYPE_CD) IN ('TO', 'CC')
+                      AND LOWER(P.EMAIL_ADDR) = LOWER(#{emailAddr})
+                )
+            </when>
+            <when test="type == 'important'">
+                AND <include refid="notTrash"/>
+                AND EXISTS (
+                    SELECT 1
+                    FROM TB_MAIL_LABEL_MAP LM
+                    JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+                    WHERE LM.EMP_ID = M.EMP_ID
+                      AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                      AND TRIM(L.LABEL_TYPE_CD) = 'IMPORTANT'
+                )
+            </when>
+            <when test="type == 'unread'">
+                AND <include refid="notTrash"/>
+                AND EXISTS (
+                    SELECT 1
+                    FROM TB_MAIL_LABEL_MAP LM
+                    JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+                    WHERE LM.EMP_ID = M.EMP_ID
+                      AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                      AND TRIM(L.LABEL_TYPE_CD) = 'UNREAD'
+                )
+            </when>
+            <when test="type == 'draft'">
+                AND <include refid="notTrash"/>
+            </when>
+            <otherwise>
+                AND <include refid="notTrash"/>
+            </otherwise>
+        </choose>
+        <if test="keyword != null and keyword != ''">
+            AND (
+                LOWER(M.MAIL_SJ) LIKE '%' || LOWER(#{keyword}) || '%'
+                OR LOWER(M.SNIPPET) LIKE '%' || LOWER(#{keyword}) || '%'
+                OR LOWER(M.FROM_EMAIL) LIKE '%' || LOWER(#{keyword}) || '%'
+                OR LOWER(M.TO_SUMMARY) LIKE '%' || LOWER(#{keyword}) || '%'
+            )
+        </if>
+    </select>
+
+    <select id="selectMails" resultMap="MailSummaryMap">
+        SELECT
+            M.MAIL_MSG_ID AS MAIL_ID,
+            M.EXTERNAL_MSG_ID AS EXTERNAL_MESSAGE_ID,
+            M.EXTERNAL_THREAD_ID AS THREAD_ID,
+            M.MAIL_SJ AS SUBJECT,
+            M.SNIPPET,
+            M.FROM_EMAIL,
+            M.TO_SUMMARY,
+            M.MAIL_SNDNG_DT AS SENT_AT,
+            <include refid="mailFlags"/>,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM TB_MAIL_ATTACHMENT A
+                WHERE A.EMP_ID = M.EMP_ID
+                  AND A.MAIL_MSG_ID = M.MAIL_MSG_ID
+            ) THEN 1 ELSE 0 END AS HAS_ATTACHMENT
+        FROM TB_MAIL_MESSAGE M
+        WHERE M.EMP_ID = #{empId}
+          AND M.DEL_YN = 'N'
+        <if test="type != 'draft'">
+          AND M.DRAFT_YN = 'N'
+        </if>
+        <if test="type == 'draft'">
+          AND M.DRAFT_YN = 'Y'
+        </if>
+        <choose>
+            <when test="type == 'inbox'">
+                AND <include refid="notTrash"/>
+                AND EXISTS (
+                    SELECT 1
+                    FROM TB_MAIL_LABEL_MAP LM
+                    JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+                    WHERE LM.EMP_ID = M.EMP_ID
+                      AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                      AND TRIM(L.LABEL_TYPE_CD) = 'INBOX'
+                )
+            </when>
+            <when test="type == 'sent'">
+                AND <include refid="notTrash"/>
+                AND EXISTS (
+                    SELECT 1
+                    FROM TB_MAIL_LABEL_MAP LM
+                    JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+                    WHERE LM.EMP_ID = M.EMP_ID
+                      AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                      AND TRIM(L.LABEL_TYPE_CD) = 'SENT'
+                )
+            </when>
+            <when test="type == 'self'">
+                AND <include refid="notTrash"/>
+                AND LOWER(M.FROM_EMAIL) = LOWER(#{emailAddr})
+                AND EXISTS (
+                    SELECT 1 FROM TB_MAIL_PARTICIPANT P
+                    WHERE P.EMP_ID = M.EMP_ID
+                      AND P.MAIL_MSG_ID = M.MAIL_MSG_ID
+                      AND TRIM(P.PARTICIPANT_TYPE_CD) = 'TO'
+                      AND LOWER(P.EMAIL_ADDR) = LOWER(#{emailAddr})
+                )
+            </when>
+            <when test="type == 'tome'">
+                AND <include refid="notTrash"/>
+                AND EXISTS (
+                    SELECT 1 FROM TB_MAIL_PARTICIPANT P
+                    WHERE P.EMP_ID = M.EMP_ID
+                      AND P.MAIL_MSG_ID = M.MAIL_MSG_ID
+                      AND TRIM(P.PARTICIPANT_TYPE_CD) IN ('TO', 'CC')
+                      AND LOWER(P.EMAIL_ADDR) = LOWER(#{emailAddr})
+                )
+            </when>
+            <when test="type == 'important'">
+                AND <include refid="notTrash"/>
+                AND EXISTS (
+                    SELECT 1
+                    FROM TB_MAIL_LABEL_MAP LM
+                    JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+                    WHERE LM.EMP_ID = M.EMP_ID
+                      AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                      AND TRIM(L.LABEL_TYPE_CD) = 'IMPORTANT'
+                )
+            </when>
+            <when test="type == 'unread'">
+                AND <include refid="notTrash"/>
+                AND EXISTS (
+                    SELECT 1
+                    FROM TB_MAIL_LABEL_MAP LM
+                    JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+                    WHERE LM.EMP_ID = M.EMP_ID
+                      AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                      AND TRIM(L.LABEL_TYPE_CD) = 'UNREAD'
+                )
+            </when>
+            <when test="type == 'draft'">
+                AND <include refid="notTrash"/>
+            </when>
+            <otherwise>
+                AND <include refid="notTrash"/>
+            </otherwise>
+        </choose>
+        <if test="keyword != null and keyword != ''">
+            AND (
+                LOWER(M.MAIL_SJ) LIKE '%' || LOWER(#{keyword}) || '%'
+                OR LOWER(M.SNIPPET) LIKE '%' || LOWER(#{keyword}) || '%'
+                OR LOWER(M.FROM_EMAIL) LIKE '%' || LOWER(#{keyword}) || '%'
+                OR LOWER(M.TO_SUMMARY) LIKE '%' || LOWER(#{keyword}) || '%'
+            )
+        </if>
+        ORDER BY M.MAIL_SNDNG_DT DESC NULLS LAST, M.MAIL_MSG_ID DESC
+        OFFSET #{offset} ROWS FETCH NEXT #{size} ROWS ONLY
+    </select>
+
+    <select id="countTrash" resultType="long">
+        SELECT COUNT(1)
+        FROM TB_MAIL_MESSAGE M
+        WHERE M.EMP_ID = #{empId}
+          AND M.DEL_YN = 'N'
+          AND EXISTS (
+              SELECT 1
+              FROM TB_MAIL_LABEL_MAP LM
+              JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+              WHERE LM.EMP_ID = M.EMP_ID
+                AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                AND TRIM(L.LABEL_TYPE_CD) = 'TRASH'
+          )
+    </select>
+
+    <select id="selectTrash" resultMap="MailSummaryMap">
+        SELECT
+            M.MAIL_MSG_ID AS MAIL_ID,
+            M.EXTERNAL_MSG_ID AS EXTERNAL_MESSAGE_ID,
+            M.EXTERNAL_THREAD_ID AS THREAD_ID,
+            M.MAIL_SJ AS SUBJECT,
+            M.SNIPPET,
+            M.FROM_EMAIL,
+            M.TO_SUMMARY,
+            M.MAIL_SNDNG_DT AS SENT_AT,
+            <include refid="mailFlags"/>,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM TB_MAIL_ATTACHMENT A
+                WHERE A.EMP_ID = M.EMP_ID
+                  AND A.MAIL_MSG_ID = M.MAIL_MSG_ID
+            ) THEN 1 ELSE 0 END AS HAS_ATTACHMENT
+        FROM TB_MAIL_MESSAGE M
+        WHERE M.EMP_ID = #{empId}
+          AND M.DEL_YN = 'N'
+          AND EXISTS (
+              SELECT 1
+              FROM TB_MAIL_LABEL_MAP LM
+              JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+              WHERE LM.EMP_ID = M.EMP_ID
+                AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                AND TRIM(L.LABEL_TYPE_CD) = 'TRASH'
+          )
+        ORDER BY M.MAIL_SNDNG_DT DESC NULLS LAST, M.MAIL_MSG_ID DESC
+        OFFSET #{offset} ROWS FETCH NEXT #{size} ROWS ONLY
+    </select>
+
+    <select id="selectMailDetail" resultMap="MailDetailMap">
+        SELECT
+            M.MAIL_MSG_ID AS MAIL_ID,
+            M.EXTERNAL_MSG_ID AS EXTERNAL_MESSAGE_ID,
+            M.EXTERNAL_THREAD_ID AS THREAD_ID,
+            M.MAIL_SJ AS SUBJECT,
+            M.MAIL_CN AS CONTENT,
+            M.SNIPPET,
+            M.FROM_EMAIL,
+            M.MAIL_SNDNG_DT AS SENT_AT,
+            <include refid="mailFlags"/>
+        FROM TB_MAIL_MESSAGE M
+        WHERE M.EMP_ID = #{empId}
+          AND M.MAIL_MSG_ID = #{mailId}
+          AND M.DEL_YN = 'N'
+    </select>
+
+    <select id="selectParticipants" resultType="com.mycrewsoft.domain.mail.dto.response.MailParticipantResponse">
+        SELECT
+            TRIM(PARTICIPANT_TYPE_CD) AS type,
+            EMAIL_ADDR AS email
+        FROM TB_MAIL_PARTICIPANT
+        WHERE EMP_ID = #{empId}
+          AND MAIL_MSG_ID = #{mailId}
+        ORDER BY MAIL_PARTICIPANT_ID
+    </select>
+
+    <select id="selectAttachments" resultType="com.mycrewsoft.domain.mail.dto.response.MailAttachmentResponse">
+        SELECT
+            A.MAIL_ATCH_FILE_ID AS attachmentId,
+            D.ORGNL_FILE_NM AS originalFileName,
+            D.FILE_SZ AS fileSize,
+            D.ATCH_FILE_TY_CD AS contentType
+        FROM TB_MAIL_ATTACHMENT A
+        LEFT JOIN TB_CMMN_ATCH_FILE_DTL D ON D.ATCH_FILE_DTL_ID = A.MAIL_ATCH_FILE_ID
+        WHERE A.EMP_ID = #{empId}
+          AND A.MAIL_MSG_ID = #{mailId}
+        ORDER BY A.MAIL_ATCH_FILE_ID
+    </select>
+
+    <select id="selectAttachmentMeta" resultType="com.mycrewsoft.domain.mail.dto.response.MailAttachmentResponse">
+        SELECT
+            A.MAIL_ATCH_FILE_ID AS attachmentId,
+            D.ORGNL_FILE_NM AS originalFileName,
+            D.FILE_SZ AS fileSize,
+            D.ATCH_FILE_TY_CD AS contentType
+        FROM TB_MAIL_ATTACHMENT A
+        LEFT JOIN TB_CMMN_ATCH_FILE_DTL D ON D.ATCH_FILE_DTL_ID = A.MAIL_ATCH_FILE_ID
+        WHERE A.EMP_ID = #{empId}
+          AND A.MAIL_MSG_ID = #{mailId}
+          AND A.MAIL_ATCH_FILE_ID = #{attachmentId}
+    </select>
+
+    <select id="selectLabelTypes" resultType="string">
+        SELECT TRIM(L.LABEL_TYPE_CD)
+        FROM TB_MAIL_LABEL_MAP LM
+        JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+        WHERE LM.EMP_ID = #{empId}
+          AND LM.MAIL_MSG_ID = #{mailId}
+          AND L.SYSTEM_YN = 'Y'
+        ORDER BY L.MAIL_LABEL_ID
+    </select>
+
+    <select id="selectTrashRows" resultMap="MailMessageRowMap">
+        SELECT
+            M.MAIL_MSG_ID AS MAIL_ID,
+            M.EMP_ID,
+            M.EXTERNAL_MSG_ID AS EXTERNAL_MESSAGE_ID,
+            M.EXTERNAL_THREAD_ID AS THREAD_ID,
+            M.MESSAGE_ID_HEADER,
+            M.MAIL_SJ AS SUBJECT,
+            M.MAIL_CN AS CONTENT,
+            M.SNIPPET,
+            M.FROM_EMAIL,
+            M.TO_SUMMARY,
+            M.MAIL_SNDNG_DT AS SENT_AT,
+            M.INTERNAL_DATE,
+            M.DRAFT_YN,
+            M.BODY_SYNC_YN,
+            M.DEL_YN
+        FROM TB_MAIL_MESSAGE M
+        WHERE M.EMP_ID = #{empId}
+          AND M.DEL_YN = 'N'
+          AND EXISTS (
+              SELECT 1
+              FROM TB_MAIL_LABEL_MAP LM
+              JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+              WHERE LM.EMP_ID = M.EMP_ID
+                AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                AND TRIM(L.LABEL_TYPE_CD) = 'TRASH'
+          )
+    </select>
+
+    <insert id="mergeSystemLabel">
+        MERGE INTO TB_MAIL_LABEL target
+        USING (
+            SELECT
+                #{labelId} AS MAIL_LABEL_ID,
+                #{empId} AS EMP_ID,
+                #{externalLabelId} AS EXTERNAL_LABEL_ID,
+                #{labelName} AS LABEL_NM,
+                #{labelTypeCd} AS LABEL_TYPE_CD
+            FROM DUAL
+        ) source
+        ON (
+            target.EMP_ID = source.EMP_ID
+            AND TRIM(target.LABEL_TYPE_CD) = source.LABEL_TYPE_CD
+        )
+        WHEN MATCHED THEN
+            UPDATE SET
+                target.EXTERNAL_LABEL_ID = source.EXTERNAL_LABEL_ID,
+                target.LABEL_NM = source.LABEL_NM,
+                target.SYSTEM_YN = 'Y',
+                target.USE_YN = 'Y'
+        WHEN NOT MATCHED THEN
+            INSERT (
+                MAIL_LABEL_ID,
+                EMP_ID,
+                EXTERNAL_LABEL_ID,
+                LABEL_NM,
+                SYSTEM_YN,
+                LABEL_TYPE_CD,
+                USE_YN
+            ) VALUES (
+                source.MAIL_LABEL_ID,
+                source.EMP_ID,
+                source.EXTERNAL_LABEL_ID,
+                source.LABEL_NM,
+                'Y',
+                source.LABEL_TYPE_CD,
+                'Y'
+            )
+    </insert>
+
+    <select id="selectLabelIdByType" resultType="long">
+        SELECT MAIL_LABEL_ID
+        FROM TB_MAIL_LABEL
+        WHERE EMP_ID = #{empId}
+          AND TRIM(LABEL_TYPE_CD) = #{labelTypeCd}
+          AND USE_YN = 'Y'
+    </select>
+
+    <select id="existsLabelMap" resultType="int">
+        SELECT COUNT(1)
+        FROM TB_MAIL_LABEL_MAP
+        WHERE EMP_ID = #{empId}
+          AND MAIL_MSG_ID = #{mailId}
+          AND MAIL_LABEL_ID = #{labelId}
+    </select>
+
+    <insert id="insertLabelMap">
+        INSERT INTO TB_MAIL_LABEL_MAP (
+            MAIL_LABEL_MAP_ID,
+            MAIL_MSG_ID,
+            EMP_ID,
+            MAIL_LABEL_ID
+        ) VALUES (
+            #{labelMapId},
+            #{mailId},
+            #{empId},
+            #{labelId}
+        )
+    </insert>
+
+    <insert id="insertLabelMapsByType">
+        INSERT INTO TB_MAIL_LABEL_MAP (
+            MAIL_LABEL_MAP_ID,
+            MAIL_MSG_ID,
+            EMP_ID,
+            MAIL_LABEL_ID
+        )
+        SELECT
+            #{labelMapBaseId} + ROW_NUMBER() OVER (ORDER BY S.MAIL_MSG_ID) - 1,
+            S.MAIL_MSG_ID,
+            #{empId},
+            L.MAIL_LABEL_ID
+        FROM (
+            <foreach collection="mailIds" item="mailId" separator=" UNION ALL ">
+                SELECT #{mailId} AS MAIL_MSG_ID FROM DUAL
+            </foreach>
+        ) S
+        JOIN TB_MAIL_LABEL L
+          ON L.EMP_ID = #{empId}
+         AND TRIM(L.LABEL_TYPE_CD) = #{labelTypeCd}
+         AND L.USE_YN = 'Y'
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM TB_MAIL_LABEL_MAP LM
+            WHERE LM.EMP_ID = #{empId}
+              AND LM.MAIL_MSG_ID = S.MAIL_MSG_ID
+              AND LM.MAIL_LABEL_ID = L.MAIL_LABEL_ID
+        )
+    </insert>
+
+    <delete id="deleteLabelMapByType">
+        DELETE FROM TB_MAIL_LABEL_MAP LM
+        WHERE LM.EMP_ID = #{empId}
+          AND LM.MAIL_MSG_ID = #{mailId}
+          AND EXISTS (
+              SELECT 1
+              FROM TB_MAIL_LABEL L
+              WHERE L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+                AND L.EMP_ID = LM.EMP_ID
+                AND TRIM(L.LABEL_TYPE_CD) = #{labelTypeCd}
+          )
+    </delete>
+
+    <delete id="deleteLabelMapsByType">
+        DELETE FROM TB_MAIL_LABEL_MAP LM
+        WHERE LM.EMP_ID = #{empId}
+          AND LM.MAIL_MSG_ID IN
+          <foreach collection="mailIds" item="mailId" open="(" separator="," close=")">
+              #{mailId}
+          </foreach>
+          AND LM.MAIL_LABEL_ID IN (
+              SELECT L.MAIL_LABEL_ID
+              FROM TB_MAIL_LABEL L
+              WHERE L.EMP_ID = #{empId}
+                AND TRIM(L.LABEL_TYPE_CD) = #{labelTypeCd}
+                AND L.USE_YN = 'Y'
+          )
+    </delete>
+
+    <delete id="deleteLabelMapsByMail">
+        DELETE FROM TB_MAIL_LABEL_MAP
+        WHERE EMP_ID = #{empId}
+          AND MAIL_MSG_ID = #{mailId}
+    </delete>
+
+    <update id="markMessagesDeleted">
+        UPDATE TB_MAIL_MESSAGE
+        SET DEL_YN = 'Y',
+            LAST_MDFCN_DT = SYSDATE
+        WHERE EMP_ID = #{empId}
+          AND MAIL_MSG_ID IN
+          <foreach collection="mailIds" item="mailId" open="(" separator="," close=")">
+              #{mailId}
+          </foreach>
+    </update>
+
+    <insert id="insertParticipant" parameterType="com.mycrewsoft.domain.mail.vo.MailParticipantRow">
+        INSERT INTO TB_MAIL_PARTICIPANT (
+            MAIL_PARTICIPANT_ID,
+            MAIL_MSG_ID,
+            EMP_ID,
+            EMAIL_ADDR,
+            PARTICIPANT_TYPE_CD
+        ) VALUES (
+            #{participantId},
+            #{mailId},
+            #{empId},
+            #{email},
+            #{type}
+        )
+    </insert>
+
+    <delete id="deleteParticipantsByMail">
+        DELETE FROM TB_MAIL_PARTICIPANT
+        WHERE EMP_ID = #{empId}
+          AND MAIL_MSG_ID = #{mailId}
+    </delete>
+
+    <insert id="insertAttachment">
+        INSERT INTO TB_MAIL_ATTACHMENT (
+            MAIL_ATCH_FILE_ID,
+            MAIL_MSG_ID,
+            EMP_ID
+        ) VALUES (
+            #{attachmentId},
+            #{mailId},
+            #{empId}
+        )
+    </insert>
+
+    <update id="updateMailAccountTokens">
+        UPDATE TB_MAIL_ACCOUNT
+        SET ACCESS_TOKEN = #{accessToken},
+            TOKEN_EXPR_DT = #{tokenExprDt},
+            TOKEN_STATUS_CD = #{tokenStatusCd},
+            LAST_MDFCN_DT = SYSDATE
+        WHERE EMP_ID = #{empId}
+          AND PROVIDER_CD = 'GOOGLE'
+    </update>
+
+    <update id="updateMailAccountSyncState">
+        UPDATE TB_MAIL_ACCOUNT
+        SET GOOGLE_HISTORY_ID = #{googleHistoryId},
+            SYNC_LAST_DT = SYSDATE,
+            LAST_MDFCN_DT = SYSDATE
+        WHERE EMP_ID = #{empId}
+          AND PROVIDER_CD = 'GOOGLE'
+    </update>
+
+    <select id="selectUserLabels" resultType="com.mycrewsoft.domain.mail.dto.response.MailLabelResponse">
+        SELECT MAIL_LABEL_ID AS labelId, LABEL_NM AS name
+        FROM TB_MAIL_LABEL
+        WHERE EMP_ID = #{empId}
+          AND SYSTEM_YN = 'N'
+          AND USE_YN = 'Y'
+        ORDER BY LABEL_NM
+    </select>
+
+    <select id="selectUserLabel" resultType="com.mycrewsoft.domain.mail.dto.response.MailLabelResponse">
+        SELECT MAIL_LABEL_ID AS labelId, LABEL_NM AS name
+        FROM TB_MAIL_LABEL
+        WHERE EMP_ID = #{empId}
+          AND MAIL_LABEL_ID = #{labelId}
+          AND SYSTEM_YN = 'N'
+          AND USE_YN = 'Y'
+    </select>
+
+    <select id="countUserLabelName" resultType="int">
+        SELECT COUNT(1)
+        FROM TB_MAIL_LABEL
+        WHERE EMP_ID = #{empId}
+          AND SYSTEM_YN = 'N'
+          AND USE_YN = 'Y'
+          AND LABEL_NM = #{name}
+    </select>
+
+    <insert id="insertUserLabel">
+        INSERT INTO TB_MAIL_LABEL (
+            MAIL_LABEL_ID, EMP_ID, EXTERNAL_LABEL_ID, LABEL_NM, SYSTEM_YN, LABEL_TYPE_CD, USE_YN
+        ) VALUES (
+            #{labelId}, #{empId}, 'USER_' || #{labelId}, #{name}, 'N', 'USER_' || #{labelId}, 'Y'
+        )
+    </insert>
+
+    <update id="updateUserLabelName">
+        UPDATE TB_MAIL_LABEL
+        SET LABEL_NM = #{name}
+        WHERE EMP_ID = #{empId}
+          AND MAIL_LABEL_ID = #{labelId}
+          AND SYSTEM_YN = 'N'
+          AND USE_YN = 'Y'
+    </update>
+
+    <update id="softDeleteUserLabel">
+        UPDATE TB_MAIL_LABEL
+        SET USE_YN = 'N'
+        WHERE EMP_ID = #{empId}
+          AND MAIL_LABEL_ID = #{labelId}
+          AND SYSTEM_YN = 'N'
+    </update>
+
+    <delete id="deleteLabelMapsByLabel">
+        DELETE FROM TB_MAIL_LABEL_MAP
+        WHERE EMP_ID = #{empId}
+          AND MAIL_LABEL_ID = #{labelId}
+    </delete>
+
+    <delete id="deleteLabelMapByLabelId">
+        DELETE FROM TB_MAIL_LABEL_MAP
+        WHERE EMP_ID = #{empId}
+          AND MAIL_MSG_ID = #{mailId}
+          AND MAIL_LABEL_ID = #{labelId}
+    </delete>
+
+    <select id="countMailsByLabel" resultType="long">
+        SELECT COUNT(1)
+        FROM TB_MAIL_MESSAGE M
+        WHERE M.EMP_ID = #{empId}
+          AND M.DEL_YN = 'N'
+          AND M.DRAFT_YN = 'N'
+          AND <include refid="notTrash"/>
+          AND EXISTS (
+              SELECT 1 FROM TB_MAIL_LABEL_MAP LM
+              WHERE LM.EMP_ID = M.EMP_ID
+                AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                AND LM.MAIL_LABEL_ID = #{labelId}
+          )
+    </select>
+
+    <select id="selectMailsByLabel" resultMap="MailSummaryMap">
+        SELECT
+            M.MAIL_MSG_ID AS MAIL_ID,
+            M.EXTERNAL_MSG_ID AS EXTERNAL_MESSAGE_ID,
+            M.EXTERNAL_THREAD_ID AS THREAD_ID,
+            M.MAIL_SJ AS SUBJECT,
+            M.SNIPPET,
+            M.FROM_EMAIL,
+            M.TO_SUMMARY,
+            M.MAIL_SNDNG_DT AS SENT_AT,
+            <include refid="mailFlags"/>,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM TB_MAIL_ATTACHMENT A
+                WHERE A.EMP_ID = M.EMP_ID AND A.MAIL_MSG_ID = M.MAIL_MSG_ID
+            ) THEN 1 ELSE 0 END AS HAS_ATTACHMENT
+        FROM TB_MAIL_MESSAGE M
+        WHERE M.EMP_ID = #{empId}
+          AND M.DEL_YN = 'N'
+          AND M.DRAFT_YN = 'N'
+          AND <include refid="notTrash"/>
+          AND EXISTS (
+              SELECT 1 FROM TB_MAIL_LABEL_MAP LM
+              WHERE LM.EMP_ID = M.EMP_ID
+                AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                AND LM.MAIL_LABEL_ID = #{labelId}
+          )
+        ORDER BY M.MAIL_SNDNG_DT DESC NULLS LAST, M.MAIL_MSG_ID DESC
+        OFFSET #{offset} ROWS FETCH NEXT #{size} ROWS ONLY
+    </select>
+
+    <select id="selectUserLabelsForMail" resultType="com.mycrewsoft.domain.mail.dto.response.MailLabelResponse">
+        SELECT L.MAIL_LABEL_ID AS labelId, L.LABEL_NM AS name
+        FROM TB_MAIL_LABEL_MAP LM
+        JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+        WHERE LM.EMP_ID = #{empId}
+          AND LM.MAIL_MSG_ID = #{mailId}
+          AND L.SYSTEM_YN = 'N'
+          AND L.USE_YN = 'Y'
+        ORDER BY L.LABEL_NM
+    </select>
+
+
+    <select id="countUnreadInbox" resultType="long">
+        SELECT COUNT(1)
+        FROM TB_MAIL_MESSAGE M
+        WHERE M.EMP_ID = #{empId}
+          AND M.DEL_YN = 'N'
+          AND M.DRAFT_YN = 'N'
+          AND <include refid="notTrash"/>
+          AND EXISTS (
+              SELECT 1
+              FROM TB_MAIL_LABEL_MAP LM
+              JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+              WHERE LM.EMP_ID = M.EMP_ID
+                AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                AND TRIM(L.LABEL_TYPE_CD) = 'UNREAD'
+          )
+          AND EXISTS (
+              SELECT 1
+              FROM TB_MAIL_LABEL_MAP LM
+              JOIN TB_MAIL_LABEL L ON L.MAIL_LABEL_ID = LM.MAIL_LABEL_ID
+              WHERE LM.EMP_ID = M.EMP_ID
+                AND LM.MAIL_MSG_ID = M.MAIL_MSG_ID
+                AND TRIM(L.LABEL_TYPE_CD) = 'INBOX'
+          )
+    </select>
+
+</mapper>

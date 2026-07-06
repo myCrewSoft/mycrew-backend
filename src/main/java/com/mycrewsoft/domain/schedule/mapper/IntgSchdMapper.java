@@ -1,0 +1,50 @@
+package com.mycrewsoft.domain.schedule.mapper;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import com.mycrewsoft.domain.schedule.vo.IntgSchdVO;
+import com.mycrewsoft.domain.schedule.vo.SchdSearchVO;
+import com.mycrewsoft.domain.schedule.vo.SchdWidgetVO;
+
+@Mapper
+public interface IntgSchdMapper {
+
+	// 일정 단건 조회
+	IntgSchdVO selectIntgSchd(@Param("schdId") Long schdId);
+
+	// 리스트 조회
+	List<IntgSchdVO> selectIntgSchdList(SchdSearchVO searchVo);
+	
+	/**
+	 * 일정 생성
+	 * <selectKey>로 schdId를 vo에 세팅하는 게 목적이라 건수 확인 불필요
+	 * @param intgSchd
+	 */
+	void insertIntgSchd(IntgSchdVO intgSchd);
+	
+	// 일정 수정
+	int updateIntgSchd(IntgSchdVO intgSchd);
+	
+	// 일정 삭제(논리)
+	int deleteIntgSchd(@Param("schdId") Long schdId);
+	
+	// 위젯용
+	List<SchdWidgetVO> selectTodaySchdListForWidget(
+		@Param("empId") Long empId,
+        @Param("deptCd") String deptCd,
+        @Param("execYn") Boolean execYn,
+        @Param("beginDt") LocalDateTime beginDt,
+        @Param("endDt") LocalDateTime endDt,
+        @Param("limit") int limit
+    );
+
+	// 관리자 대시보드 위젯용: 오늘 + 다가오는 전사(C001)·간부(C003) 중요 일정
+	List<SchdWidgetVO> selectImportantSchdListForAdminWidget(
+        @Param("beginDt") LocalDateTime beginDt,
+        @Param("limit") int limit
+    );
+}

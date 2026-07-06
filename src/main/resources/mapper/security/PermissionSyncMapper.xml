@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.security.rbac.PermissionSyncMapper">
+
+    <insert id="mergePermissions">
+        MERGE INTO TB_PERMISSION P
+        USING (
+            SELECT
+                (SELECT NVL(MAX(PERM_ID), 0) FROM TB_PERMISSION)
+                    + ROW_NUMBER() OVER (ORDER BY PERM_CD) AS PERM_ID,
+                PERM_CD,
+                PERM_NM,
+                PERM_EXPLN,
+                'Y' AS PERM_ENABLED
+            FROM (
+                <foreach collection="permissions" item="permission" separator=" UNION ALL ">
+                    SELECT
+                        #{permission.code} AS PERM_CD,
+                        #{permission.name} AS PERM_NM,
+                        #{permission.description} AS PERM_EXPLN
+                    FROM DUAL
+                </foreach>
+            )
+        ) SRC
+           ON (P.PERM_CD = SRC.PERM_CD)
+         WHEN NOT MATCHED THEN
+           INSERT (
+               PERM_ID,
+               PERM_CD,
+               PERM_NM,
+               PERM_EXPLN,
+               PERM_ENABLED
+           )
+           VALUES (
+               SRC.PERM_ID,
+               SRC.PERM_CD,
+               SRC.PERM_NM,
+               SRC.PERM_EXPLN,
+               SRC.PERM_ENABLED
+           )
+    </insert>
+
+    <insert id="mergeSuperAdminPermissions">
+        INSERT INTO TB_PERMISSION_ROLE_MAPPING (
+            PERM_ID,
+            ROLE_ID
+        )
+        SELECT
+            P.PERM_ID,
+            R.ROLE_ID
+        FROM TB_PERMISSION P
+        JOIN TB_ROLE R
+          ON R.ROLE_CD = 'ROLE_SUPER_ADMIN'
+        WHERE P.PERM_ENABLED = 'Y'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM TB_PERMISSION_ROLE_MAPPING M
+              WHERE M.PERM_ID = P.PERM_ID
+                AND M.ROLE_ID = R.ROLE_ID
+          )
+    </insert>
+</mapper>

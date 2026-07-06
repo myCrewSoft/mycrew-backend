@@ -2,8 +2,14 @@ spring:
   application:
     name: mycrewsoft
 
+  mvc:
+    log-request-details: true
+
+  webflux:
+    log-request-details: true
+ 
   datasource:
-    url: jdbc:oracle:thin:@localhost:1521:XE
+    url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: oracle.jdbc.OracleDriver
@@ -20,35 +26,70 @@ spring:
       max-file-size: 50MB
       max-request-size: 100MB
 
-# Redis
-#  data:
-#    redis:
-#      host: localhost
-#      port: 6379
-#      timeout: 3000
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 3000
+
+########################################
+# Spring AI + LM Studio 연동
+########################################
+  ai:
+    openai:
+# ▶ 사내 LM Studio 주소
+      base-url: ${LOCAL_LLM_URL}
+      api-key: dummy
+
+      chat:
+        options:
+      # ▶ 사용 모델
+          model: ${LOCAL_LLM_MODEL}
+
+        # ▶ ChatClient 수동 설정
+    chat:
+      client:
+        base-url: ${LOCAL_LLM_URL}
+        api-key: dummy
+
+
+########################################
+# OpenAI 자동 설정 비활성화
+########################################
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.openai.autoconfigure.OpenAiAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiChatModelAutoConfiguration
 
 mybatis:
   mapper-locations: classpath:mapper/**/*.xml
-  type-aliases-package: com.mycrewsoft.app.domain.vo
+  type-aliases-package: com.mycrewsoft.domain
 
   configuration:
     map-underscore-to-camel-case: true
     jdbc-type-for-null: 'NULL'
 
 jwt:
+#HS256 알고리즘을 사용하여 토큰을 서명하기 위한 비밀 키.
   secret: ${JWT_SECRET}
   access-token-expiration: 1800000
   refresh-token-expiration: 604800000
+
+security:
+  rbac:
+    permission-sync:
+      enabled: true
 
 logging:
   level:
     com.projectname.app.mapper: DEBUG
     org.springframework.security: DEBUG
+    # ▶ Spring AI ChatClient 내부 동작 로그
+    org.springframework.ai.chat.client.advisor: DEBUG
 
 server:
-  error:
-    include-message: always
-    include-stacktrace: always
+  port: 80
 
 cors:
   allowed-origins: http://localhost:5173
@@ -56,3 +97,47 @@ cors:
   allowed-headers: Authorization,Content-Type,Accept
   allow-credentials: true
   max-age: 3600
+  exposed-headers: Content-Type,Cache-Control,X-Accel-Buffering
+ 
+file:
+  upload-path: ${LOCAL_STORAGE}
+
+google:
+  oauth:
+    client-id: ${GOOGLE_OAUTH_CLIENT_ID:727057848148-08dmtdfppmnoqblbukb3aegv1avmq6c9.apps.googleusercontent.com}
+    client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET:}
+    redirect-uri: http://localhost/api/mail/oauth/google/callback
+    frontend-failure-uri: http://localhost:5173/first-login?mailConnected=N
+    frontend-success-uri: http://localhost:5173/first-login?mailConnected=Y
+    frontend-mail-success-uri: http://localhost:5173/mail
+    frontend-my-page-success-uri: http://localhost:5173/mypage?mailConnected=Y
+    frontend-my-page-failure-uri: http://localhost:5173/mypage?mailConnected=N
+    scopes:
+      - openid
+      - email
+      - profile
+      - https://www.googleapis.com/auth/gmail.readonly
+      - https://www.googleapis.com/auth/gmail.send
+      - https://www.googleapis.com/auth/gmail.modify
+      - https://mail.google.com/
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui/index.html
+    url: /api/v3/api-docs
+
+websocket:
+  allowed-origins: http://localhost:5173
+
+livekit:
+  url: ${LIVEKIT_URL}
+  api-key: ${LIVEKIT_API_KEY}
+  api-secret: ${LIVEKIT_API_SECRET}
+
+openai:
+  api-key: ${OPENAI_API_KEY}
+
+holiday:
+  api:
+    key: ${HOLIDAY_API_KEY}
+    base-url: http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService

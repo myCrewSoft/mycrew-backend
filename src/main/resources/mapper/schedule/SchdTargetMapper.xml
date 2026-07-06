@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.schedule.mapper.SchdTargetMapper">
+	
+	<insert id="insertSchdTargetList">
+		<foreach collection="list" item="t" open="INSERT ALL" separator=" " close="SELECT 1 FROM DUAL">
+            INTO TB_SCHD_TARGET (
+                TARGET_TYPE_CD,
+                TARGET_ID,
+                SCHD_ID
+            ) VALUES (
+                #{t.targetTypeCd},
+                #{t.targetId},
+                #{t.schdId}
+            )
+        </foreach>
+	</insert>
+	
+	<delete id="deleteSchdTarget">
+		DELETE FROM TB_SCHD_TARGET
+         WHERE SCHD_ID = #{schdId}
+	</delete>
+	
+	<select id="selectSchdTargetDetail">
+		WITH TARGET_INFO AS (
+	        SELECT
+	            T.TARGET_TYPE_CD,
+	            T.TARGET_ID,
+	            T.SCHD_ID,
+	            E.EMP_NM,
+	            E.DEPT_CD,
+	            E.JOB_GRD_CD,
+	            E.PRFL_IMG_FILE_ID
+	        FROM TB_SCHD_TARGET T
+	        LEFT JOIN TB_EMPLOYEE E
+	               ON T.TARGET_TYPE_CD = '02'
+	              AND T.TARGET_ID = TO_CHAR(E.EMP_ID)
+	        WHERE T.SCHD_ID = #{schdId}
+	    )
+	    SELECT
+	        TI.TARGET_TYPE_CD,
+	        TI.TARGET_ID,
+	        CASE TI.TARGET_TYPE_CD
+	            WHEN '02' THEN TI.EMP_NM
+	            WHEN '04' THEN D.DEPT_NM
+	            WHEN '05' THEN P.PROJ_NM
+	            WHEN '06' THEN TK.TASK_NM
+	        END AS TARGET_NM,
+	        D.DEPT_NM,
+	        G.JOB_GRD_NM,
+	        F.SAVE_PATH_NM || '/' || F.SAVE_FILE_NM AS PROFILE_IMG_URL
+	    FROM TARGET_INFO TI
+	    LEFT JOIN TB_DEPARTMENT D
+	           ON (TI.TARGET_TYPE_CD = '02' AND TI.DEPT_CD = D.DEPT_CD)
+	           OR (TI.TARGET_TYPE_CD = '04' AND TI.TARGET_ID = D.DEPT_CD)
+	    LEFT JOIN TB_JOB_GRADE G
+	           ON TI.JOB_GRD_CD = G.JOB_GRD_CD
+	    LEFT JOIN TB_CMMN_ATCH_FILE_CLSF FC
+	           ON TI.PRFL_IMG_FILE_ID = FC.ATCH_FILE_ID
+	    LEFT JOIN TB_CMMN_ATCH_FILE_DTL F
+	           ON FC.ATCH_FILE_ID = F.ATCH_FILE_ID
+	          AND F.DEL_YN = 'N'
+	    LEFT JOIN TB_PROJECT P
+	           ON TI.TARGET_TYPE_CD = '05'
+	          AND TI.TARGET_ID = TO_CHAR(P.PROJ_ID)
+	    LEFT JOIN TB_TASK TK
+	           ON TI.TARGET_TYPE_CD = '06'
+	          AND TI.TARGET_ID = TO_CHAR(TK.TASK_ID)
+	    ORDER BY TI.TARGET_TYPE_CD ASC, TI.TARGET_ID ASC
+	</select>
+	
+</mapper>

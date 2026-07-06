@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.domain.mtng.mapper.MtngMomMapper">
+
+    <resultMap type="MtngMomVO" id="momResultMap" autoMapping="true">
+        <id property="momId" column="MOM_ID"/>
+        <collection property="mtngMomHist" ofType="MtngMomHistVO" autoMapping="true">
+            <id     property="histId"  column="HIST_ID"/>
+            <result property="momId"   column="HIST_MOM_ID"/>
+            <result property="momCn"   column="HIST_MOM_CN"/>
+            <result property="edtrId"  column="HIST_EDTR_ID"/>
+            <result property="editDt"  column="HIST_EDIT_DT"/>
+        </collection>
+    </resultMap>
+
+    <sql id="momColumns">
+        M.MOM_ID, M.MTNG_ID, M.MOM_CN, M.MOM_STTUS_CD, M.EDTR_ID,
+        M.REVW_REQ_DT, M.CNFRM_DT, M.CREAT_DT, M.DEL_DT, M.DRFT_DOC_SN
+    </sql>
+
+    <sql id="histColumns">
+        H.HIST_ID,
+        H.MOM_ID  AS HIST_MOM_ID,
+        H.MOM_CN  AS HIST_MOM_CN,
+        H.EDTR_ID AS HIST_EDTR_ID,
+        H.EDIT_DT AS HIST_EDIT_DT
+    </sql>
+
+    <insert id="createMtngMom" parameterType="MtngMomVO">
+        <selectKey keyProperty="momId" resultType="Long" order="BEFORE">
+            SELECT SEQ_MOM_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_MTNG_MOM (
+            MOM_ID, MTNG_ID, MOM_CN, MOM_STTUS_CD, EDTR_ID, CREAT_DT
+        ) VALUES (
+            #{momId}, #{mtngId}, #{momCn}, #{momSttusCd}, #{edtrId}, SYSDATE
+        )
+    </insert>
+
+    <select id="selectMomByMtngId" resultMap="momResultMap">
+        SELECT
+            <include refid="momColumns"/>,
+            <include refid="histColumns"/>
+        FROM TB_MTNG_MOM M
+        LEFT JOIN TB_MTNG_MOM_HIST H ON M.MOM_ID = H.MOM_ID
+        LEFT JOIN TB_EMPLOYEE HE ON HE.EMP_ID = H.EDTR_ID
+        WHERE M.MTNG_ID = #{mtngId}
+        AND M.DEL_DT IS NULL
+        AND M.MOM_ID = (
+            SELECT MAX(MOM_ID)
+            FROM TB_MTNG_MOM
+            WHERE MTNG_ID = #{mtngId}
+            AND DEL_DT IS NULL
+        )
+    </select>
+
+    <update id="updateMtngMom">
+        UPDATE TB_MTNG_MOM
+        SET MOM_CN       = #{momCn},
+            MOM_STTUS_CD = #{momSttusCd},
+            EDTR_ID      = #{edtrId}
+        WHERE MOM_ID = #{momId}
+    </update>
+
+    <update id="updateMtngMomDrftDocSn">
+        UPDATE TB_MTNG_MOM
+        SET DRFT_DOC_SN  = #{drftDocSn},
+            MOM_STTUS_CD = #{momSttusCd}
+        WHERE MOM_ID = #{momId}
+    </update>
+
+    <insert id="createMtngMomHist" parameterType="MtngMomHistVO">
+        <selectKey keyProperty="histId" resultType="Long" order="BEFORE">
+            SELECT SEQ_HIST_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_MTNG_MOM_HIST (
+            HIST_ID, MOM_ID, MOM_CN, EDTR_ID, EDIT_DT
+        ) VALUES (
+            #{histId}, #{momId}, #{momCn}, #{edtrId}, SYSDATE
+        )
+    </insert>
+
+	<select id="selectMomByDrftDocSn" resultType="MtngMomVO">
+	    SELECT MOM_ID, MTNG_ID, MOM_CN, MOM_STTUS_CD, EDTR_ID,
+	           REVW_REQ_DT, CNFRM_DT, CREAT_DT, DEL_DT, DRFT_DOC_SN
+	    FROM TB_MTNG_MOM
+	    WHERE DRFT_DOC_SN = #{drftDocSn}
+	    AND DEL_DT IS NULL
+	</select>
+	
+	<update id="updateMtngMomSttus">
+	    UPDATE TB_MTNG_MOM
+	    SET MOM_STTUS_CD = #{momSttusCd},
+	        CNFRM_DT     = SYSDATE
+	    WHERE MOM_ID = #{momId}
+	</update>
+</mapper>

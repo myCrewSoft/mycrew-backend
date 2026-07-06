@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.domain.approval.mapper.ApprovalAiMapper">
+
+    <select id="selectApproverCandidates"
+            resultType="com.mycrewsoft.domain.approval.dto.response.ApprovalAiApproverCandidateDTO">
+        SELECT
+            E.EMP_ID AS empId,
+            E.EMP_NM AS empNm,
+            E.DEPT_CD AS deptCd,
+            D.DEPT_NM AS deptNm,
+            D.PRNT_DEPT_CD AS parentDeptCd,
+            E.JOB_GRD_CD AS jobGrdCd,
+            JG.JOB_GRD_NM AS jobGrdNm,
+            JG.SORT_ORDER AS jobGrdSortOrder,
+            E.JOB_PSTN_CD AS jobPstnCd,
+            JP.JOB_PSTN_NM AS jobPstnNm,
+            E.JOB_DUTY_CN AS jobDutyCn,
+            E.EXEC_YN AS execYn,
+            CASE WHEN E.EMP_STAMP_FILE_ID IS NULL THEN 'N' ELSE 'Y' END AS hasSignatureYn,
+            CASE WHEN D.EMP_ID = E.EMP_ID THEN 'Y' ELSE 'N' END AS deptLeaderYn,
+            E.PRFL_IMG_FILE_ID AS prflImgFileId
+        FROM TB_EMPLOYEE E
+        LEFT JOIN TB_DEPARTMENT D
+          ON D.DEPT_CD = E.DEPT_CD
+        LEFT JOIN TB_JOB_GRADE JG
+          ON JG.JOB_GRD_CD = E.JOB_GRD_CD
+        LEFT JOIN TB_JOB_POSITION JP
+          ON JP.JOB_PSTN_CD = E.JOB_PSTN_CD
+        WHERE E.ENABLED = 'Y'
+          AND E.EMP_ID <![CDATA[ <> ]]> #{empId}
+        ORDER BY
+            CASE WHEN E.DEPT_CD = #{deptCd} THEN 0 ELSE 1 END,
+            CASE WHEN D.EMP_ID = E.EMP_ID THEN 0 ELSE 1 END,
+            CASE WHEN E.EMP_STAMP_FILE_ID IS NULL THEN 1 ELSE 0 END,
+            NVL(JG.SORT_ORDER, 9999),
+            E.EMP_ID
+        FETCH FIRST 50 ROWS ONLY
+    </select>
+
+</mapper>

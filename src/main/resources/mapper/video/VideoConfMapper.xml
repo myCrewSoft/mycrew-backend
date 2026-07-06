@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mycrewsoft.domain.video.mapper.VideoConfMapper">
+
+    <resultMap id="meetingReminderResultMap" type="MeetingReminderVO">
+        <id property="vconfId" column="VCONF_ID"/>
+        <result property="vconfNm" column="VCONF_NM"/>
+        <collection property="empIds" ofType="long" columnPrefix="P_">
+            <result column="EMP_ID"/>
+        </collection>
+    </resultMap>
+
+    <insert id="createVideoConf" parameterType="VideoConfVO">
+        <selectKey keyProperty="vconfId" resultType="Long" order="BEFORE">
+            SELECT SEQ_VCONF_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_VIDEO_CONF (
+            VCONF_ID, MTNG_ID, VCONF_NM, ROOM_NM, CRTR_ID, CREAT_DT
+        ) VALUES (
+            #{vconfId}, #{mtngId}, #{vconfNm}, #{roomNm}, #{crtrId}, #{creatDt}
+        )
+    </insert>
+
+    <update id="updateRoomNm">
+        UPDATE TB_VIDEO_CONF
+        SET ROOM_NM = #{roomNm}
+        WHERE VCONF_ID = #{vconfId}
+    </update>
+
+    <insert id="insertPtcptLog" parameterType="VideoPtcptLogVO">
+        <selectKey keyProperty="ptcptLogId" resultType="Long" order="BEFORE">
+            SELECT SEQ_VIDEO_PTCPT_LOG_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_VIDEO_PTCPT_LOG (PTCPT_LOG_ID, VCONF_ID, EMP_ID, JOIN_DT)
+        VALUES (#{ptcptLogId}, #{vconfId}, #{empId}, SYSDATE)
+    </insert>
+
+    <update id="updatePtcptLogJoinDt">
+        UPDATE TB_VIDEO_PTCPT_LOG
+        SET JOIN_DT = SYSDATE
+        WHERE PTCPT_LOG_ID = #{ptcptLogId}
+    </update>
+
+    <update id="updatePtcptLogLeavDt">
+        UPDATE TB_VIDEO_PTCPT_LOG
+        SET LEAV_DT = SYSDATE
+        WHERE PTCPT_LOG_ID = #{ptcptLogId}
+    </update>
+
+    <select id="selectLatestOpenPtcptLogId" resultType="Long">
+        SELECT PTCPT_LOG_ID
+        FROM TB_VIDEO_PTCPT_LOG
+        WHERE VCONF_ID = #{vconfId}
+            AND EMP_ID = #{empId}
+            AND LEAV_DT IS NULL
+        ORDER BY JOIN_DT DESC
+        FETCH FIRST 1 ROWS ONLY
+    </select>
+
+    <insert id="insertChatLog" parameterType="VideoChatLogVO">
+        <selectKey keyProperty="chatLogId" resultType="Long" order="BEFORE">
+            SELECT SEQ_CHAT_LOG_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_VIDEO_CHAT_LOG (CHAT_LOG_ID, VCONF_ID, MBR_ID, SPKNG_CN, CREAT_DT)
+        VALUES (#{chatLogId}, #{vconfId}, #{mbrId}, #{spkngCn}, SYSDATE)
+    </insert>
+
+    <insert id="insertRcrdg" parameterType="VideoRcrdgVO">
+        <selectKey keyProperty="rcrdgId" resultType="Long" order="BEFORE">
+            SELECT SEQ_RCRDG_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_VIDEO_RCRDG (RCRDG_ID, VCONF_ID, RCRDG_ATCH_FILE_ID, CREAT_DT)
+        VALUES (#{rcrdgId}, #{vconfId}, #{rcrdgAtchFileId}, SYSDATE)
+    </insert>
+
+    <select id="countAccessibleRcrdg" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_VIDEO_RCRDG R
+        INNER JOIN TB_VIDEO_CONF V
+            ON V.VCONF_ID = R.VCONF_ID
+        INNER JOIN TB_MTNG M
+            ON M.MTNG_ID = V.MTNG_ID
+        WHERE R.VCONF_ID = #{vconfId}
+          AND R.RCRDG_ATCH_FILE_ID = #{atchFileDtlId}
+          AND R.DEL_DT IS NULL
+          AND M.DEL_YN = 'N'
+          AND (
+              M.CRTR_ID = #{empId}
+              OR EXISTS (
+                  SELECT 1
+                  FROM TB_MTNG_PTCPT P
+                  WHERE P.MTNG_ID = M.MTNG_ID
+                    AND P.EMP_ID = #{empId}
+              )
+          )
+    </select>
+
+    <select id="selectConfsStartingSoon" resultMap="meetingReminderResultMap">
+        SELECT
+            V.VCONF_ID,
+            M.MTNG_ID AS MEETING_ID,
+            V.VCONF_NM,
+            P.EMP_ID AS P_EMP_ID
+        FROM TB_VIDEO_CONF V
+        JOIN TB_MTNG M ON M.MTNG_ID = V.MTNG_ID
+        JOIN TB_MTNG_PTCPT P ON P.MTNG_ID = M.MTNG_ID
+        WHERE M.DEL_YN = 'N'
+        AND M.BEGIN_DT BETWEEN SYSDATE AND SYSDATE + (10/1440)
+    </select>
+
+    <select id="selectChatLogsByVconfId" resultType="VideoChatLogVO">
+        SELECT CHAT_LOG_ID, VCONF_ID, MBR_ID, SPKNG_CN, CREAT_DT, END_DT
+        FROM TB_VIDEO_CHAT_LOG
+        WHERE VCONF_ID = #{vconfId}
+        ORDER BY CREAT_DT ASC
+    </select>
+
+</mapper>

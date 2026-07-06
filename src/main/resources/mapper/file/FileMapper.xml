@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.file.mapper.FileMapper">
+
+<insert id="insertClsf" parameterType="com.mycrewsoft.domain.file.vo.FileClsfVo">
+	<selectKey keyProperty="atchFileId" resultType="long" order="BEFORE">
+		SELECT SEQ_ATCH_FILE_ID.NEXTVAL
+		FROM DUAL
+	</selectKey>
+	
+	INSERT INTO TB_CMMN_ATCH_FILE_CLSF(
+		ATCH_FILE_ID,
+		ATCH_FILE_BIZ_CD
+	) VALUES (
+		#{atchFileId},
+		#{atchFileBizCd}
+	)
+</insert>
+
+<insert id="insertDtl" parameterType="com.mycrewsoft.domain.file.vo.FileDtlVo">
+	<selectKey keyProperty="atchFileDtlId" resultType="long" order="BEFORE">
+		SELECT SEQ_ATCH_FILE_DTL_ID.NEXTVAL
+		FROM DUAL
+	</selectKey>
+	
+	INSERT INTO TB_CMMN_ATCH_FILE_DTL(
+		ATCH_FILE_DTL_ID,
+		ATCH_FILE_ID,
+		ORGNL_FILE_NM,
+		ATCH_FILE_TY_CD,
+		SAVE_PATH_NM,
+		SAVE_FILE_NM,
+		FILE_EXTSN,
+		FILE_SZ,
+		FILE_CN,
+		FRST_REGST_DT,
+		FRST_RGSTR_ID
+	)
+	VALUES(
+		#{atchFileDtlId},
+		#{atchFileId}, 
+		#{orgnlFileNm}, 
+		#{atchFileTyCd}, 
+		#{savePathNm}, 
+		#{saveFileNm}, 
+		#{fileExtsn}, 
+		#{fileSz}, 
+		#{fileCn}, 
+		SYSDATE, 
+		#{frstRgstrId}
+	)
+</insert>
+
+<update id="deleteDtl">
+    UPDATE TB_CMMN_ATCH_FILE_DTL
+    SET
+        DEL_YN   = 'Y',
+        DEL_DT   = SYSDATE,
+        DLTRS_ID = #{dltrsId}
+    WHERE ATCH_FILE_DTL_ID = #{atchFileDtlId} AND DEL_YN = 'N'
+</update>
+	
+<select id="selectDtlById" resultType="com.mycrewsoft.domain.file.vo.FileDtlVo">
+	SELECT
+		ATCH_FILE_DTL_ID,
+		ATCH_FILE_ID,
+		ORGNL_FILE_NM,
+		SAVE_PATH_NM,
+		SAVE_FILE_NM,
+		ATCH_FILE_TY_CD,
+		FILE_EXTSN,
+		FILE_SZ,
+		DEL_YN
+	FROM TB_CMMN_ATCH_FILE_DTL
+	WHERE ATCH_FILE_DTL_ID = #{atchFileDtlId}
+</select>
+
+<update id="restoreFile">
+	UPDATE TB_CMMN_ATCH_FILE_DTL
+    SET DEL_YN = 'N'
+    WHERE ATCH_FILE_DTL_ID = #{atchFileDtlId}
+      AND DEL_YN = 'Y'
+</update>
+
+<delete id="hardDeleteFileClsf">
+	DELETE FROM TB_CMMN_ATCH_FILE_CLSF
+    WHERE ATCH_FILE_ID = #{atchFileId}
+</delete>
+
+<delete id="hardDeleteFileDtl">
+	DELETE FROM TB_CMMN_ATCH_FILE_DTL
+    WHERE ATCH_FILE_DTL_ID = #{atchFileDtlId}
+</delete>
+</mapper>

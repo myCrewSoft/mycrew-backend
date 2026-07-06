@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.schedule.mapper.IntgSchdMapper">
+	<resultMap type="IntgSchdVo" id="intgSchdResultMap" autoMapping="true">
+	    <id property="schdId" column="SCHD_ID"/>
+	    <collection property="targets" ofType="SchdTargetVo" autoMapping="true">
+	        <id property="targetTypeCd" column="TARGET_TYPE_CD"/>
+	        <id property="targetId"     column="TARGET_ID"/>
+	    </collection>
+	</resultMap>
+	
+	<sql id="schdColumns">
+	    S.SCHD_ID,
+	    S.SCHD_CLSF_CD,
+	    S.SCHD_NM,
+	    S.SCHD_DETAIL_CN,
+	    S.BEGIN_DT,
+	    S.END_DT,
+	    S.SCHD_WRTR_ID,
+	    S.SCHD_REGST_DT,
+	    S.SCHD_CHGR_ID,
+	    S.SCHD_CHG_DT,
+	    S.ALL_DAY_YN,
+	    S.DEL_YN,
+	    S.DEL_DT,
+	    S.REPT_YN,
+	    S.REPT_TYPE_CD,
+	    S.REPT_END_DT,
+	    WE.EMP_NM           AS SCHD_WRTR_NM,
+	    WD.DEPT_NM          AS SCHD_WRTR_DEPT_NM,
+	    WJG.JOB_GRD_NM      AS SCHD_WRTR_JOB_GRD_NM,
+	    WE.PRFL_IMG_FILE_ID AS SCHD_WRTR_PRFL_IMG_FILE_ID,
+	    (SELECT TO_NUMBER(ST.TARGET_ID) FROM TB_SCHD_TARGET ST
+	     WHERE ST.SCHD_ID = S.SCHD_ID
+	       AND ST.TARGET_TYPE_CD = '06'
+	       AND ROWNUM = 1) AS TASK_ID,
+	    (SELECT CASE
+	         WHEN EXISTS (
+	             SELECT 1 FROM TB_SCHD_TARGET ST
+	             WHERE ST.SCHD_ID = S.SCHD_ID AND ST.TARGET_TYPE_CD = '05'
+	         )
+	         THEN (
+	             SELECT TO_NUMBER(ST.TARGET_ID) FROM TB_SCHD_TARGET ST
+	             WHERE ST.SCHD_ID = S.SCHD_ID AND ST.TARGET_TYPE_CD = '05'
+	             AND ROWNUM = 1
+	         )
+	         WHEN EXISTS (
+	             SELECT 1 FROM TB_SCHD_TARGET ST
+	             WHERE ST.SCHD_ID = S.SCHD_ID AND ST.TARGET_TYPE_CD = '06'
+	         )
+	         THEN (
+	             SELECT T.PROJ_ID FROM TB_TASK T
+	             INNER JOIN TB_SCHD_TARGET ST ON TO_CHAR(T.TASK_ID) = ST.TARGET_ID
+	             WHERE ST.SCHD_ID = S.SCHD_ID AND ST.TARGET_TYPE_CD = '06'
+	             AND ROWNUM = 1
+	         )
+	         ELSE NULL
+	     END FROM DUAL) AS PROJ_ID,
+	    (SELECT TO_NUMBER(ST.TARGET_ID) FROM TB_SCHD_TARGET ST
+	     WHERE ST.SCHD_ID = S.SCHD_ID
+	       AND ST.TARGET_TYPE_CD = '07'
+	       AND ROWNUM = 1) AS MTNG_ID,
+	    (SELECT TO_NUMBER(ST.TARGET_ID) FROM TB_SCHD_TARGET ST
+	     WHERE ST.SCHD_ID = S.SCHD_ID
+	       AND ST.TARGET_TYPE_CD = '08'
+	       AND ROWNUM = 1) AS RSRV_ID,
+	    (SELECT D.DEPT_NM FROM TB_DEPARTMENT D
+	     WHERE D.DEPT_CD = (
+	         SELECT ST.TARGET_ID FROM TB_SCHD_TARGET ST
+	         WHERE ST.SCHD_ID = S.SCHD_ID
+	           AND ST.TARGET_TYPE_CD = '04'
+	           AND ROWNUM = 1
+	     )) AS SCHD_DEPT_NM
+	</sql>
+    
+    <sql id="whereNotDeleted">
+        S.DEL_YN = 'N'
+    </sql>
+    
+    <!-- 일정 단건 조회 -->
+	<select id="selectIntgSchd" resultMap="intgSchdResultMap">
+		SELECT
+			<include refid="schdColumns"/>
+			, T.TARGET_TYPE_CD
+			, T.TARGET_ID
+		FROM TB_INTG_SCHD S
+		LEFT JOIN TB_SCHD_TARGET T ON S.SCHD_ID = T.SCHD_ID
+		LEFT JOIN TB_EMPLOYEE WE   ON WE.EMP_ID    = S.SCHD_WRTR_ID
+		LEFT JOIN TB_DEPARTMENT WD  ON WD.DEPT_CD   = WE.DEPT_CD
+		LEFT JOIN TB_JOB_GRADE WJG  ON WJG.JOB_GRD_CD = WE.JOB_GRD_CD
+		WHERE <include refid="whereNotDeleted"/>
+		  AND S.SCHD_ID = #{schdId}
+	</select>
+	
+	<select id="selectIntgSchdList" resultType="IntgSchdVo">
+	    SELECT *
+	      FROM (
+	        SELECT DISTINCT
+	            <include refid="schdColumns"/>
+	          FROM TB_INTG_SCHD S
+          LEFT JOIN TB_EMPLOYEE WE   ON WE.EMP_ID    = S.SCHD_WRTR_ID
+		  LEFT JOIN TB_DEPARTMENT WD  ON WD.DEPT_CD   = WE.DEPT_CD
+	      LEFT JOIN TB_JOB_GRADE WJG  ON WJG.JOB_GRD_CD = WE.JOB_GRD_CD
+	         WHERE <include refid="whereNotDeleted"/>
+	           AND S.BEGIN_DT &lt;= #{endDt}
+	           AND S.END_DT   &gt;= #{beginDt}
+	           AND (
+	                 S.SCHD_WRTR_ID = #{empId}
+	                 OR S.SCHD_ID IN (
+	                     SELECT T.SCHD_ID
+	                       FROM TB_SCHD_TARGET T
+	                      WHERE (T.TARGET_TYPE_CD = '01')
+	                         OR (T.TARGET_TYPE_CD = '02' AND T.TARGET_ID = TO_CHAR(#{empId}))
+	                         OR (T.TARGET_TYPE_CD = '04' AND T.TARGET_ID = #{deptCd})
+	                         <if test="execYn == true">
+	                             OR (T.TARGET_TYPE_CD = '03')
+	                         </if>
+	                         <if test="projIds != null and projIds.size() > 0">
+	                             OR (T.TARGET_TYPE_CD = '05' AND T.TARGET_ID IN
+	                                 <foreach collection="projIds" item="projId" open="(" separator="," close=")">
+	                                     #{projId}
+	                                 </foreach>
+	                             )
+	                         </if>
+	                         <if test="taskIds != null and taskIds.size() > 0">
+	                             OR (T.TARGET_TYPE_CD = '06' AND T.TARGET_ID IN
+	                                 <foreach collection="taskIds" item="taskId" open="(" separator="," close=")">
+	                                     #{taskId}
+	                                 </foreach>
+	                             )
+	                         </if>
+	                 )
+	               )
+	         ORDER BY S.BEGIN_DT ASC
+	      )
+	    <if test="limit > 0">
+	    WHERE ROWNUM &lt;= #{limit}
+	    </if>
+	</select>
+	
+	<insert id="insertIntgSchd">
+		<selectKey keyProperty="schdId" resultType="long" order="BEFORE">
+            SELECT SEQ_SCHD_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_INTG_SCHD (
+            SCHD_ID,
+            SCHD_CLSF_CD,
+            SCHD_NM,
+            SCHD_DETAIL_CN,
+            BEGIN_DT,
+            END_DT,
+            SCHD_WRTR_ID,
+            SCHD_REGST_DT,
+            ALL_DAY_YN,
+            DEL_YN,
+            REPT_YN,
+            REPT_TYPE_CD,
+            REPT_END_DT
+        ) VALUES (
+            #{schdId},
+            #{schdClsfCd},
+            #{schdNm},
+            #{schdDetailCn},
+            #{beginDt},
+            #{endDt},
+            #{schdWrtrId},
+            SYSDATE,
+            #{allDayYn},
+            'N',
+            #{reptYn},
+            #{reptTypeCd},
+            #{reptEndDt}
+        )
+	</insert>
+	
+	<update id="updateIntgSchd">
+		UPDATE TB_INTG_SCHD
+           SET SCHD_CLSF_CD   = #{schdClsfCd},
+               SCHD_NM        = #{schdNm},
+               SCHD_DETAIL_CN = #{schdDetailCn},
+               BEGIN_DT       = #{beginDt},
+               END_DT         = #{endDt},
+               ALL_DAY_YN     = #{allDayYn},
+               REPT_YN        = #{reptYn},
+               REPT_TYPE_CD   = #{reptTypeCd},
+               REPT_END_DT    = #{reptEndDt},
+               SCHD_CHGR_ID   = #{schdChgrId},
+               SCHD_CHG_DT    = SYSDATE
+         WHERE SCHD_ID = #{schdId}
+           AND DEL_YN  = 'N'
+	</update>
+	
+	<delete id="deleteIntgSchd">
+		UPDATE TB_INTG_SCHD
+           SET DEL_YN       = 'Y',
+               DEL_DT       = SYSDATE,
+               SCHD_CHGR_ID = #{schdId},
+               SCHD_CHG_DT  = SYSDATE
+         WHERE SCHD_ID = #{schdId}
+           AND DEL_YN  = 'N'
+	</delete>
+	
+	<select id="selectTodaySchdListForWidget" resultType="SchdWidgetVO">
+	    SELECT *
+	      FROM (
+	        SELECT
+	            S.SCHD_ID        AS id,
+	            S.SCHD_CLSF_CD   AS scheduleTypeCode,
+	            S.SCHD_NM        AS title,
+	            S.BEGIN_DT       AS startDt,
+	            S.END_DT         AS endDt,
+	            S.ALL_DAY_YN     AS allDayYn,
+	            MAX(D.DEPT_NM)   AS deptNm,
+	            MAX(P.PROJ_NM)   AS projNm,
+	            MAX(T.TASK_NM)   AS taskNm
+	          FROM TB_INTG_SCHD S
+	          LEFT JOIN TB_SCHD_TARGET TD
+	              ON TD.SCHD_ID = S.SCHD_ID AND TD.TARGET_TYPE_CD = '04'
+	          LEFT JOIN TB_DEPARTMENT D
+	              ON D.DEPT_CD = TD.TARGET_ID
+	          LEFT JOIN TB_SCHD_TARGET TP
+	              ON TP.SCHD_ID = S.SCHD_ID AND TP.TARGET_TYPE_CD = '05'
+	          LEFT JOIN TB_PROJECT P
+	              ON P.PROJ_ID = TO_NUMBER(TP.TARGET_ID)
+	          LEFT JOIN TB_SCHD_TARGET TT
+	              ON TT.SCHD_ID = S.SCHD_ID AND TT.TARGET_TYPE_CD = '06'
+	          LEFT JOIN TB_TASK T
+	              ON T.TASK_ID = TO_NUMBER(TT.TARGET_ID)
+	         WHERE S.DEL_YN = 'N'
+	           AND S.BEGIN_DT &lt;= #{endDt}
+	           AND S.END_DT   &gt;= #{beginDt}
+	           AND (
+	                 S.SCHD_WRTR_ID = #{empId}
+	                 OR S.SCHD_ID IN (
+	                     SELECT T2.SCHD_ID
+	                       FROM TB_SCHD_TARGET T2
+	                      WHERE (T2.TARGET_TYPE_CD = '01')
+	                         OR (T2.TARGET_TYPE_CD = '02' AND T2.TARGET_ID = TO_CHAR(#{empId}))
+	                         OR (T2.TARGET_TYPE_CD = '04' AND T2.TARGET_ID = #{deptCd})
+	                         <if test="execYn == true">
+	                             OR (T2.TARGET_TYPE_CD = '03')
+	                         </if>
+	                 )
+	               )
+	         GROUP BY
+	            S.SCHD_ID,
+	            S.SCHD_CLSF_CD,
+	            S.SCHD_NM,
+	            S.BEGIN_DT,
+	            S.END_DT,
+	            S.ALL_DAY_YN
+	         ORDER BY S.BEGIN_DT ASC
+	      )
+	     WHERE ROWNUM &lt;= #{limit}
+	</select>
+
+	<!-- 관리자 대시보드 위젯용: 오늘 + 다가오는 전사(C001)·간부(C003) 중요 일정 -->
+	<select id="selectImportantSchdListForAdminWidget" resultType="SchdWidgetVO">
+	    SELECT *
+	      FROM (
+	        SELECT
+	            S.SCHD_ID        AS id,
+	            S.SCHD_CLSF_CD   AS scheduleTypeCode,
+	            S.SCHD_NM        AS title,
+	            S.BEGIN_DT       AS startDt,
+	            S.END_DT         AS endDt,
+	            S.ALL_DAY_YN     AS allDayYn,
+	            NULL             AS deptNm,
+	            NULL             AS projNm,
+	            NULL             AS taskNm
+	          FROM TB_INTG_SCHD S
+	         WHERE S.DEL_YN = 'N'
+	           AND S.SCHD_CLSF_CD IN ('C001', 'C003')
+	           AND S.END_DT &gt;= #{beginDt}
+	         ORDER BY S.BEGIN_DT ASC
+	      )
+	     WHERE ROWNUM &lt;= #{limit}
+	</select>
+
+</mapper>

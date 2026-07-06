@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.mtng.mapper.MtngMapper">
+
+    <insert id="createMtng" parameterType="MtngVO">
+        <selectKey keyProperty="mtngId" resultType="long" order="BEFORE">
+            SELECT SEQ_MTNG_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_MTNG (
+            MTNG_ID,
+            MTNG_NM,
+            MTNG_TYPE_CD,
+            CRTR_ID,
+            BEGIN_DT,
+            END_DT,
+            CREAT_DT,
+            DEL_YN
+        ) VALUES (
+            #{mtngId},
+            #{mtngNm},
+            #{mtngTypeCd},
+            #{crtrId},
+            #{beginDt},
+            #{endDt},
+            #{creatDt},
+            #{delYn}
+        )
+    </insert>
+
+    <insert id="createMtngPtcptList" parameterType="list">
+        <foreach collection="list" item="ptcpt" separator=";" open="BEGIN" close="; END;">
+            INSERT INTO TB_MTNG_PTCPT (
+                MTNG_PTCPT_ID,
+                MTNG_ID,
+                EMP_ID
+            ) VALUES (
+                SEQ_MTNG_PTCPT_ID.NEXTVAL,
+                #{ptcpt.mtngId},
+                #{ptcpt.empId}
+            )
+        </foreach>
+    </insert>
+
+    <update id="updateMtngConfRmRsrvId">
+        UPDATE TB_MTNG
+        SET CONF_RM_RSRV_ID = #{confRmRsrvId}
+        WHERE MTNG_ID = #{mtngId}
+    </update>
+
+    <select id="selectMtngList" resultType="MtngListVO">
+	    SELECT *
+	    FROM (
+	        SELECT
+	            M.MTNG_ID,
+	            M.MTNG_NM,
+	            M.MTNG_TYPE_CD,
+	            M.BEGIN_DT,
+	            M.END_DT,
+	            M.CRTR_ID,
+	            E.EMP_NM AS CRTR_NM,
+	            V.VCONF_ID,
+	            V.ROOM_NM,
+	            MM.MOM_STTUS_CD,
+	            (
+	                SELECT COUNT(*)
+	                FROM TB_MTNG_PTCPT P
+	                WHERE P.MTNG_ID = M.MTNG_ID
+	            ) AS PTCPT_CNT
+	        FROM TB_MTNG M
+	        INNER JOIN TB_MTNG_PTCPT MP
+	            ON MP.MTNG_ID = M.MTNG_ID
+	           AND MP.EMP_ID = #{empId}
+	        LEFT JOIN TB_EMPLOYEE E
+	            ON E.EMP_ID = M.CRTR_ID
+	        LEFT JOIN TB_VIDEO_CONF V
+	            ON V.MTNG_ID = M.MTNG_ID
+	        LEFT JOIN TB_MTNG_MOM MM
+	            ON MM.MOM_ID = (
+	                SELECT MAX(MOM_ID)
+	                FROM TB_MTNG_MOM
+	                WHERE MTNG_ID = M.MTNG_ID
+	                AND DEL_DT IS NULL
+	            )
+	        LEFT JOIN TB_CONF_RM_RSRV R
+	            ON R.RSRV_ID = M.CONF_RM_RSRV_ID
+	        LEFT JOIN TB_CONF_RM CR
+	            ON CR.CONF_RM_ID = R.CONF_RM_ID
+	        WHERE M.DEL_YN = 'N'
+	
+	        <if test="beginDt != null">
+	            AND M.END_DT &gt;= #{beginDt}
+	        </if>
+	
+	        <if test="endDt != null">
+	            AND M.BEGIN_DT &lt;= #{endDt}
+	        </if>
+	
+	        <if test="keyword != null and keyword != ''">
+	            AND (
+	                M.MTNG_NM LIKE '%' || #{keyword} || '%'
+	                OR MM.MOM_CN LIKE '%' || #{keyword} || '%'
+	                OR EXISTS (
+	                    SELECT 1
+	                    FROM TB_MTNG_PTCPT KP
+	                    INNER JOIN TB_EMPLOYEE KE
+	                        ON KE.EMP_ID = KP.EMP_ID
+	                    WHERE KP.MTNG_ID = M.MTNG_ID
+	                      AND KE.EMP_NM LIKE '%' || #{keyword} || '%'
+	                )
+	            )
+	        </if>
+	
+	        ORDER BY M.BEGIN_DT ASC
+	    )
+	    <if test="limit != null and limit > 0">
+	        WHERE ROWNUM &lt;= #{limit}
+	    </if>
+	</select>
+
+    <select id="selectMtngDetail" resultType="MtngDetailVO">
+        SELECT
+            M.MTNG_ID,
+            M.MTNG_NM,
+            M.MTNG_TYPE_CD,
+            M.BEGIN_DT,
+            M.END_DT,
+            M.CRTR_ID,
+            E.EMP_NM AS CRTR_NM,
+            M.CONF_RM_RSRV_ID,
+            CR.CONF_RM_NM,
+            V.VCONF_ID,
+            V.ROOM_NM,
+            MM.MOM_ID,
+            MM.MOM_STTUS_CD,
+            VR.RCRDG_ATCH_FILE_ID,
+            VR.CREAT_DT AS RCRDG_CREAT_DT
+        FROM TB_MTNG M
+        LEFT JOIN TB_EMPLOYEE E
+            ON E.EMP_ID = M.CRTR_ID
+        LEFT JOIN TB_CONF_RM_RSRV R
+            ON R.RSRV_ID = M.CONF_RM_RSRV_ID
+        LEFT JOIN TB_CONF_RM CR
+            ON CR.CONF_RM_ID = R.CONF_RM_ID
+        LEFT JOIN TB_VIDEO_CONF V
+            ON V.MTNG_ID = M.MTNG_ID
+        LEFT JOIN TB_MTNG_MOM MM
+            ON MM.MOM_ID = (
+                SELECT MAX(MOM_ID)
+                FROM TB_MTNG_MOM
+                WHERE MTNG_ID = M.MTNG_ID
+                AND DEL_DT IS NULL
+            )
+        LEFT JOIN TB_VIDEO_RCRDG VR
+            ON VR.RCRDG_ID = (
+                SELECT MAX(VR2.RCRDG_ID)
+                FROM TB_VIDEO_RCRDG VR2
+                WHERE VR2.VCONF_ID = V.VCONF_ID
+                  AND VR2.DEL_DT IS NULL
+            )
+        WHERE M.MTNG_ID = #{mtngId}
+            AND M.DEL_YN = 'N'
+    </select>
+
+    <select id="selectMtngPtcptDetailList" resultType="MtngPtcptDetailVO">
+        SELECT
+            P.MTNG_PTCPT_ID,
+            P.EMP_ID,
+            E.EMP_NM,
+            D.DEPT_NM,
+            J.JOB_GRD_NM,
+            E.PRFL_IMG_FILE_ID
+        FROM TB_MTNG_PTCPT P
+        INNER JOIN TB_EMPLOYEE E
+            ON E.EMP_ID = P.EMP_ID
+        LEFT JOIN TB_DEPARTMENT D
+            ON D.DEPT_CD = E.DEPT_CD
+        LEFT JOIN TB_JOB_GRADE J
+            ON J.JOB_GRD_CD = E.JOB_GRD_CD
+        WHERE P.MTNG_ID = #{mtngId}
+    </select>
+
+    <update id="updateMtng" parameterType="MtngVO">
+        UPDATE TB_MTNG
+        SET MTNG_NM = #{mtngNm},
+            MTNG_TYPE_CD = #{mtngTypeCd},
+            BEGIN_DT = #{beginDt},
+            END_DT = #{endDt},
+            CONF_RM_RSRV_ID = #{confRmRsrvId}
+        WHERE MTNG_ID = #{mtngId}
+    </update>
+
+    <delete id="deleteMtngPtcptByMtngId">
+        DELETE FROM TB_MTNG_PTCPT
+        WHERE MTNG_ID = #{mtngId}
+    </delete>
+
+    <update id="deleteMtng">
+        UPDATE TB_MTNG
+        SET DEL_YN = 'Y'
+        WHERE MTNG_ID = #{mtngId}
+    </update>
+
+    <select id="selectMtngBeginDt" resultType="java.time.LocalDateTime">
+        SELECT BEGIN_DT
+        FROM TB_MTNG
+        WHERE MTNG_ID = #{mtngId}
+    </select>
+
+    <select id="selectVideoConfByMtngId" resultType="VideoConfVO">
+        SELECT VCONF_ID, MTNG_ID, ROOM_NM, VCONF_NM, CRTR_ID, CREAT_DT
+        FROM TB_VIDEO_CONF
+        WHERE MTNG_ID = #{mtngId}
+    </select>
+
+    <delete id="deleteVideoConfByMtngId">
+        DELETE FROM TB_VIDEO_CONF
+        WHERE MTNG_ID = #{mtngId}
+    </delete>
+
+    
+    <select id="selectMtngDetailByVconfId" resultType="MtngDetailVO">
+        SELECT
+            M.MTNG_ID,
+            M.MTNG_NM,
+            M.MTNG_TYPE_CD,
+            M.BEGIN_DT,
+            M.END_DT,
+            M.CRTR_ID,
+            E.EMP_NM AS CRTR_NM,
+            M.CONF_RM_RSRV_ID,
+            CR.CONF_RM_NM,
+            V.VCONF_ID,
+            V.ROOM_NM,
+            MM.MOM_ID,
+            MM.MOM_STTUS_CD
+        FROM TB_VIDEO_CONF V
+        INNER JOIN TB_MTNG M
+            ON M.MTNG_ID = V.MTNG_ID
+            AND M.DEL_YN = 'N'
+        LEFT JOIN TB_EMPLOYEE E
+            ON E.EMP_ID = M.CRTR_ID
+        LEFT JOIN TB_CONF_RM_RSRV R
+            ON R.RSRV_ID = M.CONF_RM_RSRV_ID
+        LEFT JOIN TB_CONF_RM CR
+            ON CR.CONF_RM_ID = R.CONF_RM_ID
+        LEFT JOIN TB_MTNG_MOM MM
+            ON MM.MOM_ID = (
+                SELECT MAX(MOM_ID)
+                FROM TB_MTNG_MOM
+                WHERE MTNG_ID = M.MTNG_ID
+                AND DEL_DT IS NULL
+            )
+        WHERE V.VCONF_ID = #{vconfId}
+    </select>
+</mapper>

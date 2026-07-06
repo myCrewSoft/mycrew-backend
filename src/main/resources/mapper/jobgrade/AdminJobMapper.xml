@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mycrewsoft.domain.jobgrade.mapper.AdminJobMapper">
+
+    <resultMap id="RankResultMap" type="com.mycrewsoft.domain.jobgrade.dto.response.RankResponseDTO">
+        <result property="rankId" column="RANK_ID"/>
+        <result property="rankName" column="RANK_NAME"/>
+        <result property="sortOrder" column="SORT_ORDER"/>
+        <result property="useYn" column="USE_YN"/>
+        <result property="assignedEmployeeCount" column="ASSIGNED_EMPLOYEE_COUNT"/>
+    </resultMap>
+
+    <select id="selectRanks" resultMap="RankResultMap">
+        SELECT
+            G.JOB_GRD_CD AS RANK_ID,
+            G.JOB_GRD_NM AS RANK_NAME,
+            G.SORT_ORDER AS SORT_ORDER,
+            G.USE_YN,
+            COUNT(E.EMP_ID) AS ASSIGNED_EMPLOYEE_COUNT
+        FROM TB_JOB_GRADE G
+        LEFT JOIN TB_EMPLOYEE E
+          ON E.JOB_GRD_CD = G.JOB_GRD_CD
+         AND NVL(E.ENABLED, 'Y') = 'Y'
+        WHERE NVL(G.USE_YN, 'Y') = 'Y'
+        GROUP BY G.JOB_GRD_CD, G.JOB_GRD_NM, G.SORT_ORDER, G.USE_YN
+        ORDER BY G.SORT_ORDER ASC, G.JOB_GRD_CD ASC
+    </select>
+
+    <!-- 직급 ID 자동 생성: JOB_GRD_CD VARCHAR2(5) 제약에 맞춰 JOB + 2자리 일련번호를 사용한다. -->
+    <!-- 비활성(USE_YN='N') 행까지 포함해 MAX를 계산하여 PK 재사용/충돌을 방지한다. -->
+    <select id="selectNextRankCode" resultType="java.lang.String">
+        SELECT 'JOB' || LPAD(
+            NVL((
+                SELECT MAX(TO_NUMBER(SUBSTR(TRIM(JOB_GRD_CD), 4)))
+                FROM TB_JOB_GRADE
+                WHERE REGEXP_LIKE(TRIM(JOB_GRD_CD), '^JOB[0-9]+$')
+            ), 0) + 1,
+            2,
+            '0'
+        )
+        FROM DUAL
+    </select>
+
+    <select id="selectRankById" resultMap="RankResultMap">
+        SELECT
+            G.JOB_GRD_CD AS RANK_ID,
+            G.JOB_GRD_NM AS RANK_NAME,
+            G.SORT_ORDER AS SORT_ORDER,
+            G.USE_YN,
+            (
+                SELECT COUNT(1)
+                FROM TB_EMPLOYEE E
+                WHERE E.JOB_GRD_CD = G.JOB_GRD_CD
+                  AND NVL(E.ENABLED, 'Y') = 'Y'
+            ) AS ASSIGNED_EMPLOYEE_COUNT
+        FROM TB_JOB_GRADE G
+        WHERE G.JOB_GRD_CD = #{rankId}
+          AND NVL(G.USE_YN, 'Y') = 'Y'
+    </select>
+
+    <insert id="insertRank">
+        INSERT INTO TB_JOB_GRADE (
+            JOB_GRD_CD,
+            JOB_GRD_NM,
+            SORT_ORDER,
+            USE_YN,
+            FRST_RGTR_ID,
+            FRST_REG_DT,
+            LAST_MDFR_ID,
+            LAST_MDFCN_DT
+        )
+        VALUES (
+            #{jobGrdCd},
+            #{jobGrdNm},
+            #{sortOrder},
+            'Y',
+            NVL(#{frstRgtrId}, 0),
+            SYSDATE,
+            NVL(#{lastMdfrId}, 0),
+            SYSDATE
+        )
+    </insert>
+
+    <update id="updateRank">
+        UPDATE TB_JOB_GRADE
+        SET JOB_GRD_NM = #{rankName},
+            SORT_ORDER = #{sortOrder},
+            LAST_MDFR_ID = NVL(#{lastModifierId}, 0),
+            LAST_MDFCN_DT = SYSDATE
+        WHERE JOB_GRD_CD = #{rankId}
+          AND NVL(USE_YN, 'Y') = 'Y'
+    </update>
+
+    <update id="disableRank">
+        UPDATE TB_JOB_GRADE
+        SET USE_YN = 'N',
+            LAST_MDFR_ID = NVL(#{lastModifierId}, 0),
+            LAST_MDFCN_DT = SYSDATE
+        WHERE JOB_GRD_CD = #{rankId}
+          AND NVL(USE_YN, 'Y') = 'Y'
+    </update>
+
+    <select id="selectEmpIdsByRankId" resultType="java.lang.Long">
+        SELECT E.EMP_ID
+        FROM TB_EMPLOYEE E
+        WHERE E.JOB_GRD_CD = #{rankId}
+          AND NVL(E.ENABLED, 'Y') = 'Y'
+    </select>
+
+    <update id="updateEmployeeRank">
+        UPDATE TB_EMPLOYEE
+        SET JOB_GRD_CD = #{replacementRankId}
+        WHERE JOB_GRD_CD = #{rankId}
+          AND NVL(ENABLED, 'Y') = 'Y'
+    </update>
+
+    <select id="countEnabledEmployeesByIds" resultType="int">
+        SELECT COUNT(1)
+        FROM TB_EMPLOYEE
+        WHERE NVL(ENABLED, 'Y') = 'Y'
+          AND EMP_ID IN
+          <foreach collection="empIds" item="empId" open="(" separator="," close=")">
+              #{empId}
+          </foreach>
+    </select>
+
+    <select id="countEmployeesByRankAndIds" resultType="int">
+        SELECT COUNT(1)
+        FROM TB_EMPLOYEE
+        WHERE JOB_GRD_CD = #{rankId}
+          AND NVL(ENABLED, 'Y') = 'Y'
+          AND EMP_ID IN
+          <foreach collection="empIds" item="empId" open="(" separator="," close=")">
+              #{empId}
+          </foreach>
+    </select>
+
+    <update id="updateEmployeesRank">
+        UPDATE TB_EMPLOYEE
+        SET JOB_GRD_CD = #{rankId}
+        WHERE NVL(ENABLED, 'Y') = 'Y'
+          AND EMP_ID IN
+          <foreach collection="empIds" item="empId" open="(" separator="," close=")">
+              #{empId}
+          </foreach>
+    </update>
+
+    <update id="updateSelectedEmployeesRank">
+        UPDATE TB_EMPLOYEE
+        SET JOB_GRD_CD = null
+        WHERE JOB_GRD_CD = #{rankId}
+          AND NVL(ENABLED, 'Y') = 'Y'
+          AND EMP_ID IN
+          <foreach collection="empIds" item="empId" open="(" separator="," close=")">
+              #{empId}
+          </foreach>
+    </update>
+</mapper>

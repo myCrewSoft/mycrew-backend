@@ -1,0 +1,562 @@
+package com.mycrewsoft.domain.board.service;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mycrewsoft.common.constant.PermissionCode;
+import com.mycrewsoft.common.exception.CustomException;
+import com.mycrewsoft.common.exception.ErrorCode;
+import com.mycrewsoft.common.util.DtoMapper;
+import com.mycrewsoft.domain.board.dto.request.BoardCommentCreateRequest;
+import com.mycrewsoft.domain.board.dto.request.BoardCommentUpdateRequest;
+import com.mycrewsoft.domain.board.dto.request.BoardCreateRequest;
+import com.mycrewsoft.domain.board.dto.request.BoardSearchRequest;
+import com.mycrewsoft.domain.board.dto.request.BoardUpdateRequest;
+import com.mycrewsoft.domain.board.dto.response.BoardResponse;
+import com.mycrewsoft.domain.board.dto.response.BoardSideBarResponse;
+import com.mycrewsoft.domain.board.dto.response.BoardWidgetItemResponse;
+import com.mycrewsoft.domain.board.event.CommentCreatedEvent;
+import com.mycrewsoft.domain.board.event.NoticeCreatedEvent;
+import com.mycrewsoft.domain.board.mapper.BoardMapper;
+import com.mycrewsoft.domain.board.vo.BoardCommentVO;
+import com.mycrewsoft.domain.board.vo.BoardLikeVo;
+import com.mycrewsoft.domain.board.vo.BoardVO;
+import com.mycrewsoft.domain.board.vo.BoardWidgetVO;
+import com.mycrewsoft.domain.employee.mapper.EmployeeLookupMapper;
+import com.mycrewsoft.domain.employee.mapper.EmployeeMapper;
+import com.mycrewsoft.security.authz.AuthorizationService;
+import com.mycrewsoft.security.authz.PermissionScopeSet;
+import com.mycrewsoft.security.authz.ResourceContext;
+import com.mycrewsoft.security.authz.ResourceType;
+import com.mycrewsoft.security.util.SecurityUtil;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class BoardServiceImpl implements BoardService {
+
+	private final EmployeeMapper employeeMapper;
+	private final EmployeeLookupMapper employeeLookupMapper;
+	private final BoardMapper boardMapper;
+	private final AuthorizationService authorizationService;
+	private final ObjectMapper objectMapper;
+	private final DtoMapper dtoMapper;
+	private final ApplicationEventPublisher eventPublisher;
+	
+	// 위젯 출력 개수
+	private static final int WIDGET_BOARD_LIMIT = 3;
+
+	// 데이터를 몇 페이지에 몇개씩 보여줄지
+	@Override
+	@Transactional(readOnly = true)
+	public Page<BoardResponse> getBoardList(String boardTypeCd, String deptCd, BoardSearchRequest searchRequest,
+			Pageable pageable) {
+		if (!StringUtils.isNotBlank(boardTypeCd)) {
+			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+		}
+
+		// 1. 권한 검증 및 자원 설정
+		if (StringUtils.isNotBlank(deptCd)) {
+
+			ResourceContext resource = ResourceContext.builder().resourceType(ResourceType.BOARD).deptCd(deptCd)
+					.build();
+
+			authorizationService.assertCurrentUserPermission(PermissionCode.BOARD_POST_READ, resource);
+		}
+
+		if (StringUtils.isBlank(boardTypeCd)) {
+			boardTypeCd = "DEPT";
+			searchRequest.setBoardTypeCd(boardTypeCd);
+		}
+
+		// 2. 권한 정보(부서코드, 글로벌 여부, 스코프 ID 세트 등) 조회
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
+		String myDeptCd = employeeMapper.selectEmpDeptCodeByEmpId(currentEmpId);
+		PermissionScopeSet scopes = authorizationService.getCurrentPermissionScopes(PermissionCode.BOARD_POST_READ);
+
+		// 3. 데이터베이스 조회 (전체 카운트 및 페이징된 리스트)
+		int total = boardMapper.countBoard(searchRequest, boardTypeCd, deptCd);
+
+		// 4. 한 페이지에 보여지는 게시물
+		List<BoardResponse> content = boardMapper.getBoardList(pageable.getOffset(), // pageNumber* pageSize
+				pageable.getPageSize(), // 한 페이지당 몇개 ?
+				searchRequest, // 검색기능
+				boardTypeCd, deptCd);
+		// 5. Spring Page 객체로 바인딩하여 반환
+		return new PageImpl<>(content, pageable, total);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Page<BoardResponse> getMyBoardList(BoardSearchRequest searchRequest, Pageable pageable) {
+		// 본인(작성자) 기준 조회이므로 별도 권한 검증 없이 현재 사용자 ID로 필터링한다.
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
+
+		int total = boardMapper.countMyBoard(currentEmpId, searchRequest);
+
+		List<BoardResponse> content = boardMapper.getMyBoardList(
+				pageable.getOffset(),
+				pageable.getPageSize(),
+				currentEmpId,
+				searchRequest);
+
+		return new PageImpl<>(content, pageable, total);
+	}
+
+	@Override
+	@Transactional
+	public List<BoardSideBarResponse> getSideBar() {
+		// 1. 권한 검증 및 자원 설정
+		ResourceContext resource = ResourceContext.builder().resourceType(ResourceType.BOARD).build();
+
+		authorizationService.assertCurrentUserPermission(PermissionCode.BOARD_POST_READ, resource);
+
+		// 2. 권한 정보(부서코드, 글로벌 여부, 스코프 ID 세트 등) 조회
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
+		String myDeptCd = employeeMapper.selectEmpDeptCodeByEmpId(currentEmpId);
+		PermissionScopeSet scopes = authorizationService.getCurrentPermissionScopes(PermissionCode.BOARD_POST_READ);
+
+		// 3. 데이터베이스 조회 (전체 카운트 및 페이징된 리스트)
+
+		// 게시판 사이드바의 목록 조회
+		List<BoardSideBarResponse> rawBoardList = boardMapper.getSideBar(myDeptCd, currentEmpId, scopes.hasGlobal(),
+				scopes.getDepartmentScopeIds());
+		if (rawBoardList == null) {
+			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+		}
+
+		List<BoardSideBarResponse> resultList = new ArrayList<>(); // 메인 게시판 리스트(공지사항,익명,자유,부서)
+		List<BoardSideBarResponse> deptChildren = new ArrayList<>(); // 부서게시판의 하위 게시판
+
+		for (BoardSideBarResponse item : rawBoardList) {
+			if ("DEPT".equalsIgnoreCase(item.getBoardTypeCd())) {
+				// 💡 boardTypeCd가 'DEPT'인 항목(개발팀, 운영팀 등)은 자식 목록에 차곡차곡 수집합니다.
+				deptChildren.add(item);
+			} else {
+				// 💡 공지사항, 자유게시판, 익명게시판 등 일반 대메뉴는 결과 리스트에 바로 넣습니다.
+				item.setUnderlevel(null); // 하위 항목이 없으므로 명시적으로 null 지정
+				resultList.add(item);
+			}
+		}
+
+		BoardSideBarResponse deptParent = BoardSideBarResponse.builder().boardTypeCd("DEPT").boardName("부서게시판")
+				// 위에서 열심히 수집한 개발팀, 운영팀 리스트를 underlevel 공간에 주입합니다.
+				.underlevel(deptChildren.isEmpty() ? null : deptChildren).build();
+
+		if (!resultList.isEmpty()) {
+			resultList.add(1, deptParent);
+		} else {
+			resultList.add(deptParent);
+		}
+
+		return resultList;
+	}
+
+	@Override
+	@Transactional
+	public BoardResponse getBoard(String deptCd, Long boardId) {
+
+		Long empId = SecurityUtil.getCurrentEmpId();
+		
+		// 1. 권한 검증 및 자원 설정
+		// 부서코드가 비어있지않으면
+		if (StringUtils.isNotBlank(deptCd)) {
+			ResourceContext resource = ResourceContext.builder().resourceType(ResourceType.BOARD).deptCd(deptCd)
+					.build();
+
+			authorizationService.assertCurrentUserPermission(PermissionCode.BOARD_POST_READ, resource);
+		}
+		
+		// 2. 데이터베이스 조회 (게시물의 게시글, 게시판 댓글, 좋아요,조회수,좋아요 수 )
+		int updatedView = boardMapper.updateViewCount(boardId);
+		if (updatedView == 0) {
+			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+		}
+
+		BoardVO boardVo = boardMapper.readBoard(boardId);
+		if (boardVo == null) {
+			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+		}
+
+		List<BoardCommentVO> boardCommentVO = boardMapper.readCommentList(boardId);
+
+		BoardLikeVo boardLikeVo = boardMapper.readLikeStatus(boardId, empId);
+
+		int boardLikeCount = boardMapper.readLikeCount(boardId);
+		
+		//내가 갖고 있는 BOARD_POST_READ 권한이 Global 인지 판단(Global == 타인, 모든 부서, 모든 프로젝트의 게시글 범위)
+		if(!authorizationService.hasGlobalScope(PermissionCode.BOARD_POST_READ)) {
+			//내 BOARD_POST_READ 권한이 Global이 아니라면, 세부 검증으로 이동.
+					
+	
+			//db에서 게시글을 조회하여 실제 데이터로 검증
+			Long writer	= boardVo.getFrstRgtrId();
+			String getDeptCd = boardVo.getDeptCd();
+			Long prod = boardVo.getProjId();
+			String prodId = null;
+			
+			if(prod != null) {
+				prodId = prod.toString();
+			}
+			
+			String boardType = boardVo.getBoardTypeCd();
+			
+			ResourceContext context = null;
+			
+			if(boardType.equals("NOTICE") || boardType.equals("FREE") ||boardType.equals("ANON")) {
+			    context = ResourceContext.builder()
+						            .resourceType(ResourceType.BOARD)
+						            .build();
+			} else {
+				context = ResourceContext.builder()
+						//내가 쓴 글인가? - 내가 작성한 글이면 어떤 게시판이든 상관없이 읽기 가능
+						.ownerEmpId(writer)
+						//내 BOARD_POST_READ 권한이 부서 범위인가? - 만일 내가 인사부 소속인데, 사업부 게시판 관리 권한을 받았다면?
+						.deptCd(getDeptCd)
+						//내 BOARD_POST_READ 권한이 프로젝트 범위인가? - 만일 내가 프로젝트 참여자가 아니지만, 프로젝트 관리 권한을 받았다면?
+						.projId(prodId)
+						.build();
+			}
+			
+			//위에서 나열된 3가지 조건 중 하나라도 충족하면 권한 통과.
+			authorizationService.assertCurrentUserPermission(PermissionCode.BOARD_POST_READ, context);
+		
+		}
+
+		// vo 를 dto로 바꾸는 작업
+		BoardResponse boardResponse = dtoMapper.toDto(boardVo, BoardResponse.class);
+
+		boardResponse.setCommentList(dtoMapper.toDtoList(boardCommentVO, BoardCommentVO.class));
+		boardResponse.setIsLiked(boardLikeVo != null);
+
+		boardResponse.setLikeCnt(boardLikeCount);
+
+		try {
+			log.info("BoardResponse Data: {}", objectMapper.writeValueAsString(boardResponse));
+		} catch (Exception e) {
+			log.warn("BoardResponse 로그 변환 실패: {}", e.getMessage());
+		}
+		return boardResponse;
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Page<BoardResponse> getProjList(Long projId, BoardSearchRequest searchRequest, Pageable pageable) {
+
+		// 프로젝트가 없으면 프로젝트가 없다는 예외
+		if (projId == null) {
+			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+		}
+
+		Long currentEmpId = SecurityUtil.getCurrentEmpId();
+
+		// 프로젝트 하는 이들만 볼 수있는 권한 체크 -> 지금 목록을 보려고 하는 사람이 프로젝트 참여자인지
+		// currentEmpId == mapper.getempId(projId);
+
+		// 1. 해당 프로젝트 게시글의 전체 카운트 조회
+		int total = boardMapper.countProjBoard(searchRequest, projId);
+
+		// 2. 한 페이지에 보여지는 프로젝트 게시물 리스트 조회 (getBoardList와 동일 포맷)
+		List<BoardResponse> content = boardMapper.getProjList(pageable.getOffset(), pageable.getPageSize(),
+				searchRequest, projId);
+
+		// 3. Spring Page 객체로 바인딩하여 최종 반환
+		return new PageImpl<>(content, pageable, total);
+	}
+
+	@Override
+	@Transactional
+	public Long createBoard(BoardCreateRequest boardCreateRequest) {
+	    Long empId = SecurityUtil.getCurrentEmpId();
+	    String boardTypeCd = boardCreateRequest.getBoardTypeCd();
+
+	    // 1. 게시판 타입별 권한 체크 (기존 다른 메서드와 동일한 패턴 적용)
+	    if (!authorizationService.hasGlobalScope(PermissionCode.BOARD_POST_CREATE)) {
+	        
+	        // 생성할 자원의 컨텍스트 빌드
+	        ResourceContext.ResourceContextBuilder contextBuilder = ResourceContext.builder()
+	                .ownerEmpId(empId); // 작성자 본인 등록
+
+	        if ("DEPT".equalsIgnoreCase(boardTypeCd)) {
+	            // 부서게시판일 경우: 요청 객체에 담긴 부서코드로 자원 설정
+	            contextBuilder.deptCd(boardCreateRequest.getDeptCd());
+	            
+	        } else if ("PROJ".equalsIgnoreCase(boardTypeCd)) {
+	            // 프로젝트 게시판일 경우: 요청 객체에 담긴 프로젝트 ID 설정
+	            if (boardCreateRequest.getProjId() != null) {
+	                contextBuilder.projId(boardCreateRequest.getProjId().toString());
+	            }
+	        }
+	        
+	        if(boardCreateRequest.getBoardTypeCd().equals("NOTICE")) {
+	        	throw new CustomException(ErrorCode.ACCESS_DENIED);
+	        }
+	 
+	        // 공지사항(NOTICE)의 경우 특정 부서나 프로젝트가 없으므로 
+	        // 전사 관리자(Global 권한자)가 아니면 아래 assert에서 걸러지도록 유도하거나, 
+	        // 별도의 관리자 권한 코드를 사용할 수 있습니다.
+
+	        // 최종 권한 검증 및 예외 발생
+	        authorizationService.assertCurrentUserPermission(PermissionCode.BOARD_POST_CREATE, contextBuilder.build());
+	    }
+	    
+	    // 2. DTO -> VO로 변환 및 저장 (기존 로직)
+	    BoardVO boardVo = dtoMapper.toDto(boardCreateRequest, BoardVO.class);
+	    boardVo.setFrstRgtrId(empId);
+	    
+	    boardMapper.createBoard(boardVo);
+      
+      // 공지사항이면 전 사원에게 알림
+      if("NOTICE".equals(boardVo.getBoardTypeCd())) {
+        List<Long> allEmpIds = employeeLookupMapper.selectAllEmpIds();
+        eventPublisher.publishEvent(
+          new NoticeCreatedEvent(boardVo.getBoardId(), boardVo.getBoardSj(), allEmpIds)
+        );
+
+      }
+	    return boardVo.getBoardId();
+	}
+	@Override
+	@Transactional
+	public Long updateBoardDetail(Long boardId, BoardUpdateRequest boardUpdateRequest) {
+		// 로그인한 사원 아이디 empId
+		Long empId = SecurityUtil.getCurrentEmpId();
+		
+		
+		// db에서 글을 조회
+		BoardVO writtenBoard  = boardMapper.readBoard(boardId);
+		if (writtenBoard == null) {
+			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+		}
+		
+		//내가 갖고 있는 BOARD_POST_UPDATE 권한이 Global 인지 판단(Global == 타인, 모든 부서, 모든 프로젝트의 게시글 범위)
+		if(!authorizationService.hasGlobalScope(PermissionCode.BOARD_POST_UPDATE)) {
+			//내 BOARD_POST_UPDATE 권한이 Global이 아니라면, 세부 검증으로 이동.
+			
+			//db에서 게시글을 조회하여 실제 데이터로 검증
+			Long writer	= writtenBoard.getFrstRgtrId();
+			String deptCd = writtenBoard.getDeptCd();
+			Long prod = writtenBoard.getProjId();
+			String prodId = null;
+			
+			if(prod != null) {
+				prodId = prod.toString();
+			}
+			
+			ResourceContext context = ResourceContext.builder()
+										//내가 쓴 글인가? - 내가 작성한 글이면 어떤 게시판이든 상관없이 수정 가능
+										.ownerEmpId(writer)
+										//내 BOARD_POST_UPDATE 권한이 부서 범위인가? - 만일 내가 인사부 소속인데, 사업부 게시판 관리 권한을 받았다면?
+										.deptCd(deptCd)
+										//내 BOARD_POST_UPDATE 권한이 프로젝트 범위인가? - 만일 내가 프로젝트 참여자가 아니지만, 프로젝트 관리 권한을 받았다면?
+										.projId(prodId)
+										.build();
+			
+			//위에서 나열된 3가지 조건 중 하나라도 충족하면 권한 통과.
+			authorizationService.assertCurrentUserPermission(PermissionCode.BOARD_POST_UPDATE, context);
+			
+			//DTO-VO로 변환
+			BoardVO boardDetail = dtoMapper.toDto(boardUpdateRequest, BoardVO.class);
+			boardDetail.setBoardId(boardId);
+			
+			//데이터베이스에서 생성
+			int result= boardMapper.updateBoardDetails(boardDetail);
+			if(result==0) {
+				throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+			}
+			return boardId; // 게시물 수정하면 그 게시물로 이동하기 때문에 
+		} else {
+			//DTO-VO로 변환
+			BoardVO boardDetail =dtoMapper.toDto(boardUpdateRequest,  BoardVO.class);
+			boardDetail.setBoardId(boardId);
+			
+			//데이터베이스에서 생성
+			int result= boardMapper.updateBoardDetails(boardDetail);
+			if(result==0) {
+				throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+			}
+			return boardId; // 게시물 수정하면 그 게시물로 이동하기 때문에 
+		}
+	}
+	
+	@Override
+	@Transactional
+	public void deleteBoardDetail(Long boardId) {
+		//로그인한 사원 아이디 empId
+		Long empId = SecurityUtil.getCurrentEmpId();
+		
+		//db에서 글을 조회
+		BoardVO readedBoard  = boardMapper.readBoard(boardId);
+		if (readedBoard == null) {
+			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+		}
+
+		Long written = readedBoard.getFrstRgtrId();
+		String deptCd = readedBoard.getDeptCd();
+		Long prod = readedBoard.getProjId();
+		String prodId = null;
+		
+		if(prod != null) {
+			prodId = prod.toString();
+		}
+		
+		ResourceContext context = ResourceContext.builder().ownerEmpId(written).deptCd(deptCd).projId(prodId).build();
+
+		//위에서 나열된 3가지 조건 중 하나라도 충족하면 권한 통과.
+		authorizationService.assertCurrentUserPermission(PermissionCode.BOARD_POST_DELETE, context);
+
+		//데이터베이스에서 논리 삭제
+		int result = boardMapper.deleteBoardDetail(boardId);
+		if(result ==0) {
+			throw new CustomException(ErrorCode.BOARD_NOT_FOUND);
+		}
+		
+	}
+
+	@Transactional
+	@Override
+	public Long createComment(BoardCommentCreateRequest createComment) {
+		
+		// 권한 체크
+		Long empId = SecurityUtil.getCurrentEmpId();
+		
+		// DTO -> VO로 변환
+		BoardCommentVO boardCommentVO = dtoMapper.toDto(createComment, BoardCommentVO.class);
+
+		boardCommentVO.setWrterEmpId(empId);
+	
+		// 데이터베이스에서 생성
+		boardMapper.insertComment(boardCommentVO);
+
+		// 글 작성자에게 댓글 등록 알림
+		BoardVO boardVo = boardMapper.readBoard(boardCommentVO.getBoardId());
+		String boardSj = boardVo.getBoardSj();
+		Long boardWriter = boardVo.getFrstRgtrId();
+		eventPublisher.publishEvent(
+			new CommentCreatedEvent(boardCommentVO.getBoardId(), boardSj, boardWriter)
+		);
+		
+		return boardCommentVO.getCommentId();
+	}
+
+	@Override
+	@Transactional
+	public Long updateComment(BoardCommentUpdateRequest updateComment) {
+
+		// 권한 체크
+		Long empId = SecurityUtil.getCurrentEmpId();
+		
+		// DTO -> VO로 변환
+		BoardCommentVO updateVo = dtoMapper.toDto(updateComment , BoardCommentVO.class);
+		
+		updateVo.setWrterEmpId(empId);
+		
+				
+		//데이터베이스에서 생성
+		int result= boardMapper.updateComment(updateVo);
+		
+		if(result==0) {
+		throw new CustomException(ErrorCode.ACCESS_DENIED);
+			}
+		return updateVo.getCommentId(); 
+			
+	}
+
+	@Override
+	@Transactional
+	public void deleteComment(Long commentId) {
+		
+		// 권한 체크
+		Long empId = SecurityUtil.getCurrentEmpId();
+		
+		// db에서 글을 조회
+		 Long readCommentEmpId = boardMapper.readCmWrterEmpId(commentId); 
+		
+		 //댓글 못 찾음
+		if(readCommentEmpId == null) {
+			throw new CustomException(ErrorCode.COMMENT_NOT_FOUND); 
+		}
+		
+		// 로그인한 사람과 게시판 댓글 작성자 아이디  동일하지않으면 
+		if(!empId.equals(readCommentEmpId)){
+			throw new CustomException(ErrorCode.ACCESS_DENIED);
+
+		}
+		//데이터 베이스에서 논리삭제 
+		int result =	boardMapper.deleteComment(commentId);
+		if(result ==0) {
+			throw new CustomException(ErrorCode.ACCESS_DENIED);
+		}
+	}
+
+	@Override
+	public boolean toggelLike(Long boardId, Long empId) {
+	
+		// DB에서 이 글에 이 사람이 좋아요를 누른 데이터가 있는지 조회
+		BoardLikeVo likeStatus = boardMapper.readLikeStatus(boardId, empId);
+		// 만약 결과가 NULL 이라면? (즉, 하트를 처음 누르는 상황)
+		if(likeStatus ==null) {
+			// 글 번호와 직원사번 를 채워 넣음
+			BoardLikeVo newLike = new BoardLikeVo();
+			newLike.setBoardId(boardId);
+			newLike.setEmpId(empId);
+			
+			//DB 에 이사람 이 글 좋아요 눌렀음 하고 저장함
+			boardMapper.insertLike(newLike);
+			return true;
+		}else {
+			//DB 에 이제 좋아요가 취소되었습니다 false 를 리턴함
+			boardMapper.deleteLike(boardId, empId);
+			return false;
+		}
+		
+		
+	}
+
+	@Override
+	public Map<String, Object> getLike(Long boardId, Long empId) {
+	
+		// map 을 사용하는 이유는 타입이 다른 int 와 boolean을 사용하기 때문에  
+		Map<String, Object> result = new HashMap<>();
+		
+		int likeCount = boardMapper.readLikeCount(boardId);
+		
+		boolean isLiked = boardMapper.readLikeStatus(boardId, empId)!=null;
+		
+		result.put("likeCount", likeCount);
+		result.put("isLiked", isLiked);
+		return result;
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<BoardWidgetItemResponse> getBoardListForWidget(String boardTypeCd, int limit) {
+	    Long currentEmpId = SecurityUtil.getCurrentEmpId();
+	    String deptCd = employeeMapper.selectEmpDeptCodeByEmpId(currentEmpId);
+	    List<BoardWidgetVO> voList = boardMapper.getBoardListForWidget(boardTypeCd, deptCd, limit);
+	    return voList.stream()
+	            .map(vo -> {
+	                BoardWidgetItemResponse dto = new BoardWidgetItemResponse();
+	                dto.setId(vo.getBoardId());
+	                dto.setTitle(vo.getBoardSj());
+	                dto.setWriterName(vo.getEmpNm());
+	                dto.setCreatedAt(vo.getFrstRegDt());
+	                return dto;
+	            })
+	            .toList();
+	}
+}

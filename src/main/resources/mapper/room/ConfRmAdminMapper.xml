@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.mycrewsoft.domain.room.mapper.ConfRmAdminMapper">
+	
+	<select id="selectConfRmStatsSummary" resultType="ConfRmSummaryVO">
+        SELECT
+            (SELECT COUNT(*) FROM TB_CONF_RM) AS total_count,
+            (
+                SELECT COUNT(DISTINCT r.CONF_RM_ID)
+                FROM TB_CONF_RM_RSRV r
+                WHERE r.DEL_YN = 'N'
+                  AND SYSDATE BETWEEN r.BEGIN_DT AND r.END_DT
+            ) AS in_use_count,
+            (
+                SELECT COUNT(*)
+                FROM TB_CONF_RM rm
+                WHERE rm.USE_YN = 'Y'
+                  AND rm.CONF_RM_ID NOT IN (
+                      SELECT r.CONF_RM_ID
+                      FROM TB_CONF_RM_RSRV r
+                      WHERE r.DEL_YN = 'N'
+                        AND SYSDATE BETWEEN r.BEGIN_DT AND r.END_DT
+                  )
+            ) AS available_count,
+            (
+                SELECT ROUND(
+                    AVG(
+                        (
+                            SELECT COALESCE(SUM(
+                                (LEAST(r.END_DT, TRUNC(SYSDATE) + 18/24) - GREATEST(r.BEGIN_DT, TRUNC(SYSDATE) + 9/24)) * 24 * 60
+                            ), 0)
+                            FROM TB_CONF_RM_RSRV r
+                            WHERE r.CONF_RM_ID = rm.CONF_RM_ID
+                              AND r.DEL_YN = 'N'
+                              AND r.BEGIN_DT &lt; TRUNC(SYSDATE) + 18/24
+                              AND r.END_DT &gt; TRUNC(SYSDATE) + 9/24
+                        ) / (9 * 60) * 100
+                    ), 1
+                )
+                FROM TB_CONF_RM rm
+                WHERE rm.USE_YN = 'Y'
+            ) AS avg_occupancy_rate
+        FROM DUAL
+    </select>
+    
+    <select id="selectConfRmList" resultType="ConfRmAdminVO">
+        SELECT
+            rm.CONF_RM_ID,
+            rm.CONF_RM_NM,
+            rm.CONF_RM_FLR,
+            rm.CONF_RM_HO,
+            rm.CONF_RM_COLOR,
+            rm.USE_YN,
+            rm.CONF_RM_MNGR_ID,
+            e.EMP_NM        AS mngr_nm,
+            d.DEPT_NM       AS mngr_dept_nm,
+            j.JOB_GRD_NM    AS mngr_job_grd_nm,
+            e.PRFL_IMG_FILE_ID AS mngr_prfl_img_file_id
+        FROM TB_CONF_RM rm
+        LEFT JOIN TB_EMPLOYEE e ON rm.CONF_RM_MNGR_ID = e.EMP_ID
+        LEFT JOIN TB_DEPARTMENT d ON e.DEPT_CD = d.DEPT_CD
+        LEFT JOIN TB_JOB_GRADE j  ON e.JOB_GRD_CD = j.JOB_GRD_CD
+        ORDER BY rm.CONF_RM_FLR, rm.CONF_RM_HO
+    </select>
+</mapper>

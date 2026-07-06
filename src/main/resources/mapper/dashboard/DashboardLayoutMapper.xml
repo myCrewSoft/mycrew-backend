@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.mycrewsoft.domain.dashboard.mapper.DashboardLayoutMapper">
+	
+	<select id="selectDashboardLayout" parameterType="long" resultType="DashboardLayoutVO">
+        SELECT DSHBD_LYT_ID
+             , EMP_ID
+             , LYT_JSON_CN
+             , CREAT_DT
+             , LAST_MDFCN_DT
+          FROM TB_DASHBOARD_LAYOUT
+         WHERE EMP_ID = #{empId}
+    </select>
+
+    <insert id="insertDashboardLayout" parameterType="DashboardLayoutVO">
+        <selectKey keyProperty="dshbdLytId" resultType="long" order="BEFORE">
+            SELECT SEQ_DSHBD_LYT_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_DASHBOARD_LAYOUT (
+            DSHBD_LYT_ID
+          , EMP_ID
+          , LYT_JSON_CN
+          , CREAT_DT
+          , LAST_MDFCN_DT
+        ) VALUES (
+            #{dshbdLytId}
+          , #{empId}
+          , #{lytJsonCn}
+          , SYSDATE
+          , SYSDATE
+        )
+    </insert>
+
+    <update id="updateDashboardLayout" parameterType="DashboardLayoutVO">
+        UPDATE TB_DASHBOARD_LAYOUT
+           SET LYT_JSON_CN   = #{lytJsonCn}
+             , LAST_MDFCN_DT = SYSDATE
+         WHERE EMP_ID = #{empId}
+    </update>
+    
+</mapper>

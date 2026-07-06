@@ -4,6 +4,8 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 .env
+.metadata
+SKILL.md
 
 ### STS ###
 .apt_generated

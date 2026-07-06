@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.mycrewsoft.domain.reservation.mapper.ReservationMapper">
+	
+	<select id="selectConfRmRsrvList" resultType="ReservationDetailVO">
+		SELECT
+			RR.RSRV_ID, RR.CONF_RM_ID, RR.RSRV_EMP_ID, RR.RSRV_PURPS,
+			RR.BEGIN_DT, RR.END_DT, RR.DEL_YN, RR.ALL_DAY_YN,
+			E.EMP_NM AS RSRV_EMP_NM,
+			E.DEPT_CD AS RSRV_EMP_DEPT_CD,
+			E.JOB_GRD_CD AS RSRV_EMP_JOB_GRD_CD,
+			E.PRFL_IMG_FILE_ID AS RSRV_EMP_PRFL_IMG_FILE_ID,
+			M.MTNG_ID AS MTNG_ID
+		FROM TB_CONF_RM_RSRV RR
+		JOIN TB_CONF_RM CR ON RR.CONF_RM_ID = CR.CONF_RM_ID
+		JOIN TB_EMPLOYEE E ON RR.RSRV_EMP_ID = E.EMP_ID
+		LEFT JOIN TB_MTNG M ON M.CONF_RM_RSRV_ID = RR.RSRV_ID AND M.DEL_YN = 'N'
+		WHERE CR.USE_YN = 'Y'
+		AND RR.DEL_YN = 'N'
+		AND <![CDATA[ RR.BEGIN_DT <= #{endDt}
+      	AND RR.END_DT >= #{beginDt}]]>
+		ORDER BY RR.CONF_RM_ID, RR.BEGIN_DT
+	</select>
+
+	<select id="selectConfRmRsrv" resultType="ReservationDetailVO">
+		SELECT
+			RR.RSRV_ID, RR.CONF_RM_ID, RR.RSRV_EMP_ID, RR.RSRV_PURPS,
+			RR.BEGIN_DT, RR.END_DT, RR.DEL_YN, RR.ALL_DAY_YN,
+			E.EMP_NM AS RSRV_EMP_NM,
+			E.DEPT_CD AS RSRV_EMP_DEPT_CD,
+			E.JOB_GRD_CD AS RSRV_EMP_JOB_GRD_CD,
+			E.PRFL_IMG_FILE_ID AS RSRV_EMP_PRFL_IMG_FILE_ID
+		FROM TB_CONF_RM_RSRV RR
+		JOIN TB_EMPLOYEE E ON RR.RSRV_EMP_ID = E.EMP_ID
+		LEFT JOIN TB_MTNG M ON M.CONF_RM_RSRV_ID = RR.RSRV_ID AND M.DEL_YN = 'N'
+		WHERE RR.RSRV_ID = #{rsrvId}
+		AND RR.DEL_YN = 'N'
+	</select>
+
+	<insert id="insertConfRmRsrv">
+	    <selectKey keyProperty="rsrvId" resultType="long" order="BEFORE">
+	        SELECT SEQ_RSRV_ID.NEXTVAL FROM DUAL
+	    </selectKey>
+	    INSERT INTO TB_CONF_RM_RSRV (
+	        RSRV_ID
+	        , CONF_RM_ID
+	        , RSRV_EMP_ID
+	        , RSRV_PURPS
+	        , BEGIN_DT
+	        , END_DT
+	        , DEL_YN
+	        , ALL_DAY_YN
+	    ) VALUES (
+	        #{rsrvId}
+	        , #{confRmId}
+	        , #{rsrvEmpId}
+	        , #{rsrvPurps}
+	        , #{beginDt}
+	        , #{endDt}
+	        , 'N'
+	        , #{allDayYn}
+	    )
+	</insert>
+
+    <update id="updateConfRmRsrv">
+	    UPDATE TB_CONF_RM_RSRV
+	       SET RSRV_PURPS    = #{rsrvPurps},
+	           BEGIN_DT      = #{beginDt},
+	           END_DT        = #{endDt},
+	           ALL_DAY_YN  = #{allDayYn}
+	     WHERE RSRV_ID = #{rsrvId}
+		   AND DEL_YN = 'N'
+	</update>
+
+    <update id="deleteConfRmRsrv">
+		UPDATE TB_CONF_RM_RSRV
+		SET DEL_YN = 'Y'
+		WHERE RSRV_ID = #{rsrvId}
+	</update>
+
+	<select id="countOverlappingRsrv" resultType="int">
+	    SELECT COUNT(*)
+	    FROM TB_CONF_RM_RSRV
+	    WHERE CONF_RM_ID = #{confRmId}
+	      AND DEL_YN = 'N'
+	      AND RSRV_ID != #{rsrvId}
+	      AND BEGIN_DT  <![CDATA[ < ]]> #{endDt}
+	      AND END_DT    <![CDATA[ > ]]> #{beginDt}
+	</select>
+    
+    <select id="selectMyReservationListForWidget" resultType="ReservationDetailVO">
+	    SELECT *
+	      FROM (
+	        SELECT
+	            RR.RSRV_ID,
+	            RR.CONF_RM_ID,
+	            RR.RSRV_EMP_ID,
+	            RR.RSRV_PURPS,
+	            RR.BEGIN_DT,
+	            RR.END_DT,
+	            RR.ALL_DAY_YN,
+	            M.MTNG_ID
+	          FROM TB_CONF_RM_RSRV RR
+	          JOIN TB_CONF_RM CR ON RR.CONF_RM_ID = CR.CONF_RM_ID
+	          LEFT JOIN TB_MTNG M ON M.CONF_RM_RSRV_ID = RR.RSRV_ID AND M.DEL_YN = 'N'
+	         WHERE CR.USE_YN = 'Y'
+	           AND RR.DEL_YN = 'N'
+	           AND RR.RSRV_EMP_ID = #{empId}
+	           AND RR.BEGIN_DT &gt;= #{beginDt}
+	           AND RR.BEGIN_DT &lt;= #{endDt}
+	         ORDER BY RR.BEGIN_DT ASC
+	      )
+	     WHERE ROWNUM &lt;= #{limit}
+	</select>
+    
+</mapper>
